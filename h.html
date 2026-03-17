@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クイズ参加者</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f2f5; margin: 0; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        .btn { width: 100%; padding: 20px; margin: 8px 0; font-size: 22px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
+        .btn-join { background: #2ecc71; }
+        .btn-a { background: #ff4757; } .btn-b { background: #2f3542; }
+        .btn-c { background: #2ed573; } .btn-d { background: #1e90ff; }
+        .btn-e { background: #a29bfe; }
+        input { width: 100%; padding: 15px; margin-bottom: 20px; font-size: 18px; border: 2px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        .screen { display: none; }
+        .active { display: block; }
+        .disabled { pointer-events: none; opacity: 0.5; }
+        #timer-display { font-size: 24px; font-weight: bold; color: #e94560; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div id="sc-registration" class="screen active">
+            <h2>クイズ参加申込</h2>
+            <input type="text" id="userName" placeholder="名前を入力（例：坂本）">
+            <button class="btn btn-join" onclick="joinGame()">参加する！</button>
+        </div>
+        <div id="sc-starting" class="screen">
+            <h2>受付完了！</h2>
+            <p>開始までそのままお待ちください...</p>
+        </div>
+        <div id="sc-quiz" class="screen">
+            <div id="timer-display">残り <span id="time-left">30</span> 秒</div>
+            <h2 id="qNumDisplay">第 1 問</h2>
+            <div id="quizArea">
+                <button class="btn btn-a" onclick="sendAns('A')">A</button>
+                <button class="btn btn-b" onclick="sendAns('B')">B</button>
+                <button class="btn btn-c" onclick="sendAns('C')">C</button>
+                <button class="btn btn-d" onclick="sendAns('D')">D</button>
+                <button class="btn btn-e" onclick="sendAns('E')">E</button>
+            </div>
+            <p id="msg" style="font-weight:bold; margin-top:15px;"></p>
+        </div>
+        <div id="sc-finished" class="screen">
+            <h2>お疲れ様でした！</h2>
+        </div>
+    </div>
+
+    <script>
+        // Firebase設定
+        var firebaseConfig = {
+            apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
+            authDomain: "speed-quiz26.firebaseapp.com",
+            databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "speed-quiz26"
+        };
+        // 初期化
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+        
+        var myName = "";
+        var currentQStart = 0;
+        var countdownInterval = null;
+
+        // 状態監視
+        db.ref('status').on('value', function(snap) {
+            var status = snap.val();
+            if(!status || status.state === 'registration') {
+                switchScreen('sc-registration');
+                clearInterval(countdownInterval);
+                return;
+            }
+            if(status.state === 'starting') switchScreen('sc-starting');
+            if(status.state === 'quiz') {
+                switchScreen('sc-quiz');
+                document.getElementById('qNumDisplay').innerText = "第 " + (status.qIdx + 1) + " 問";
+                document.getElementById('quizArea').classList.remove('disabled');
+                document.getElementById('msg').innerText = "";
+                currentQStart = Date.now();
+                startTimer(30);
+            }
+            if(status.state === 'finished') switchScreen('sc-finished');
+        });
+
+        function switchScreen(id) {
+            var screens = document.getElementsByClassName('screen');
+            for(var i=0; i<screens.length; i++) screens[i].classList.remove('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+        function startTimer(seconds) {
+            clearInterval(countdownInterval);
+            var timeLeft = seconds;
+            document.getElementById('time-left').innerText = timeLeft;
+            countdownInterval = setInterval(function() {
+                timeLeft--;
+                document.getElementById('time-left').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('quizArea').classList.add('disabled');
+                    document.getElementById('msg').innerText = "⏰ 時間切れ！";
+                }
+            }, 1000);
+        }
+
+        function joinGame() {
+            myName = document.getElementById('userName').value;
+            if(!myName) return alert("名前を入れてね");
+            
+            db.ref('players/' + myName).set(true, function(error) {
+                if (error) {
+                    alert("送信エラー: " + error.message);
+                } else {
+                    switchScreen('sc-starting');
+                }
+            });
+        }
+
+        function sendAns(choice) {
+            if(!myName) return;
+            db.ref('answers/' + myName).set({
+                name: myName, choice: choice, timestamp: Date.now(), qStart: currentQStart
+            }, function(error) {
+                if(!error) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('quizArea').classList.add('disabled');
+                    document.getElementById('msg').innerText = choice + " で送信完了！";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>クイズ大会 - メインスクリーン</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #1a1a2e; color: white; text-align: center; margin: 0; padding: 20px; overflow: hidden; }
+        .container { max-width: 1000px; margin: auto; }
+        h1 { font-size: 3em; color: #e94560; margin-bottom: 10px; }
+        .panel { background: #16213e; padding: 30px; border-radius: 20px; border: 2px solid #30475e; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .counter { font-size: 4em; font-weight: bold; color: #f1c40f; }
+        .progress-bg { background: #0f3460; height: 30px; border-radius: 15px; overflow: hidden; width: 90%; margin: 20px auto; border: 2px solid #30475e; }
+        .progress-bar { background: linear-gradient(90deg, #e94560, #ff4757); height: 100%; width: 0%; transition: width 0.3s; }
+        #qImage { max-height: 450px; border: 6px solid #e94560; border-radius: 15px; margin-top: 20px; }
+        .player-badge { background: #0f3460; padding: 10px 25px; border-radius: 30px; border: 2px solid #e94560; display: inline-block; margin: 8px; font-size: 1.5em; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; font-size: 1.2em; }
+        th { background: #e94560; padding: 15px; }
+        td { border: 1px solid #30475e; padding: 15px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="view-registration">
+        <h1>🏁 参加者受付中</h1>
+        <div class="panel">
+            <div class="counter"><span id="reg-count">0</span> 名</div>
+            <div id="player-list"></div>
+        </div>
+    </div>
+
+    <div id="view-quiz" style="display:none;">
+        <h1 id="qNumTitle">第 1 問</h1>
+        <div class="counter"><span id="ans-count">0</span> / <span id="total-count">0</span></div>
+        <div class="progress-bg"><div id="progress-bar" class="progress-bar"></div></div>
+        <img id="qImage" src="">
+    </div>
+
+    <div id="view-finished" style="display:none;">
+        <h1>📊 最終結果発表</h1>
+        <div id="result-area" class="panel"></div>
+    </div>
+</div>
+
+<script>
+    var firebaseConfig = {
+        apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
+        authDomain: "speed-quiz26.firebaseapp.com",
+        databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "speed-quiz26"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.database();
+
+    var questions = [];
+    var players = [], currentIdx = 0, history = {}, timerObj = null;
+
+    // 設問設定の読み込み
+    db.ref('quizConfig').on('value', function(snap) { questions = snap.val() || []; });
+
+    // 参加者・回答監視
+    db.ref('players').on('value', function(snap) {
+        players = Object.keys(snap.val() || {});
+        document.getElementById('reg-count').innerText = players.length;
+        document.getElementById('total-count').innerText = players.length;
+        document.getElementById('player-list').innerHTML = players.map(n => `<span class="player-badge">${n}</span>`).join('');
+    });
+
+    db.ref('answers').on('value', function(snap) {
+        var count = Object.keys(snap.val() || {}).length;
+        document.getElementById('ans-count').innerText = count;
+        document.getElementById('progress-bar').style.width = (players.length > 0 ? (count / players.length * 100) : 0) + "%";
+    });
+
+    // 管理者からの命令(Command)を監視して動く
+    db.ref('adminCommand').on('value', function(snap) {
+        var cmd = snap.val();
+        if(!cmd) return;
+        if(cmd.type === 'close') db.ref('status/state').set('starting');
+        if(cmd.type === 'start') {
+            document.getElementById('view-registration').style.display = 'none';
+            document.getElementById('view-quiz').style.display = 'block';
+            loadQuestion();
+        }
+        if(cmd.type === 'next') {
+            db.ref('answers').once('value').then(function(s) {
+                history[currentIdx] = s.val() || {};
+                if (currentIdx < questions.length - 1) {
+                    currentIdx++;
+                    db.ref('answers').remove();
+                    loadQuestion();
+                } else {
+                    document.getElementById('view-quiz').style.display = 'none';
+                    document.getElementById('view-finished').style.display = 'block';
+                    db.ref('status/state').set('finished');
+                    showResults();
+                }
+            });
+        }
+        if(cmd.type === 'result') showResults();
+    });
+
+    function loadQuestion() {
+        if(!questions[currentIdx]) return;
+        document.getElementById('qNumTitle').innerText = "第 " + (currentIdx + 1) + " 問";
+        document.getElementById('qImage').src = questions[currentIdx].img;
+        db.ref('status').set({ state: 'quiz', qIdx: currentIdx, isLast: (currentIdx === questions.length - 1) });
+        clearTimeout(timerObj);
+        timerObj = setTimeout(() => { db.ref('status/playTimeout').set(true); }, 30000);
+    }
+
+    function showResults() {
+        // (前回同様の集計ロジックで result-area にテーブルを描画)
+        var finalData = players.map(name => {
+            var total = 0;
+            var detail = questions.map((q, i) => {
+                var pAns = (history[i] && history[i][name]) || null;
+                var isCorrect = pAns && pAns.choice === q.ans;
+                var score = isCorrect ? Math.max(0, 2000 - Math.floor((pAns.timestamp - pAns.qStart)/10)) : 0;
+                total += score;
+                return { isCorrect, score };
+            });
+            return { name, detail, total };
+        }).sort((a,b) => b.total - a.total);
+
+        var html = '<table><tr><th>順位</th><th>名前</th><th>合計点</th></tr>';
+        finalData.forEach((p, i) => {
+            html += `<tr><td>${i+1}</td><td>${p.name}</td><td><strong>${p.total}</strong></td></tr>`;
+        });
+        html += '</table>';
+        document.getElementById('result-area').innerHTML = html;
+    }
+</script>
+</body>
+</html>
