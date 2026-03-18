@@ -46,4 +46,225 @@
         .rank-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 15px; font-size: 40px; font-weight: bold; }
         .rank-1 { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7); color: #000; transform: scale(1.05); border: 2px solid #fff; }
         .rank-2 { background: linear-gradient(135deg, #e3e3e3, #ffffff, #a3a3a3); color: #000; }
-        .rank-3 { background: linear-gradient(1
+        .rank-3 { background: linear-gradient(135deg, #cd7f32, #ffdab9, #8b4513); color: #000; }
+    </style>
+</head>
+<body>
+
+    <div id="wait-screen" class="screen active">
+        <h1>スピードクイズ 大会会場</h1>
+        <div class="qr-box">
+            <img src="./qrcode.png" alt="参加用QRコード">
+        </div>
+        <div class="player-count">現在の参加者: <span id="p-count">0</span> 名</div>
+        <div class="player-list" id="p-list"></div>
+    </div>
+
+    <div id="rules-screen" class="screen">
+        <h1>受付終了！</h1>
+        <div class="rule-text">
+            それではスピードクイズの時間がやってまいりました！全部で10問出題します。<br><br>
+            スマホ画面の選択肢の中から正解と思ったボタンを押してください。<br>
+            このスピードクイズは正解しただけの得点ではありません。<span style="color: #f1c40f; font-weight: bold;">どれだけ早く回答したかという時間でも点数になります。</span><br><br>
+            皆さん全力でがんばってください！
+        </div>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <div class="timer-box" id="timer-display"><i class="fas fa-stopwatch"></i> <span id="time-left">20</span> 秒</div>
+        
+        <div class="q-header" id="disp-qnum">第 1 問</div>
+        <div class="q-text" id="disp-qtext">問題がここに表示されます</div>
+        <img id="disp-qimg" class="q-image" src="">
+        
+        <div id="disp-status" class="status-badge status-thinking">⏳ 回答受付中...</div>
+        <div id="disp-ans" class="correct-ans">正解は：<span id="ans-text"></span></div>
+    </div>
+
+    <div id="end-screen" class="screen">
+        <h1>終了！</h1>
+    </div>
+    <div id="details-screen" class="screen">
+        <div class="title-text">📊 全員の結果発表</div>
+        <p style="font-size: 40px;">（システム集計中... 各問題の正解・不正解とタイムが表示されます）</p>
+    </div>
+    <div id="ranking-screen" class="screen">
+        <div class="title-text">🏆 総合ランキング トップ3 🏆</div>
+        <div class="ranking-box" id="ranking-container"></div>
+    </div>
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
+            authDomain: "speed-quiz26.firebaseapp.com",
+            databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "speed-quiz26"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+
+        let quizData = [];
+        let currentQuestionIndex = 0;
+        
+        // タイマー用の変数
+        let timerInterval = null;
+        const TIME_LIMIT = 20; // 制限時間を20秒に設定
+        let isClosed = false; // 締め切られたかどうかの判定
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        db.ref('quizConfig').on('value', snap => {
+            quizData = snap.val() || [];
+        });
+
+        db.ref('adminCommand').on('value', snap => {
+            const cmd = snap.val();
+            if (!cmd) return;
+
+            switch(cmd.type) {
+                case 'rules':
+                    switchScreen('rules-screen');
+                    currentQuestionIndex = 0;
+                    stopTimer(); // タイマーリセット
+                    break;
+                case 'start':
+                case 'next':
+                    if(cmd.type === 'next') currentQuestionIndex++;
+                    
+                    if (currentQuestionIndex < quizData.length) {
+                        showQuestion(currentQuestionIndex);
+                        switchScreen('quiz-screen');
+                        startTimer(); // タイマースタート
+                    } else {
+                        switchScreen('end-screen');
+                        stopTimer();
+                    }
+                    break;
+                case 'close':
+                    closeQuestion(); // 手動で締め切り
+                    break;
+                case 'end':
+                    switchScreen('end-screen');
+                    stopTimer();
+                    break;
+                case 'details':
+                    switchScreen('details-screen');
+                    stopTimer();
+                    break;
+                case 'ranking':
+                    switchScreen('ranking-screen');
+                    generateMockRanking();
+                    stopTimer();
+                    break;
+                case 'reset':
+                    switchScreen('wait-screen');
+                    currentQuestionIndex = 0;
+                    stopTimer();
+                    break;
+            }
+        });
+
+        // 問題を表示する処理
+        function showQuestion(index) {
+            if (!quizData[index]) return;
+            const q = quizData[index];
+            document.getElementById('disp-qnum').innerText = `第 ${index + 1} 問`;
+            document.getElementById('disp-qtext').innerText = q.text;
+            
+            const imgEl = document.getElementById('disp-qimg');
+            if (q.img) {
+                imgEl.src = q.img;
+                imgEl.style.display = "block";
+            } else {
+                imgEl.style.display = "none";
+                imgEl.src = "";
+            }
+
+            document.getElementById('disp-status').className = "status-badge status-thinking";
+            document.getElementById('disp-status').innerText = "⏳ 回答受付中...";
+            document.getElementById('disp-ans').style.display = "none";
+            isClosed = false;
+        }
+
+        // タイマーを開始する処理
+        function startTimer() {
+            stopTimer(); // 前のタイマーが残っていたら消す
+            let timeLeft = TIME_LIMIT;
+            const timerDisplay = document.getElementById('time-left');
+            const timerBox = document.getElementById('timer-display');
+            
+            timerDisplay.innerText = timeLeft;
+            timerBox.className = "timer-box"; // 色を元に戻す
+
+            timerInterval = setInterval(() => {
+                if (isClosed) {
+                    stopTimer();
+                    return;
+                }
+                
+                timeLeft--;
+                timerDisplay.innerText = timeLeft;
+
+                // 残り5秒で赤く点滅させる
+                if (timeLeft <= 5 && timeLeft > 0) {
+                    timerBox.className = "timer-box timer-urgent";
+                }
+
+                // 0秒になったら強制締め切り
+                if (timeLeft <= 0) {
+                    stopTimer();
+                    closeQuestion();
+                    // Firebaseに「自動で時間切れになった」という信号を送り、スマホをロックさせる
+                    db.ref('adminCommand').set({ type: 'close', ts: Date.now(), auto: true });
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if(timerInterval) clearInterval(timerInterval);
+        }
+
+        // 締め切り処理（正解発表）
+        function closeQuestion() {
+            if (isClosed) return; // 既に締め切られていたら何もしない
+            isClosed = true;
+            stopTimer();
+            
+            document.getElementById('disp-status').className = "status-badge status-closed";
+            document.getElementById('disp-status').innerText = "🛑 締め切りました！";
+            
+            if (quizData[currentQuestionIndex]) {
+                document.getElementById('ans-text').innerText = quizData[currentQuestionIndex].ans;
+                document.getElementById('disp-ans').style.display = "block";
+            }
+        }
+
+        db.ref('players').on('value', snap => {
+            const players = snap.val() || {};
+            const listDiv = document.getElementById('p-list');
+            listDiv.innerHTML = '';
+            let count = 0;
+            for (let id in players) {
+                count++;
+                const badge = document.createElement('div');
+                badge.className = 'player-badge';
+                badge.innerHTML = `<i class="fas fa-user"></i> ${players[id].name}`;
+                listDiv.appendChild(badge);
+            }
+            document.getElementById('p-count').innerText = count;
+        });
+
+        function generateMockRanking() {
+            const container = document.getElementById('ranking-container');
+            container.innerHTML = `
+                <div class="rank-row rank-1"><div>🥇 第1位</div><div>計算中... さん</div><div>最高得点 / 最速タイム</div></div>
+                <div class="rank-row rank-2"><div>🥈 第2位</div><div>計算中... さん</div><div>得点 / タイム</div></div>
+                <div class="rank-row rank-3"><div>🥉 第3位</div><div>計算中... さん</div><div>得点 / タイム</div></div>
+            `;
+        }
+    </script>
+</body>
+</html>
