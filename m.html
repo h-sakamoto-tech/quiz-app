@@ -1,182 +1,4 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>会場スクリーン</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <style>
-        /* ベーススタイル（プロジェクター用ダークテーマ） */
-        body { margin: 0; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: radial-gradient(circle, #1a2a6c, #112b3c, #000000); color: #fff; overflow: hidden; }
-        
-        /* 画面共通設定 */
-        .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 50px; box-sizing: border-box; animation: fadeIn 0.8s ease-out forwards; position: relative; }
-        /* 通常画面の切り替えクラス */
-        .screen.active { display: flex; }
-        
-        /* ★プロジェクター用全体縮小（85%） */
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: scale(0.75); } 
-            to { opacity: 1; transform: scale(0.85); } 
-        }
-        @keyframes popUp { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
-
-        /* =========================================
-           ① 待機画面（QRコード・特大＆左右レイアウト）
-           ========================================= */
-        #wait-screen {
-            display: none; /* 初期非表示 */
-            /* 左右2カラムレイアウトへ変更 */
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
-            align-items: center;
-            justify-items: center;
-            padding: 80px; /* 余白を多めに */
-        }
-        /* JSで制御する待機画面用切り替えクラス */
-        #wait-screen.wait-active { display: grid; }
-
-        /* 左側（タイトルとQR） */
-        .wait-left { display: flex; flex-direction: column; align-items: center; gap: 30px; }
-        
-        /* 変更点：タイトル文字（60px -> 100px / 約1.6倍） */
-        #wait-screen h1 { font-size: 100px; color: #f1c40f; margin: 0; text-shadow: 0 0 20px rgba(241, 196, 15, 0.5); }
-        
-        /* 変更点：QRボックス（padding/radius 2倍） */
-        .qr-box { background: #fff; padding: 40px; border-radius: 40px; box-shadow: 0 15px 50px rgba(0,0,0,0.6); }
-        
-        /* 変更点：QR画像サイズ（300px -> 600px / 2倍！） */
-        .qr-box img { width: 600px; height: 600px; object-fit: contain; }
-
-        /* 右側（人数とリスト） */
-        .wait-right { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; justify-content: flex-start; }
-
-        /* 変更点：参加者数文字・枠（font 40px -> 70px / 約1.75倍） */
-        .player-count { font-size: 70px; font-weight: bold; background: #e74c3c; padding: 20px 60px; border-radius: 80px; margin-bottom: 50px; box-shadow: 0 10px 0px #b03a2e; }
-        
-        /* 参加者リストのグリッド調整 */
-        .player-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; width: 100%; justify-content: center; }
-        
-        /* 変更点：名前バッジ文字・枠（font 24px -> 40px / 約1.6倍） */
-        .player-badge { background: rgba(255,255,255,0.2); padding: 15px 30px; border-radius: 20px; font-size: 40px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 15px; animation: popUp 0.5s ease-out forwards; }
-
-        /* =========================================
-           ② ルール説明画面
-           ========================================= */
-        #rules-screen h1 { font-size: 80px; color: #e74c3c; margin-bottom: 50px; text-shadow: 0 0 30px rgba(231, 76, 60, 0.8); }
-        .rule-text { font-size: 50px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.6); padding: 60px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 80%; }
-
-        /* =========================================
-           ③ クイズ画面（超巨大タイマー）
-           ========================================= */
-        .q-header { font-size: 50px; color: #f1c40f; margin-bottom: 20px; font-weight: bold; text-shadow: 2px 2px 10px #000; }
-        .q-text { font-size: 70px; font-weight: bold; margin-bottom: 30px; line-height: 1.3; text-shadow: 2px 2px 10px #000; }
-        .q-image { max-width: 600px; max-height: 400px; border-radius: 15px; border: 5px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 30px; display: none; }
-        
-        /* 超巨大タイマー（画面中央上部に配置） */
-        .timer-box { 
-            font-size: 130px; /* 特大文字 */
-            font-weight: bold; 
-            background: rgba(0,0,0,0.7); 
-            padding: 20px 80px; 
-            border-radius: 60px; 
-            border: 10px solid #f1c40f; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            gap: 40px; 
-            transition: color 0.3s; 
-            margin-bottom: 50px; /* 問題文との間隔 */
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-        }
-        .timer-urgent { color: #e74c3c; animation: popUp 0.5s infinite alternate; border-color: #e74c3c; }
-        
-        .status-badge { font-size: 40px; padding: 15px 40px; border-radius: 50px; font-weight: bold; margin-top: 20px; }
-        .status-thinking { background: #3498db; animation: pulse 2s infinite; }
-        .status-closed { background: #e74c3c; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .correct-ans { font-size: 80px; color: #2ecc71; font-weight: bold; margin-top: 30px; animation: popUp 0.5s ease-out forwards; text-shadow: 0 0 30px #2ecc71; display: none; }
-
-        /* =========================================
-           ④〜⑥ 終了・結果・ランキング画面
-           ========================================= */
-        #end-screen h1 { font-size: 150px; color: #fff; text-shadow: 0 0 50px #e74c3c, 0 0 100px #e74c3c; animation: popUp 1s ease-out forwards; letter-spacing: 20px; margin: 0; }
-        .title-text { font-size: 70px; color: #f1c40f; margin-bottom: 40px; border-bottom: 5px solid #f1c40f; padding-bottom: 10px; }
-        
-        /* 詳細結果テーブル */
-        .details-table-wrapper { width: 95%; max-height: 65vh; overflow-y: auto; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 15px; border: 2px solid #555; }
-        table { width: 100%; border-collapse: collapse; color: #fff; font-size: 24px; }
-        th, td { border: 1px solid #7f8c8d; padding: 15px 10px; text-align: center; }
-        th { background: #2980b9; position: sticky; top: -20px; z-index: 10; font-size: 26px; }
-        .td-correct { color: #2ecc71; font-weight: bold; }
-        .td-wrong { color: #e74c3c; font-weight: bold; }
-        .td-time { font-size: 16px; color: #bdc3c7; display: block; margin-top: 5px; }
-        
-        /* 総合ランキング（トップ3） */
-        .ranking-box { display: flex; flex-direction: column; gap: 20px; width: 80%; }
-        .rank-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 15px; font-size: 40px; font-weight: bold; }
-        .rank-1 { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7); color: #000; transform: scale(1.1); border: 3px solid #fff; box-shadow: 0 0 30px rgba(241, 196, 15, 0.5); z-index: 3; }
-        .rank-2 { background: linear-gradient(135deg, #e3e3e3, #ffffff, #a3a3a3); color: #000; transform: scale(1.05); z-index: 2; }
-        .rank-3 { background: linear-gradient(135deg, #cd7f32, #ffdab9, #8b4513); color: #000; }
-    </style>
-</head>
-<body>
-
-    <div id="wait-screen" class="screen">
-        <div class="wait-left">
-            <h1>スピードクイズ 大会会場</h1>
-            <div class="qr-box">
-                <img src="./qrcode.png" alt="参加用QRコード">
-            </div>
-        </div>
-        
-        <div class="wait-right">
-            <div class="player-count">現在の参加者: <span id="p-count">0</span> 名</div>
-            <div class="player-list" id="p-list">
-                </div>
-        </div>
-    </div>
-
-    <div id="rules-screen" class="screen">
-        <h1>受付終了！</h1>
-        <div class="rule-text">
-            それではスピードクイズの時間がやってまいりました！全部で10問出題します。<br><br>
-            スマホ画面の選択肢の中から正解と思ったボタンを押してください。<span style="color: #e74c3c; font-weight: bold;">各問題の制限時間は「20秒」です。</span><br><br>
-            このクイズは正解しただけの得点ではありません。<br>
-            <span style="color: #f1c40f; font-weight: bold;">正解の基本点100点に加え、早く回答するほど「残り時間(秒) × 10点」のボーナスが加算されます！</span><br><br>
-            皆さん全力でがんばってください！
-        </div>
-    </div>
-
-    <div id="quiz-screen" class="screen">
-        <div class="timer-box" id="timer-display"><i class="fas fa-stopwatch"></i> <span id="time-left">20</span> 秒</div>
-        
-        <div class="q-header" id="disp-qnum">第 1 問</div>
-        <div class="q-text" id="disp-qtext">問題がここに表示されます</div>
-        <img id="disp-qimg" class="q-image" src="">
-        
-        <div id="disp-status" class="status-badge status-thinking">⏳ 回答受付中...</div>
-        <div id="disp-ans" class="correct-ans">正解は：<span id="ans-text"></span></div>
-    </div>
-
-    <div id="end-screen" class="screen">
-        <h1>終了！</h1>
-    </div>
-    
-    <div id="details-screen" class="screen">
-        <div class="title-text">📊 全員の結果発表</div>
-        <div id="details-container" class="details-table-wrapper"></div>
-    </div>
-    
-    <div id="ranking-screen" class="screen">
-        <div class="title-text">🏆 総合ランキング トップ3 🏆</div>
-        <div class="ranking-box" id="ranking-container"></div>
-    </div>
-
-    <script>
-        // ★★★ Firebaseの設定 ★★★（ご自身のプロジェクト設定に書き換えてください）
+// ★★★ Firebaseの設定 ★★★（ご自身のプロジェクト設定に書き換えてください）
         var firebaseConfig = {
             apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
             authDomain: "speed-quiz26.firebaseapp.com",
@@ -192,22 +14,29 @@
         const TIME_LIMIT = 20; 
         let isClosed = false;
 
-        // ★ 画面を切り替える関数（待機画面用の処理を追加）
+        // ★ 画面を切り替える関数を修正（確実に見えなくする）
         function switchScreen(screenId) {
+            // 1. まず全ての画面を非表示にする（インラインスタイルで強制的に消す）
             document.querySelectorAll('.screen').forEach(el => {
-                // 全画面からactiveクラス、wait-activeクラスを消す
                 el.classList.remove('active', 'wait-active');
+                el.style.display = 'none'; // 追加：確実に消す
             });
             
-            // 指定された画面にクラスを付与
+            // 2. 指定された画面だけを表示する
+            const targetScreen = document.getElementById(screenId);
             if (screenId === 'wait-screen') {
-                // 待機画面だけ特別なクラス（gridレイアウトのため）
-                document.getElementById(screenId).classList.add('wait-active');
+                targetScreen.classList.add('wait-active');
+                targetScreen.style.display = 'grid'; // 待機画面はgrid
             } else {
-                // それ以外は共通のflexクラス
-                document.getElementById(screenId).classList.add('active');
+                targetScreen.classList.add('active');
+                targetScreen.style.display = 'flex'; // それ以外はflex
             }
         }
+
+        // ページ読み込み時の初期表示を設定
+        window.onload = () => {
+             switchScreen('wait-screen');
+        };
 
         // Firebaseからクイズ設定を読み込み
         db.ref('quizConfig').on('value', snap => {
@@ -509,6 +338,3 @@
                 document.getElementById('ranking-container').innerHTML = html;
             });
         }
-    </script>
-</body>
-</html>
