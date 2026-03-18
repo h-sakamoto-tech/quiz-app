@@ -7,53 +7,37 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        /* ベーススタイル */
+        /* 背景は全画面を覆うように設定 */
         body { margin: 0; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: radial-gradient(circle, #1a2a6c, #112b3c, #000000); color: #fff; overflow: hidden; }
         
-        /* 画面共通設定 */
+        /* 画面の中身を中央に配置 */
         .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 50px; box-sizing: border-box; animation: fadeIn 0.8s ease-out forwards; position: relative; }
-        /* 通常画面の切り替えクラス */
-        .screen.active { display: flex; }
+        .active { display: flex; }
         
+        /* 全体を「85%」に縮小 */
         @keyframes fadeIn { 
             from { opacity: 0; transform: scale(0.75); } 
             to { opacity: 1; transform: scale(0.85); } 
         }
         @keyframes popUp { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-        /* =========================================
-           ① 待機画面（QRコード・特大＆左右レイアウト）
-           ========================================= */
-        #wait-screen {
-            /* ★修正点：常に表示される設定を削除しました */
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
-            align-items: center;
-            justify-items: center;
-            padding: 80px; 
-        }
-        /* ★待機画面が選ばれた時だけ表示するクラス */
+        /* 待機画面 */
+        #wait-screen { grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; justify-items: center; padding: 80px; }
         #wait-screen.wait-active { display: grid; }
-
         .wait-left { display: flex; flex-direction: column; align-items: center; gap: 30px; }
         #wait-screen h1 { font-size: 100px; color: #f1c40f; margin: 0; text-shadow: 0 0 20px rgba(241, 196, 15, 0.5); }
         .qr-box { background: #fff; padding: 40px; border-radius: 40px; box-shadow: 0 15px 50px rgba(0,0,0,0.6); }
         .qr-box img { width: 600px; height: 600px; object-fit: contain; }
-
         .wait-right { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; justify-content: flex-start; }
         .player-count { font-size: 70px; font-weight: bold; background: #e74c3c; padding: 20px 60px; border-radius: 80px; margin-bottom: 50px; box-shadow: 0 10px 0px #b03a2e; }
         .player-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; width: 100%; justify-content: center; }
         .player-badge { background: rgba(255,255,255,0.2); padding: 15px 30px; border-radius: 20px; font-size: 40px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 15px; animation: popUp 0.5s ease-out forwards; }
 
-        /* =========================================
-           ② ルール説明画面
-           ========================================= */
+        /* ★ルール画面（ご指定の文章に合わせた調整） */
         #rules-screen h1 { font-size: 80px; color: #e74c3c; margin-bottom: 50px; text-shadow: 0 0 30px rgba(231, 76, 60, 0.8); }
-        .rule-text { font-size: 50px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.6); padding: 60px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 80%; }
+        .rule-text { font-size: 45px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.6); padding: 60px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 90%; }
 
-        /* =========================================
-           ③ クイズ画面
-           ========================================= */
+        /* クイズ画面 */
         .q-header { font-size: 50px; color: #f1c40f; margin-bottom: 20px; font-weight: bold; text-shadow: 2px 2px 10px #000; }
         .q-text { font-size: 70px; font-weight: bold; margin-bottom: 30px; line-height: 1.3; text-shadow: 2px 2px 10px #000; }
         .q-image { max-width: 600px; max-height: 400px; border-radius: 15px; border: 5px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 30px; display: none; }
@@ -67,9 +51,7 @@
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .correct-ans { font-size: 80px; color: #2ecc71; font-weight: bold; margin-top: 30px; animation: popUp 0.5s ease-out forwards; text-shadow: 0 0 30px #2ecc71; display: none; }
 
-        /* =========================================
-           ④〜⑥ 終了・結果・ランキング画面
-           ========================================= */
+        /* 終了・結果・ランキング画面 */
         #end-screen h1 { font-size: 150px; color: #fff; text-shadow: 0 0 50px #e74c3c, 0 0 100px #e74c3c; animation: popUp 1s ease-out forwards; letter-spacing: 20px; margin: 0; }
         .title-text { font-size: 70px; color: #f1c40f; margin-bottom: 40px; border-bottom: 5px solid #f1c40f; padding-bottom: 10px; }
         
@@ -97,6 +79,7 @@
                 <img src="./qrcode.png" alt="参加用QRコード">
             </div>
         </div>
+        
         <div class="wait-right">
             <div class="player-count">現在の参加者: <span id="p-count">0</span> 名</div>
             <div class="player-list" id="p-list"></div>
@@ -109,7 +92,8 @@
             それではスピードクイズの時間がやってまいりました！全部で10問出題します。<br><br>
             スマホ画面の選択肢の中から正解と思ったボタンを押してください。<span style="color: #e74c3c; font-weight: bold;">各問題の制限時間は「20秒」です。</span><br><br>
             このクイズは正解しただけの得点ではありません。<br>
-            <span style="color: #f1c40f; font-weight: bold;">正解の基本点100点に加え、早く回答するほど「残り時間(秒) × 10点」のボーナスが加算されます！</span><br><br>
+            正解の基本点100点に加え、早く回答するほど<span style="color: #f1c40f; font-weight: bold;">「残り時間(秒) × 1点」のボーナス</span>が加算されます！<br>
+            <span style="color: #3498db; font-weight: bold;">正答数が同じ場合は、回答までの時間が短いチームが優勝です！！</span><br><br>
             皆さん全力でがんばってください！
         </div>
     </div>
@@ -153,14 +137,10 @@
         const TIME_LIMIT = 20; 
         let isClosed = false;
 
-        // ★ 画面の切り替え処理を修正（競合を防ぐ）
         function switchScreen(screenId) {
-            // 一度すべての画面からクラスを外す
             document.querySelectorAll('.screen').forEach(el => {
                 el.classList.remove('active', 'wait-active');
             });
-            
-            // 指定された画面だけに必要なクラスをつける
             const targetScreen = document.getElementById(screenId);
             if (screenId === 'wait-screen') {
                 targetScreen.classList.add('wait-active');
@@ -176,8 +156,6 @@
         db.ref('adminCommand').on('value', snap => {
             const cmd = snap.val();
             if (!cmd) return;
-
-            console.log("管理者コマンド受信:", cmd.type);
 
             switch(cmd.type) {
                 case 'rules':
@@ -251,7 +229,7 @@
             const timerBox = document.getElementById('timer-display');
             
             timerDisplay.innerText = timeLeft;
-            timerBox.className = "timer-box";
+            timerBox.className = "timer-box"; 
 
             timerInterval = setInterval(() => {
                 if (isClosed) { stopTimer(); return; }
@@ -290,10 +268,10 @@
             document.getElementById('disp-ans').style.display = "block";
 
             db.ref('answers').once('value', snap => {
-                const answers = snap.val() || {};
+                const answers = snap.val() || {}; 
                 
                 db.ref('players').once('value', pSnap => {
-                    const players = pSnap.val() || {};
+                    const players = pSnap.val() || {}; 
                     let updates = {};
                     
                     for(let uid in players) {
@@ -313,7 +291,9 @@
                                 isCorrect = true;
                                 let remainSec = Math.floor((20000 - timeTaken) / 1000);
                                 if(remainSec < 0) remainSec = 0;
-                                points = 100 + (remainSec * 10);
+                                
+                                // ★修正：スピードボーナスを「残り秒数 × 1ポイント」に変更
+                                points = 100 + (remainSec * 1);
                                 currentScore += points;
                             }
                         }
