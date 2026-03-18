@@ -132,6 +132,9 @@
                 <div class="status-display">
                     <div class="status-title">現在のスクリーン画面</div>
                     <div class="status-text" id="current-status-text">待機画面 (QRコード)</div>
+                    <div style="margin-top: 15px; font-size: 18px; color: #ccc;">
+                        登録済みの問題: <span id="loaded-q-count" style="color: #2ecc71; font-weight: bold; font-size: 24px;">0</span> 問
+                    </div>
                 </div>
 
                 <button class="btn-control c-rules" id="btn-rules" onclick="startQuiz()">
@@ -245,6 +248,7 @@
 
         function loadSnd(i, id) { if(i.files[0]) document.getElementById(id).src = URL.createObjectURL(i.files[0]); }
         
+        // ★修正：問題数のカウントと表示を確実に行う
         function saveQuizConfig() {
             const data = [];
             document.querySelectorAll('.q-row').forEach(r => {
@@ -253,6 +257,7 @@
             db.ref('quizConfig').set(data).then(() => {
                 alert("✅ 設定を保存しました！");
                 buildScenario(data.length);
+                document.getElementById('loaded-q-count').innerText = data.length;
             });
         }
 
@@ -286,9 +291,16 @@
             scenario.push({ type: 'ranking', title: '総合発表 (トップ3)', actionText: '終了', color: '#7f8c8d' });
         }
 
+        // ★修正：初期ロード時にも問題数を正確にカウントして表示
         db.ref('quizConfig').once('value', snap => {
-            const data = snap.val() || [];
-            buildScenario(data.length);
+            const data = snap.val();
+            let count = 0;
+            if (data) {
+                // Firebaseから返ってくるデータが配列でもオブジェクトでも正確に数える
+                count = Array.isArray(data) ? data.length : Object.keys(data).length;
+            }
+            buildScenario(count);
+            document.getElementById('loaded-q-count').innerText = count;
         });
 
         function updateUI() {
@@ -325,8 +337,12 @@
             }
         }
 
+        // ★修正：問題が0問の時は明確なエラーを出し、進行を止める
         function startQuiz() {
-            if (totalQuestions === 0) { alert("問題が設定されていません！「設定を保存して反映」を押してください。"); return; }
+            if (!totalQuestions || totalQuestions <= 0) { 
+                alert("⚠️ エラー：クイズ問題がシステムに保存されていません！\n\n左側の「設定を保存して反映」ボタンを押して、問題を確定させてから開始してください。"); 
+                return; 
+            }
             currentStepIndex = 0; 
             executeStep();
         }
@@ -359,7 +375,6 @@
                 if(step.type === 'ranking') document.getElementById('sndRanking').play();
             } catch(e) {}
             
-            // ★修正箇所：空のデータ（undefined）を含めずにFirebaseへ送信する
             let commandData = {
                 type: step.type,
                 ts: Date.now()
