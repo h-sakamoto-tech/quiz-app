@@ -2,91 +2,162 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>運営パネル (V2)</title>
+    <title>運営パネル (V2) - PC版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <div style="text-align: right; margin-bottom: 20px;">
-        <a href="Manual.pptx" target="_blank" style="background-color: #4b5563; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; border: 1px solid #6b7280;">
-            <i class="fas fa-file-powerpoint"></i> 運営マニュアルを開く
-        </a>
-    </div>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #222; color: #fff; padding: 20px; }
-        .section { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
-        .q-row { background: #444; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
-        .input-line { margin: 5px 0; display: flex; gap: 10px; align-items: center; }
-        input[type="text"] { flex: 1; padding: 8px; border-radius: 4px; border: none; }
-        .btn { padding: 10px 20px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; margin: 5px; }
-        .btn-add { background: #3498db; color: white; width: 100%; font-size: 18px; margin-top: 10px; }
-        .btn-save { background: #27ae60; color: white; width: 100%; font-size: 16px; margin-top: 10px; }
-        .btn-next { background: #e94560; color: white; display: block; width: 100%; margin: 10px 0; text-align: left; font-size: 16px; padding: 15px;}
-        .btn-delete { background: #e74c3c; color: white; padding: 5px 10px; margin: 0; font-size: 12px; }
-        .img-preview { max-height: 50px; border-radius: 4px; display: none; margin-left: 10px; }
+        /* 全体のベース設定（PC向けに調整） */
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #1e1e1e; color: #fff; padding: 20px; margin: 0; }
         
+        /* ヘッダー部分 */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #f1c40f; }
+        .manual-btn { background-color: #4b5563; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; border: 1px solid #6b7280; transition: background 0.2s; }
+        .manual-btn:hover { background-color: #6b7280; }
+
+        /* 大枠のレイアウト（左右2カラム） */
+        .container { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; align-items: start; }
+
+        /* 各セクションの共通スタイル */
+        .section { background: #2d2d2d; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #444; }
+        .section h2 { margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 10px; color: #3498db; }
+
+        /* 左側：クイズ設定エリア */
+        .q-row { background: #3d3d3d; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #3498db; }
+        .input-line { margin: 10px 0; display: flex; gap: 15px; align-items: center; }
+        .input-label { width: 60px; font-weight: bold; color: #aaa; text-align: right; }
+        input[type="text"] { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; background: #222; color: #fff; font-size: 16px; }
+        input[type="file"] { flex: 1; padding: 5px; color: #ccc; }
+        select { padding: 10px; border-radius: 6px; border: 1px solid #555; background: #222; color: #fff; font-size: 16px; cursor: pointer; }
+        
+        /* ボタン類 */
+        .btn { padding: 12px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: filter 0.2s; font-size: 16px; }
+        .btn:hover { filter: brightness(1.2); }
+        .btn-add { background: #34495e; color: white; width: 100%; margin-top: 10px; border: 1px dashed #7f8c8d; }
+        .btn-save { background: #27ae60; color: white; width: 100%; font-size: 18px; margin-top: 20px; padding: 15px; box-shadow: 0 4px 0 #1e8449; }
+        .btn-save:active { transform: translateY(4px); box-shadow: none; }
+        .btn-delete { background: #e74c3c; color: white; padding: 6px 12px; font-size: 14px; margin-left: auto; border-radius: 4px; }
+
+        /* 右側：進行管理エリア */
+        .control-panel { position: sticky; top: 20px; /* スクロールしても右側を固定 */ }
+        .btn-control { display: block; width: 100%; margin-bottom: 15px; text-align: left; padding: 20px; font-size: 18px; color: white; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); transition: transform 0.1s, box-shadow 0.1s; }
+        .btn-control:active { transform: translateY(4px); box-shadow: none; }
+        
+        /* 進行ボタンの色分け */
+        .c-rules { background: #8e44ad; }
+        .c-start { background: #e74c3c; }
+        .c-next  { background: #e67e22; }
+        .c-end   { background: #34495e; }
+        .c-details { background: #2980b9; }
+        .c-ranking { background: #f1c40f; color: #333; font-weight: 900; }
+        .c-reset { background: #7f8c8d; margin-top: 30px; }
+
+        /* 音源設定エリア */
+        .sound-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px; }
+        .sound-item { background: #333; padding: 10px; border-radius: 6px; border: 1px solid #444; }
+
+        .img-preview { max-height: 60px; border-radius: 4px; display: none; margin-left: 10px; border: 2px solid #555; }
         #questions-container { counter-reset: qnum; }
-        .q-row-title::before { counter-increment: qnum; content: "【第 " counter(qnum) " 問】"; font-weight: bold; font-size: 18px; }
-        .sound-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .q-row-title::before { counter-increment: qnum; content: "【第 " counter(qnum) " 問】"; font-size: 20px; color: #f1c40f; }
     </style>
 </head>
 <body>
-    <h1>⚙️ 運営パネル (V2)</h1>
     
-    <div class="section">
-        <h2>🎵 音源設定（全シーン対応）</h2>
-        <div class="sound-grid">
-            <div>① 締切＆ルール音: <input type="file" onchange="loadSnd(this, 'sndRules')"></div>
-            <div>② クイズ開始音: <input type="file" onchange="loadSnd(this, 'sndStart')"></div>
-            <div>③ 次へ（正解）音: <input type="file" onchange="loadSnd(this, 'sndNext')"></div>
-            <div>④ 終了！表示音: <input type="file" onchange="loadSnd(this, 'sndEnd')"></div>
-            <div>⑤ 結果発表音: <input type="file" onchange="loadSnd(this, 'sndDetails')"></div>
-            <div>⑥ 総合発表音: <input type="file" onchange="loadSnd(this, 'sndRanking')"></div>
-        </div>
+    <div class="header">
+        <h1><i class="fas fa-cogs"></i> 運営パネル (PC版)</h1>
+        <a href="Manual.pptx" target="_blank" class="manual-btn">
+            <i class="fas fa-file-powerpoint"></i> 運営マニュアルを開く
+        </a>
     </div>
-    
-    <div class="section">
-        <h2>🖼️ クイズ内容の設定</h2>
-        <div id="questions-container">
-            <div class="q-row">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <span class="q-row-title"></span>
-                    <button class="btn btn-delete" onclick="this.parentElement.parentElement.remove()">🗑️ 削除</button>
-                </div>
-                <div class="input-line">問題文: <input type="text" class="q-txt"></div>
-                <div class="input-line">
-                    画像: 
-                    <input type="file" accept="image/*" onchange="encodeImage(this)" style="flex: 1;">
-                    <input type="hidden" class="q-img">
-                    <img class="img-preview" src="">
-                </div>
-                <div class="input-line">正解: 
-                    <select class="q-ans">
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                        <option value="E">E</option>
-                        <option value="F">F</option>
-                        <option value="G">G</option>
-                    </select>
+
+    <div class="container">
+        
+        <div class="left-column">
+            
+            <div class="section" style="margin-bottom: 20px;">
+                <h2><i class="fas fa-music"></i> 音源設定</h2>
+                <div class="sound-grid">
+                    <div class="sound-item">① 締切＆ルール: <input type="file" onchange="loadSnd(this, 'sndRules')"></div>
+                    <div class="sound-item">② クイズ開始: <input type="file" onchange="loadSnd(this, 'sndStart')"></div>
+                    <div class="sound-item">③ 次へ（正解）: <input type="file" onchange="loadSnd(this, 'sndNext')"></div>
+                    <div class="sound-item">④ 終了！表示: <input type="file" onchange="loadSnd(this, 'sndEnd')"></div>
+                    <div class="sound-item">⑤ 結果発表: <input type="file" onchange="loadSnd(this, 'sndDetails')"></div>
+                    <div class="sound-item">⑥ 総合発表: <input type="file" onchange="loadSnd(this, 'sndRanking')"></div>
                 </div>
             </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-edit"></i> クイズ内容の設定</h2>
+                <div id="questions-container">
+                    <div class="q-row">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span class="q-row-title" style="font-weight: bold;"></span>
+                            <button class="btn btn-delete" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-trash-alt"></i> 削除</button>
+                        </div>
+                        <div class="input-line">
+                            <span class="input-label">問題文</span>
+                            <input type="text" class="q-txt" placeholder="問題をここに入力してください">
+                        </div>
+                        <div class="input-line">
+                            <span class="input-label">画　像</span>
+                            <input type="file" accept="image/*" onchange="encodeImage(this)">
+                            <input type="hidden" class="q-img">
+                            <img class="img-preview" src="">
+                        </div>
+                        <div class="input-line">
+                            <span class="input-label">正　解</span>
+                            <select class="q-ans">
+                                <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-add" onclick="addQuestionRow()"><i class="fas fa-plus"></i> 問題を追加する</button>
+                <button type="button" class="btn btn-save" onclick="saveQuizConfig()"><i class="fas fa-cloud-upload-alt"></i> 設定を保存して反映</button>
+            </div>
+
         </div>
-        <button type="button" class="btn btn-add" onclick="addQuestionRow()">＋ 問題を追加する</button>
-        <button type="button" class="btn btn-save" onclick="saveQuizConfig()">設定を保存して反映</button>
-    </div>
-    
-    <div class="section">
-        <h2>🎮 進行管理（本番シナリオ順）</h2>
-        <button class="btn btn-next" onclick="controlGame('rules')">① 受付締切 ＆ ルール説明を表示</button>
-        <button class="btn btn-next" onclick="controlGame('start')">② クイズ開始（第1問を表示）</button>
-        <button class="btn btn-next" onclick="controlGame('next')">③ 次へ（解答締切・正解表示・次の問題へ）</button>
-        <button class="btn btn-next" style="background: #8e44ad;" onclick="controlGame('end')">④ 全問終了（「終了！」を表示）</button>
-        <button class="btn btn-next" style="background: #2980b9;" onclick="controlGame('details')">⑤ 結果発表（全員の正誤・タイムを表示）</button>
-        <button class="btn btn-next" style="background: #f39c12;" onclick="controlGame('ranking')">⑥ 総合発表（1位〜3位を表示）</button>
-        
-        <hr style="border-color: #555; margin: 20px 0;">
-        <button class="btn" style="background:#777; width: 100%;" onclick="controlGame('reset')">🔄 参加者と進行データだけリセット</button>
+
+        <div class="right-column">
+            <div class="section control-panel">
+                <h2><i class="fas fa-gamepad"></i> 進行コントロール</h2>
+                <p style="font-size: 13px; color: #aaa; margin-bottom: 20px;">※本番は上から順番にクリックしてください。</p>
+                
+                <button class="btn-control c-rules" onclick="controlGame('rules')">
+                    <strong>① 受付締切</strong><br><span style="font-size:14px;font-weight:normal;">ルール説明を表示</span>
+                </button>
+                
+                <button class="btn-control c-start" onclick="controlGame('start')">
+                    <strong>② クイズ開始</strong><br><span style="font-size:14px;font-weight:normal;">（第1問を表示）</span>
+                </button>
+                
+                <button class="btn-control c-next" onclick="controlGame('close')" style="background: #e74c3c; border: 2px solid #fff;">
+                    <strong>🛑 手動で締め切る</strong><br><span style="font-size:14px;font-weight:normal;">（20秒待たずに正解発表）</span>
+                </button>
+                
+                <button class="btn-control c-next" onclick="controlGame('next')">
+                    <strong>③ 次の問題へ</strong><br><span style="font-size:14px;font-weight:normal;">（解答締切・正解表示）</span>
+                </button>
+                
+                <button class="btn-control c-end" onclick="controlGame('end')">
+                    <strong>④ 全問終了</strong><br><span style="font-size:14px;font-weight:normal;">（「終了！」を表示）</span>
+                </button>
+                
+                <button class="btn-control c-details" onclick="controlGame('details')">
+                    <strong>⑤ 結果発表</strong><br><span style="font-size:14px;font-weight:normal;">（全員の正誤・タイムを表示）</span>
+                </button>
+                
+                <button class="btn-control c-ranking" onclick="controlGame('ranking')">
+                    <strong>⑥ 総合発表</strong><br><span style="font-size:14px;font-weight:normal;">（1位〜3位を表示）</span>
+                </button>
+                
+                <button class="btn-control c-reset" onclick="controlGame('reset')">
+                    <i class="fas fa-sync-alt"></i> 参加者データのみリセット
+                </button>
+            </div>
+        </div>
+
     </div>
     
     <audio id="sndRules"></audio>
@@ -110,13 +181,26 @@
             const div = document.createElement('div');
             div.className = 'q-row';
             div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <span class="q-row-title"></span>
-                    <button class="btn btn-delete" onclick="this.parentElement.parentElement.remove()">🗑️ 削除</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span class="q-row-title" style="font-weight: bold;"></span>
+                    <button class="btn btn-delete" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-trash-alt"></i> 削除</button>
                 </div>
-                <div class="input-line">問題文: <input type="text" class="q-txt"></div>
-                <div class="input-line">画像: <input type="file" accept="image/*" onchange="encodeImage(this)" style="flex: 1;"><input type="hidden" class="q-img"><img class="img-preview" src=""></div>
-                <div class="input-line">正解: <select class="q-ans"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option></select></div>`;
+                <div class="input-line">
+                    <span class="input-label">問題文</span>
+                    <input type="text" class="q-txt" placeholder="問題をここに入力してください">
+                </div>
+                <div class="input-line">
+                    <span class="input-label">画　像</span>
+                    <input type="file" accept="image/*" onchange="encodeImage(this)">
+                    <input type="hidden" class="q-img">
+                    <img class="img-preview" src="">
+                </div>
+                <div class="input-line">
+                    <span class="input-label">正　解</span>
+                    <select class="q-ans">
+                        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option>
+                    </select>
+                </div>`;
             document.getElementById('questions-container').appendChild(div);
         }
         
@@ -146,7 +230,7 @@
             document.querySelectorAll('.q-row').forEach(r => {
                 data.push({ text: r.querySelector('.q-txt').value, img: r.querySelector('.q-img').value, ans: r.querySelector('.q-ans').value });
             });
-            db.ref('quizConfig').set(data).then(() => alert("設定を保存しました！"));
+            db.ref('quizConfig').set(data).then(() => alert("✅ 設定を保存しました！"));
         }
         
         function controlGame(a) {
@@ -154,10 +238,10 @@
                 if(confirm("参加者データと進行状況をリセットしますか？\n（画面上の問題設定や効果音はそのまま残ります）")) {
                     Promise.all([
                         db.ref('players').remove(),
-                        db.ref('adminCommand').remove(),
-                        db.ref('status').remove()
+                        db.ref('answers').remove(),
+                        db.ref('adminCommand').remove()
                     ]).then(() => {
-                        alert("参加者データをリセットしました。クイズの進行は最初に戻ります。");
+                        alert("リセット完了しました。クイズの進行は最初に戻ります。");
                     });
                 }
                 return; 
@@ -170,12 +254,22 @@
                 if(a==='end') document.getElementById('sndEnd').play();
                 if(a==='details') document.getElementById('sndDetails').play();
                 if(a==='ranking') document.getElementById('sndRanking').play();
+                if(a==='close') document.getElementById('sndRules').play(); 
             } catch(e) {
                 console.log("音が設定されていないか、再生エラーです");
             }
             
             db.ref('adminCommand').set({ type: a, ts: Date.now() });
         }
+
+        db.ref('adminCommand').on('value', snap => {
+            const cmd = snap.val();
+            if (cmd && cmd.type === 'close' && cmd.auto === true) {
+                try {
+                    document.getElementById('sndRules').play();
+                } catch(e) {}
+            }
+        });
     </script>
 </body>
 </html>
