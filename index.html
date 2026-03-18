@@ -7,7 +7,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        /* 全体を大きくスケールアップ */
         body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #1e1e1e; color: #fff; padding: 30px; margin: 0; font-size: 20px; }
         
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
@@ -20,7 +19,6 @@
         .section { background: #2d2d2d; padding: 35px; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border: 2px solid #444; }
         .section h2 { margin-top: 0; border-bottom: 2px solid #555; padding-bottom: 15px; color: #3498db; font-size: 1.8rem; }
 
-        /* ★参加者リスト用スタイル */
         .player-list-box { background: #222; padding: 20px; border-radius: 10px; border: 2px solid #555; max-height: 200px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 15px; }
         .admin-player-badge { background: #2980b9; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 
@@ -180,7 +178,6 @@
         let currentStepIndex = -1;
         let totalQuestions = 0;
 
-        // ★追加：管理者画面用の参加者リストリアルタイム更新
         db.ref('players').on('value', snap => {
             const players = snap.val() || {};
             const listDiv = document.getElementById('admin-p-list');
@@ -199,7 +196,6 @@
             
             countSpan.innerText = count;
             
-            // 誰もいない時の表示
             if (count === 0) {
                 listDiv.innerHTML = '<span style="color: #777; font-size: 18px;">（まだ誰も参加していません）</span>';
             }
@@ -363,7 +359,16 @@
                 if(step.type === 'ranking') document.getElementById('sndRanking').play();
             } catch(e) {}
             
-            db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: Date.now() });
+            // ★修正箇所：空のデータ（undefined）を含めずにFirebaseへ送信する
+            let commandData = {
+                type: step.type,
+                ts: Date.now()
+            };
+            if (step.qIndex !== undefined) {
+                commandData.qIndex = step.qIndex;
+            }
+            
+            db.ref('adminCommand').set(commandData);
         }
 
         function resetGame() {
