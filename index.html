@@ -2,80 +2,66 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>運営パネル (V2) - PC版</title>
+    <title>運営パネル (V2) - PC特大版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        /* 全体のベース設定（PC向けに調整） */
-        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #1e1e1e; color: #fff; padding: 20px; margin: 0; }
+        /* 全体を大きくスケールアップ */
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #1e1e1e; color: #fff; padding: 30px; margin: 0; font-size: 20px; }
         
-        /* ヘッダー部分 */
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { margin: 0; color: #f1c40f; }
-        .manual-btn { background-color: #4b5563; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; border: 1px solid #6b7280; transition: background 0.2s; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #f1c40f; font-size: 2.5rem; }
+        .manual-btn { background-color: #4b5563; color: white; padding: 15px 30px; border-radius: 10px; text-decoration: none; font-size: 20px; font-weight: bold; border: 2px solid #6b7280; transition: background 0.2s; }
         .manual-btn:hover { background-color: #6b7280; }
 
-        /* 大枠のレイアウト（左右2カラム） */
-        .container { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; align-items: start; }
+        .container { display: grid; grid-template-columns: 2fr 1fr; gap: 40px; align-items: start; }
 
-        /* 各セクションの共通スタイル */
-        .section { background: #2d2d2d; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #444; }
-        .section h2 { margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 10px; color: #3498db; }
+        .section { background: #2d2d2d; padding: 35px; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border: 2px solid #444; }
+        .section h2 { margin-top: 0; border-bottom: 2px solid #555; padding-bottom: 15px; color: #3498db; font-size: 1.8rem; }
 
-        /* 左側：クイズ設定エリア */
-        .q-row { background: #3d3d3d; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #3498db; }
-        .input-line { margin: 10px 0; display: flex; gap: 15px; align-items: center; }
-        .input-label { width: 60px; font-weight: bold; color: #aaa; text-align: right; }
-        input[type="text"] { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; background: #222; color: #fff; font-size: 16px; }
-        input[type="file"] { flex: 1; padding: 5px; color: #ccc; }
-        select { padding: 10px; border-radius: 6px; border: 1px solid #555; background: #222; color: #fff; font-size: 16px; cursor: pointer; }
+        .q-row { background: #3d3d3d; padding: 25px; border-radius: 12px; margin-bottom: 20px; border-left: 8px solid #3498db; }
+        .input-line { margin: 15px 0; display: flex; gap: 20px; align-items: center; }
+        .input-label { width: 90px; font-weight: bold; color: #ccc; text-align: right; font-size: 20px; }
+        input[type="text"] { flex: 1; padding: 15px; border-radius: 8px; border: 2px solid #555; background: #222; color: #fff; font-size: 22px; }
+        input[type="file"] { flex: 1; padding: 10px; color: #ccc; font-size: 18px; }
+        select { padding: 15px; border-radius: 8px; border: 2px solid #555; background: #222; color: #fff; font-size: 22px; cursor: pointer; }
         
-        /* ボタン類 */
-        .btn { padding: 12px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: filter 0.2s; font-size: 16px; }
+        .btn { padding: 15px 25px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: filter 0.2s; font-size: 20px; }
         .btn:hover { filter: brightness(1.2); }
-        .btn-add { background: #34495e; color: white; width: 100%; margin-top: 10px; border: 1px dashed #7f8c8d; }
-        .btn-save { background: #27ae60; color: white; width: 100%; font-size: 18px; margin-top: 20px; padding: 15px; box-shadow: 0 4px 0 #1e8449; }
-        .btn-save:active { transform: translateY(4px); box-shadow: none; }
-        .btn-delete { background: #e74c3c; color: white; padding: 6px 12px; font-size: 14px; margin-left: auto; border-radius: 4px; }
+        .btn-add { background: #34495e; color: white; width: 100%; margin-top: 15px; border: 2px dashed #7f8c8d; font-size: 24px; padding: 20px; }
+        .btn-save { background: #27ae60; color: white; width: 100%; font-size: 26px; margin-top: 25px; padding: 20px; box-shadow: 0 6px 0 #1e8449; }
+        .btn-save:active { transform: translateY(6px); box-shadow: none; }
+        .btn-delete { background: #e74c3c; color: white; padding: 10px 20px; font-size: 18px; margin-left: auto; border-radius: 6px; }
 
-        /* 右側：進行管理エリア */
-        .control-panel { position: sticky; top: 20px; /* スクロールしても右側を固定 */ }
-        .btn-control { display: block; width: 100%; margin-bottom: 15px; text-align: left; padding: 20px; font-size: 18px; color: white; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); transition: transform 0.1s, box-shadow 0.1s; }
-        .btn-control:active { transform: translateY(4px); box-shadow: none; }
+        .control-panel { position: sticky; top: 30px; }
+        .btn-control { display: block; width: 100%; margin-bottom: 20px; text-align: left; padding: 25px 30px; font-size: 26px; color: white; border-radius: 12px; border: none; cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,0.2); transition: transform 0.1s, box-shadow 0.1s; }
+        .btn-control:active { transform: translateY(6px); box-shadow: none; }
         
-        /* 進行ボタンの色分け */
-        .c-rules { background: #8e44ad; }
-        .c-start { background: #e74c3c; }
-        .c-next  { background: #e67e22; }
-        .c-end   { background: #34495e; }
-        .c-details { background: #2980b9; }
-        .c-ranking { background: #f1c40f; color: #333; font-weight: 900; }
-        .c-reset { background: #7f8c8d; margin-top: 30px; }
+        .c-rules { background: #8e44ad; } .c-start { background: #e74c3c; } .c-next { background: #e67e22; }
+        .c-end { background: #34495e; } .c-details { background: #2980b9; } .c-ranking { background: #f1c40f; color: #333; font-weight: 900; }
+        .c-reset { background: #7f8c8d; margin-top: 40px; }
 
-        /* 音源設定エリア */
-        .sound-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px; }
-        .sound-item { background: #333; padding: 10px; border-radius: 6px; border: 1px solid #444; }
+        .sound-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 18px; }
+        .sound-item { background: #333; padding: 15px; border-radius: 8px; border: 1px solid #444; }
 
-        .img-preview { max-height: 60px; border-radius: 4px; display: none; margin-left: 10px; border: 2px solid #555; }
+        .img-preview { max-height: 80px; border-radius: 6px; display: none; margin-left: 15px; border: 3px solid #555; }
         #questions-container { counter-reset: qnum; }
-        .q-row-title::before { counter-increment: qnum; content: "【第 " counter(qnum) " 問】"; font-size: 20px; color: #f1c40f; }
+        .q-row-title::before { counter-increment: qnum; content: "【第 " counter(qnum) " 問】"; font-size: 26px; color: #f1c40f; }
     </style>
 </head>
 <body>
     
     <div class="header">
-        <h1><i class="fas fa-cogs"></i> 運営パネル (PC版)</h1>
+        <h1><i class="fas fa-cogs"></i> 運営パネル (PC特大版)</h1>
         <a href="Manual.pptx" target="_blank" class="manual-btn">
             <i class="fas fa-file-powerpoint"></i> 運営マニュアルを開く
         </a>
     </div>
 
     <div class="container">
-        
         <div class="left-column">
-            
-            <div class="section" style="margin-bottom: 20px;">
+            <div class="section" style="margin-bottom: 30px;">
                 <h2><i class="fas fa-music"></i> 音源設定</h2>
                 <div class="sound-grid">
                     <div class="sound-item">① 締切＆ルール: <input type="file" onchange="loadSnd(this, 'sndRules')"></div>
@@ -91,7 +77,7 @@
                 <h2><i class="fas fa-edit"></i> クイズ内容の設定</h2>
                 <div id="questions-container">
                     <div class="q-row">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <span class="q-row-title" style="font-weight: bold;"></span>
                             <button class="btn btn-delete" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-trash-alt"></i> 削除</button>
                         </div>
@@ -116,40 +102,39 @@
                 <button type="button" class="btn btn-add" onclick="addQuestionRow()"><i class="fas fa-plus"></i> 問題を追加する</button>
                 <button type="button" class="btn btn-save" onclick="saveQuizConfig()"><i class="fas fa-cloud-upload-alt"></i> 設定を保存して反映</button>
             </div>
-
         </div>
 
         <div class="right-column">
             <div class="section control-panel">
                 <h2><i class="fas fa-gamepad"></i> 進行コントロール</h2>
-                <p style="font-size: 13px; color: #aaa; margin-bottom: 20px;">※本番は上から順番にクリックしてください。</p>
+                <p style="font-size: 16px; color: #aaa; margin-bottom: 25px;">※本番は上から順番にクリックしてください。</p>
                 
                 <button class="btn-control c-rules" onclick="controlGame('rules')">
-                    <strong>① 受付締切</strong><br><span style="font-size:14px;font-weight:normal;">ルール説明を表示</span>
+                    <strong>① 受付締切</strong><br><span style="font-size:18px;font-weight:normal;">ルール説明を表示</span>
                 </button>
                 
                 <button class="btn-control c-start" onclick="controlGame('start')">
-                    <strong>② クイズ開始</strong><br><span style="font-size:14px;font-weight:normal;">（第1問を表示）</span>
+                    <strong>② クイズ開始</strong><br><span style="font-size:18px;font-weight:normal;">（第1問を表示）</span>
                 </button>
                 
-                <button class="btn-control c-next" onclick="controlGame('close')" style="background: #e74c3c; border: 2px solid #fff;">
-                    <strong>🛑 手動で締め切る</strong><br><span style="font-size:14px;font-weight:normal;">（20秒待たずに正解発表）</span>
+                <button class="btn-control c-next" onclick="controlGame('close')" style="background: #e74c3c; border: 3px solid #fff;">
+                    <strong>🛑 手動で締め切る</strong><br><span style="font-size:18px;font-weight:normal;">（20秒待たずに正解発表）</span>
                 </button>
                 
                 <button class="btn-control c-next" onclick="controlGame('next')">
-                    <strong>③ 次の問題へ</strong><br><span style="font-size:14px;font-weight:normal;">（解答締切・正解表示）</span>
+                    <strong>③ 次の問題へ</strong><br><span style="font-size:18px;font-weight:normal;">（解答締切・正解表示）</span>
                 </button>
                 
                 <button class="btn-control c-end" onclick="controlGame('end')">
-                    <strong>④ 全問終了</strong><br><span style="font-size:14px;font-weight:normal;">（「終了！」を表示）</span>
+                    <strong>④ 全問終了</strong><br><span style="font-size:18px;font-weight:normal;">（「終了！」を表示）</span>
                 </button>
                 
                 <button class="btn-control c-details" onclick="controlGame('details')">
-                    <strong>⑤ 結果発表</strong><br><span style="font-size:14px;font-weight:normal;">（全員の正誤・タイムを表示）</span>
+                    <strong>⑤ 結果発表</strong><br><span style="font-size:18px;font-weight:normal;">（全員の正誤・タイムを表示）</span>
                 </button>
                 
                 <button class="btn-control c-ranking" onclick="controlGame('ranking')">
-                    <strong>⑥ 総合発表</strong><br><span style="font-size:14px;font-weight:normal;">（1位〜3位を表示）</span>
+                    <strong>⑥ 総合発表</strong><br><span style="font-size:18px;font-weight:normal;">（1位〜3位を表示）</span>
                 </button>
                 
                 <button class="btn-control c-reset" onclick="controlGame('reset')">
@@ -157,7 +142,6 @@
                 </button>
             </div>
         </div>
-
     </div>
     
     <audio id="sndRules"></audio>
@@ -181,7 +165,7 @@
             const div = document.createElement('div');
             div.className = 'q-row';
             div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <span class="q-row-title" style="font-weight: bold;"></span>
                     <button class="btn btn-delete" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-trash-alt"></i> 削除</button>
                 </div>
