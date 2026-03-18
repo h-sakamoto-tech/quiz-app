@@ -2,139 +2,175 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>クイズ大会 - メインスクリーン</title>
+    <title>会場スクリーン</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #1a1a2e; color: white; text-align: center; margin: 0; padding: 20px; overflow: hidden; }
-        .container { max-width: 1000px; margin: auto; }
-        h1 { font-size: 3em; color: #e94560; margin-bottom: 10px; }
-        .panel { background: #16213e; padding: 30px; border-radius: 20px; border: 2px solid #30475e; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .counter { font-size: 4em; font-weight: bold; color: #f1c40f; }
-        .progress-bg { background: #0f3460; height: 30px; border-radius: 15px; overflow: hidden; width: 90%; margin: 20px auto; border: 2px solid #30475e; }
-        .progress-bar { background: linear-gradient(90deg, #e94560, #ff4757); height: 100%; width: 0%; transition: width 0.3s; }
-        #qImage { max-height: 450px; border: 6px solid #e94560; border-radius: 15px; margin-top: 20px; }
-        .player-badge { background: #0f3460; padding: 10px 25px; border-radius: 30px; border: 2px solid #e94560; display: inline-block; margin: 8px; font-size: 1.5em; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; font-size: 1.2em; }
-        th { background: #e94560; padding: 15px; }
-        td { border: 1px solid #30475e; padding: 15px; }
+        /* ベーススタイル（プロジェクター映えするダークテーマ） */
+        body { margin: 0; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: radial-gradient(circle, #1a2a6c, #112b3c, #000000); color: #fff; overflow: hidden; }
+        .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 50px; box-sizing: border-box; animation: fadeIn 0.8s ease-out forwards; }
+        .active { display: flex; }
+        
+        /* アニメーション */
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes popUp { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* 各画面の専用デザイン */
+        /* 1. 待機画面 */
+        #wait-screen h1 { font-size: 60px; color: #f1c40f; margin-bottom: 20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.5); }
+        .qr-box { background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 30px; }
+        .qr-box img { width: 300px; height: 300px; object-fit: contain; }
+        .player-count { font-size: 40px; font-weight: bold; background: #e74c3c; padding: 10px 40px; border-radius: 50px; margin-bottom: 30px; }
+        .player-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; max-width: 90%; }
+        .player-badge { background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 10px; font-size: 24px; font-weight: bold; animation: popUp 0.5s ease-out forwards; }
+
+        /* 2. ルール説明画面 */
+        #rules-screen h1 { font-size: 80px; color: #e74c3c; margin-bottom: 50px; text-shadow: 0 0 30px rgba(231, 76, 60, 0.8); }
+        .rule-text { font-size: 50px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.6); padding: 60px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 80%; }
+
+        /* 4. 終了画面 */
+        #end-screen h1 { font-size: 150px; color: #fff; text-shadow: 0 0 50px #e74c3c, 0 0 100px #e74c3c; animation: popUp 1s ease-out forwards; letter-spacing: 20px; margin: 0; }
+
+        /* 5 & 6. 結果・ランキング画面 */
+        .title-text { font-size: 70px; color: #f1c40f; margin-bottom: 40px; border-bottom: 5px solid #f1c40f; padding-bottom: 10px; }
+        .ranking-box { display: flex; flex-direction: column; gap: 20px; width: 80%; }
+        .rank-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 15px; font-size: 40px; font-weight: bold; }
+        .rank-1 { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7); color: #000; transform: scale(1.05); border: 2px solid #fff; }
+        .rank-2 { background: linear-gradient(135deg, #e3e3e3, #ffffff, #a3a3a3); color: #000; }
+        .rank-3 { background: linear-gradient(135deg, #cd7f32, #ffdab9, #8b4513); color: #000; }
     </style>
 </head>
 <body>
-<div class="container">
-    <div id="view-registration">
-        <h1>🏁 参加者受付中</h1>
-        <div style="text-align: center; margin: 20px;">
-    <p style="font-size: 20px; color: white;">スマホで読み取って参加！</p>
-    <img src="qrcode.png" alt="参加用QRコード" style="width: 300px; height: 300px; border: 10px solid white; border-radius: 10px;">
-</div>
-        <div class="panel">
-            <div class="counter"><span id="reg-count">0</span> 名</div>
-            <div id="player-list"></div>
+
+    <div id="wait-screen" class="screen active">
+        <h1>スピードクイズ 大会会場</h1>
+        <div class="qr-box">
+            <img src="./qr-code.png" alt="参加用QRコード">
+        </div>
+        <div class="player-count">現在の参加者: <span id="p-count">0</span> 名</div>
+        <div class="player-list" id="p-list"></div>
+    </div>
+
+    <div id="rules-screen" class="screen">
+        <h1>受付終了！</h1>
+        <div class="rule-text">
+            それではスピードクイズの時間がやってまいりました！全部で10問出題します。<br><br>
+            スマホ画面の選択肢の中から正解と思ったボタンを押してください。<br>
+            このスピードクイズは正解しただけの得点ではありません。<span style="color: #f1c40f; font-weight: bold;">どれだけ早く回答したかという時間でも点数になります。</span><br><br>
+            皆さん全力でがんばってください！
         </div>
     </div>
 
-    <div id="view-quiz" style="display:none;">
-        <h1 id="qNumTitle">第 1 問</h1>
-        <div class="counter"><span id="ans-count">0</span> / <span id="total-count">0</span></div>
-        <div class="progress-bg"><div id="progress-bar" class="progress-bar"></div></div>
-        <img id="qImage" src="">
+    <div id="quiz-screen" class="screen">
+        <h1 style="font-size: 60px; color: #3498db;">クイズ進行中...</h1>
+        <p style="font-size: 30px;">（管理者の画面に合わせて問題が表示されます）</p>
     </div>
 
-    <div id="view-finished" style="display:none;">
-        <h1>📊 最終結果発表</h1>
-        <div id="result-area" class="panel"></div>
+    <div id="end-screen" class="screen">
+        <h1>終了！</h1>
     </div>
-</div>
 
-<script>
-    var firebaseConfig = {
-        apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
-        authDomain: "speed-quiz26.firebaseapp.com",
-        databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "speed-quiz26"
-    };
-    firebase.initializeApp(firebaseConfig);
-    var db = firebase.database();
+    <div id="details-screen" class="screen">
+        <div class="title-text">📊 全員の結果発表</div>
+        <p style="font-size: 40px;">（システム集計中... 各問題の正解・不正解とタイムが表示されます）</p>
+    </div>
 
-    var questions = [];
-    var players = [], currentIdx = 0, history = {}, timerObj = null;
+    <div id="ranking-screen" class="screen">
+        <div class="title-text">🏆 総合ランキング トップ3 🏆</div>
+        <div class="ranking-box" id="ranking-container">
+            </div>
+    </div>
 
-    // 設問設定の読み込み
-    db.ref('quizConfig').on('value', function(snap) { questions = snap.val() || []; });
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
+            authDomain: "speed-quiz26.firebaseapp.com",
+            databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "speed-quiz26"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
 
-    // 参加者・回答監視
-    db.ref('players').on('value', function(snap) {
-        players = Object.keys(snap.val() || {});
-        document.getElementById('reg-count').innerText = players.length;
-        document.getElementById('total-count').innerText = players.length;
-        document.getElementById('player-list').innerHTML = players.map(n => `<span class="player-badge">${n}</span>`).join('');
-    });
-
-    db.ref('answers').on('value', function(snap) {
-        var count = Object.keys(snap.val() || {}).length;
-        document.getElementById('ans-count').innerText = count;
-        document.getElementById('progress-bar').style.width = (players.length > 0 ? (count / players.length * 100) : 0) + "%";
-    });
-
-    // 管理者からの命令(Command)を監視して動く
-    db.ref('adminCommand').on('value', function(snap) {
-        var cmd = snap.val();
-        if(!cmd) return;
-        if(cmd.type === 'close') db.ref('status/state').set('starting');
-        if(cmd.type === 'start') {
-            document.getElementById('view-registration').style.display = 'none';
-            document.getElementById('view-quiz').style.display = 'block';
-            loadQuestion();
+        // 画面を切り替える魔法の関数
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
         }
-        if(cmd.type === 'next') {
-            db.ref('answers').once('value').then(function(s) {
-                history[currentIdx] = s.val() || {};
-                if (currentIdx < questions.length - 1) {
-                    currentIdx++;
-                    db.ref('answers').remove();
-                    loadQuestion();
-                } else {
-                    document.getElementById('view-quiz').style.display = 'none';
-                    document.getElementById('view-finished').style.display = 'block';
-                    db.ref('status/state').set('finished');
-                    showResults();
-                }
-            });
-        }
-        if(cmd.type === 'result') showResults();
-    });
 
-    function loadQuestion() {
-        if(!questions[currentIdx]) return;
-        document.getElementById('qNumTitle').innerText = "第 " + (currentIdx + 1) + " 問";
-        document.getElementById('qImage').src = questions[currentIdx].img;
-        db.ref('status').set({ state: 'quiz', qIdx: currentIdx, isLast: (currentIdx === questions.length - 1) });
-        clearTimeout(timerObj);
-        timerObj = setTimeout(() => { db.ref('status/playTimeout').set(true); }, 30000);
-    }
+        // 管理者からの命令（シグナル）を受け取る！
+        db.ref('adminCommand').on('value', snap => {
+            const cmd = snap.val();
+            if (!cmd) return;
 
-    function showResults() {
-        // (前回同様の集計ロジックで result-area にテーブルを描画)
-        var finalData = players.map(name => {
-            var total = 0;
-            var detail = questions.map((q, i) => {
-                var pAns = (history[i] && history[i][name]) || null;
-                var isCorrect = pAns && pAns.choice === q.ans;
-                var score = isCorrect ? Math.max(0, 2000 - Math.floor((pAns.timestamp - pAns.qStart)/10)) : 0;
-                total += score;
-                return { isCorrect, score };
-            });
-            return { name, detail, total };
-        }).sort((a,b) => b.total - a.total);
+            console.log("管理者からの指示を受信:", cmd.type);
 
-        var html = '<table><tr><th>順位</th><th>名前</th><th>合計点</th></tr>';
-        finalData.forEach((p, i) => {
-            html += `<tr><td>${i+1}</td><td>${p.name}</td><td><strong>${p.total}</strong></td></tr>`;
+            switch(cmd.type) {
+                case 'rules':
+                    switchScreen('rules-screen');
+                    break;
+                case 'start':
+                case 'next':
+                case 'close':
+                    // クイズ進行中はクイズ画面を出す
+                    switchScreen('quiz-screen');
+                    break;
+                case 'end':
+                    switchScreen('end-screen');
+                    break;
+                case 'details':
+                    switchScreen('details-screen');
+                    // ※ここに全員の結果を描画する処理を繋げます
+                    break;
+                case 'ranking':
+                    switchScreen('ranking-screen');
+                    generateMockRanking(); // トップ3を描画
+                    break;
+                case 'reset':
+                    switchScreen('wait-screen');
+                    break;
+            }
         });
-        html += '</table>';
-        document.getElementById('result-area').innerHTML = html;
-    }
-</script>
+
+        // 待機画面の「参加者リスト」をリアルタイム更新
+        db.ref('players').on('value', snap => {
+            const players = snap.val() || {};
+            const listDiv = document.getElementById('p-list');
+            listDiv.innerHTML = '';
+            
+            let count = 0;
+            for (let id in players) {
+                count++;
+                const badge = document.createElement('div');
+                badge.className = 'player-badge';
+                badge.innerHTML = `<i class="fas fa-user"></i> ${players[id].name}`;
+                listDiv.appendChild(badge);
+            }
+            document.getElementById('p-count').innerText = count;
+        });
+
+        // トップ3ランキングを描画する関数（※本番の点数計算プログラムと繋げます）
+        function generateMockRanking() {
+            // 本来は participants データからソートしますが、今回はデモ表示用の枠組みです
+            const container = document.getElementById('ranking-container');
+            container.innerHTML = `
+                <div class="rank-row rank-1">
+                    <div>🥇 第1位</div>
+                    <div>計算中... さん</div>
+                    <div>最高得点 / 最速タイム</div>
+                </div>
+                <div class="rank-row rank-2">
+                    <div>🥈 第2位</div>
+                    <div>計算中... さん</div>
+                    <div>得点 / タイム</div>
+                </div>
+                <div class="rank-row rank-3">
+                    <div>🥉 第3位</div>
+                    <div>計算中... さん</div>
+                    <div>得点 / タイム</div>
+                </div>
+            `;
+        }
+    </script>
 </body>
 </html>
