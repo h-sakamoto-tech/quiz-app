@@ -13,23 +13,19 @@
         .active { display: flex; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* 入力画面・メッセージ画面 */
         h1 { font-size: 24px; color: #2c3e50; margin-bottom: 20px; }
         input[type="text"] { font-size: 20px; padding: 15px; width: 80%; border: 2px solid #bdc3c7; border-radius: 10px; margin-bottom: 20px; text-align: center; }
-        .btn-join { font-size: 20px; background: #e74c3c; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .btn-join { font-size: 20px; background: #e74c3c; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); width: 80%; }
         .message-box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; }
         .icon-large { font-size: 60px; color: #3498db; margin-bottom: 15px; }
 
-        /* クイズ回答画面 (A〜G対応) */
         .grid-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 400px; }
-        /* 最後のGボタンだけ真ん中に大きく配置する小技 */
         .grid-options button:last-child:nth-child(odd) { grid-column: span 2; }
         
         .btn-opt { font-size: 32px; font-weight: bold; padding: 20px; border-radius: 15px; border: none; color: white; box-shadow: 0 4px 0px rgba(0,0,0,0.2); transition: transform 0.1s; }
         .btn-opt:active { transform: translateY(4px); box-shadow: none; }
         .btn-opt:disabled { opacity: 0.5; transform: none; box-shadow: none; }
         
-        /* 選択肢の色分け */
         .bg-A { background: #e74c3c; } .bg-B { background: #3498db; }
         .bg-C { background: #2ecc71; } .bg-D { background: #f1c40f; color: #333; }
         .bg-E { background: #9b59b6; } .bg-F { background: #e67e22; }
@@ -78,32 +74,30 @@
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
-        // 参加者を識別するためのID（間違えてリロードしても大丈夫なようにブラウザに保存）
         let myUid = localStorage.getItem('quizUid');
+        let savedName = localStorage.getItem('quizName'); 
+        
         if (!myUid) {
             myUid = 'player_' + Date.now() + Math.floor(Math.random() * 1000);
             localStorage.setItem('quizUid', myUid);
         }
 
+        if (savedName) {
+            document.getElementById('playerName').value = savedName;
+        }
+
         let questionStartTime = 0;
+        let hasJoined = false; 
+        let currentCmd = null; 
+        
+        // ★ ページを開いた時刻を記録（無限ループ防止の要）
+        const pageLoadTime = Date.now(); 
 
         function switchScreen(screenId) {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
         }
 
-        function joinQuiz() {
-            const name = document.getElementById('playerName').value.trim();
-            if (!name) {
-                alert("名前を入力してください！");
-                return;
-            }
-            // Firebaseに参加者として登録
-            db.ref('players/' + myUid).set({ name: name, score: 0, totalTime: 0 });
-            switchScreen('message-screen');
-        }
-
-        // メッセージ画面の中身を書き換える便利関数
         function showMessage(iconClass, title, text, color) {
             switchScreen('message-screen');
             document.getElementById('msg-icon').className = iconClass + ' icon-large';
@@ -112,27 +106,53 @@
             document.getElementById('msg-text').innerHTML = text;
         }
 
-        // 管理者からの命令（シグナル）を監視してスマホの画面を切り替える
-        db.ref('adminCommand').on('value', snap => {
-            const cmd = snap.val();
-            if (!cmd) return;
+        function joinQuiz() {
+            const name = document.getElementById('playerName').value.trim();
+            if (!name) { alert("名前を入力してください！"); return; }
+            
+            localStorage.setItem('quizName', name);
+            db.ref('players/' + myUid).update({ name: name });
+            hasJoined = true; 
+            
+            // ★ リセット待機中、またはクイズが始まっていない時は「待機画面」へ
+            if (!currentCmd || currentCmd.type === 'reset') {
+                showMessage('fas fa-clock', '受付完了！', 'クイズが始まるまで、このまま<br>スクリーンを見てお待ちください。', '#3498db');
+            } else {
+                applyCommand(currentCmd);
+            }
+        }
 
+        db.ref('adminCommand').on('value', snap => {
+            currentCmd = snap.val();
+            
+            // ★ 管理者が「今」リセットボタンを押した時だけ、静かにログイン画面に戻す（リロードはしない）
+            if (currentCmd && currentCmd.type === 'reset' && currentCmd.ts > pageLoadTime) {
+                hasJoined = false;
+                localStorage.removeItem('quizUid');
+                switchScreen('login-screen');
+                return;
+            }
+            
+            // 参加済みの場合は画面を切り替える
+            if (hasJoined && currentCmd) {
+                applyCommand(currentCmd);
+            }
+        });
+
+        function applyCommand(cmd) {
             switch(cmd.type) {
                 case 'rules':
-                    // ルール説明中はスマホを操作させない
                     showMessage('fas fa-chalkboard-teacher', 'ルール説明中', '前方のスクリーンをご覧ください！', '#e67e22');
                     break;
                 case 'start':
                 case 'next':
-                    // クイズ開始！A〜Gボタンを表示
                     switchScreen('quiz-screen');
                     document.getElementById('quiz-status').innerText = "正解だと思うボタンをタップ！";
                     document.getElementById('quiz-status').style.color = "#333";
                     enableButtons(true);
-                    questionStartTime = Date.now(); // 表示された瞬間の時間を記録
+                    questionStartTime = Date.now();
                     break;
                 case 'close':
-                    // 締め切り
                     document.getElementById('quiz-status').innerText = "⏳ 締め切りました！スクリーンに注目！";
                     document.getElementById('quiz-status').style.color = "#e74c3c";
                     enableButtons(false);
@@ -140,38 +160,24 @@
                 case 'end':
                 case 'details':
                 case 'ranking':
-                    // 全問終了＆結果発表
                     showMessage('fas fa-trophy', 'クイズ終了！', 'お疲れ様でした！<br>結果はスクリーンで発表されます🎉', '#f1c40f');
                     break;
                 case 'reset':
-                    // リセットされたらログイン画面に戻す
-                    localStorage.removeItem('quizUid');
-                    location.reload();
+                    // 古いリセット信号の場合は無視する（待機画面のまま）
                     break;
             }
-        });
+        }
 
-        // ボタンの有効/無効を切り替える関数
         function enableButtons(isEnable) {
             document.querySelectorAll('.btn-opt').forEach(btn => {
                 btn.disabled = !isEnable;
             });
         }
 
-        // 回答を送信する関数
         function sendAnswer(choice) {
-            // 二度押し防止のためにボタンをロック
-            enableButtons(false);
-            
-            // かかった時間を計算（ミリ秒）
+            enableButtons(false); 
             const timeTaken = Date.now() - questionStartTime;
-            
-            // データベースに「選んだ記号」と「かかった時間」を送信
-            db.ref('answers/' + myUid).set({ 
-                choice: choice, 
-                time: timeTaken 
-            });
-
+            db.ref('answers/' + myUid).set({ choice: choice, time: timeTaken });
             document.getElementById('quiz-status').innerText = `【 ${choice} 】を送信しました！`;
             document.getElementById('quiz-status').style.color = "#2ecc71";
         }
