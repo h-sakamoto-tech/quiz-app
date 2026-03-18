@@ -5,7 +5,7 @@
     <title>運営パネル (V2)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <div style="text-align: right; margin-bottom: 20px;">
-        <a href="manual.pptx" target="_blank" style="background-color: #4b5563; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; border: 1px solid #6b7280;">
+        <a href="Manual.pptx" target="_blank" style="background-color: #4b5563; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; border: 1px solid #6b7280;">
             <i class="fas fa-file-powerpoint"></i> 運営マニュアルを開く
         </a>
     </div>
@@ -20,15 +20,12 @@
         .btn { padding: 10px 20px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; margin: 5px; }
         .btn-add { background: #3498db; color: white; width: 100%; font-size: 18px; margin-top: 10px; }
         .btn-save { background: #27ae60; color: white; width: 100%; font-size: 16px; margin-top: 10px; }
-        /* 進行ボタンのデザイン調整 */
         .btn-next { background: #e94560; color: white; display: block; width: 100%; margin: 10px 0; text-align: left; font-size: 16px; padding: 15px;}
         .btn-delete { background: #e74c3c; color: white; padding: 5px 10px; margin: 0; font-size: 12px; }
         .img-preview { max-height: 50px; border-radius: 4px; display: none; margin-left: 10px; }
         
         #questions-container { counter-reset: qnum; }
         .q-row-title::before { counter-increment: qnum; content: "【第 " counter(qnum) " 問】"; font-weight: bold; font-size: 18px; }
-        
-        /* 音源設定を2列にしてスッキリさせる */
         .sound-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     </style>
 </head>
@@ -91,3 +88,94 @@
         <hr style="border-color: #555; margin: 20px 0;">
         <button class="btn" style="background:#777; width: 100%;" onclick="controlGame('reset')">🔄 参加者と進行データだけリセット</button>
     </div>
+    
+    <audio id="sndRules"></audio>
+    <audio id="sndStart"></audio>
+    <audio id="sndNext"></audio>
+    <audio id="sndEnd"></audio>
+    <audio id="sndDetails"></audio>
+    <audio id="sndRanking"></audio>
+    
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
+            authDomain: "speed-quiz26.firebaseapp.com",
+            databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "speed-quiz26"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+        
+        function addQuestionRow() {
+            const div = document.createElement('div');
+            div.className = 'q-row';
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span class="q-row-title"></span>
+                    <button class="btn btn-delete" onclick="this.parentElement.parentElement.remove()">🗑️ 削除</button>
+                </div>
+                <div class="input-line">問題文: <input type="text" class="q-txt"></div>
+                <div class="input-line">画像: <input type="file" accept="image/*" onchange="encodeImage(this)" style="flex: 1;"><input type="hidden" class="q-img"><img class="img-preview" src=""></div>
+                <div class="input-line">正解: <select class="q-ans"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option></select></div>`;
+            document.getElementById('questions-container').appendChild(div);
+        }
+        
+        function encodeImage(fileInput) {
+            const file = fileInput.files[0];
+            if (!file) return;
+            if(file.size > 2 * 1024 * 1024) {
+                alert("画像サイズが大きすぎます！ 2MB以下の画像を選んでください。");
+                fileInput.value = "";
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const inputLine = fileInput.parentElement;
+                inputLine.querySelector('.q-img').value = e.target.result;
+                const previewImg = inputLine.querySelector('.img-preview');
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function loadSnd(i, id) { if(i.files[0]) document.getElementById(id).src = URL.createObjectURL(i.files[0]); }
+        
+        function saveQuizConfig() {
+            const data = [];
+            document.querySelectorAll('.q-row').forEach(r => {
+                data.push({ text: r.querySelector('.q-txt').value, img: r.querySelector('.q-img').value, ans: r.querySelector('.q-ans').value });
+            });
+            db.ref('quizConfig').set(data).then(() => alert("設定を保存しました！"));
+        }
+        
+        function controlGame(a) {
+            if(a==='reset'){ 
+                if(confirm("参加者データと進行状況をリセットしますか？\n（画面上の問題設定や効果音はそのまま残ります）")) {
+                    Promise.all([
+                        db.ref('players').remove(),
+                        db.ref('adminCommand').remove(),
+                        db.ref('status').remove()
+                    ]).then(() => {
+                        alert("参加者データをリセットしました。クイズの進行は最初に戻ります。");
+                    });
+                }
+                return; 
+            }
+            
+            try {
+                if(a==='rules') document.getElementById('sndRules').play();
+                if(a==='start') document.getElementById('sndStart').play();
+                if(a==='next') document.getElementById('sndNext').play();
+                if(a==='end') document.getElementById('sndEnd').play();
+                if(a==='details') document.getElementById('sndDetails').play();
+                if(a==='ranking') document.getElementById('sndRanking').play();
+            } catch(e) {
+                console.log("音が設定されていないか、再生エラーです");
+            }
+            
+            db.ref('adminCommand').set({ type: a, ts: Date.now() });
+        }
+    </script>
+</body>
+</html>
