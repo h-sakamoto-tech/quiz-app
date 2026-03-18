@@ -2,134 +2,178 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>クイズ参加者</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>クイズ回答画面</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f2f5; margin: 0; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        .btn { width: 100%; padding: 20px; margin: 8px 0; font-size: 22px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
-        .btn-join { background: #2ecc71; }
-        .btn-a { background: #ff4757; } .btn-b { background: #2f3542; }
-        .btn-c { background: #2ed573; } .btn-d { background: #1e90ff; }
-        .btn-e { background: #a29bfe; }
-        input { width: 100%; padding: 15px; margin-bottom: 20px; font-size: 18px; border: 2px solid #ddd; border-radius: 10px; box-sizing: border-box; }
-        .screen { display: none; }
-        .active { display: block; }
-        .disabled { pointer-events: none; opacity: 0.5; }
-        #timer-display { font-size: 24px; font-weight: bold; color: #e94560; margin: 10px 0; }
+        body { margin: 0; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: #f0f2f5; color: #333; text-align: center; overflow-x: hidden; }
+        .screen { display: none; padding: 20px; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        .active { display: flex; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 入力画面・メッセージ画面 */
+        h1 { font-size: 24px; color: #2c3e50; margin-bottom: 20px; }
+        input[type="text"] { font-size: 20px; padding: 15px; width: 80%; border: 2px solid #bdc3c7; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+        .btn-join { font-size: 20px; background: #e74c3c; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .message-box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; }
+        .icon-large { font-size: 60px; color: #3498db; margin-bottom: 15px; }
+
+        /* クイズ回答画面 (A〜G対応) */
+        .grid-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 400px; }
+        /* 最後のGボタンだけ真ん中に大きく配置する小技 */
+        .grid-options button:last-child:nth-child(odd) { grid-column: span 2; }
+        
+        .btn-opt { font-size: 32px; font-weight: bold; padding: 20px; border-radius: 15px; border: none; color: white; box-shadow: 0 4px 0px rgba(0,0,0,0.2); transition: transform 0.1s; }
+        .btn-opt:active { transform: translateY(4px); box-shadow: none; }
+        .btn-opt:disabled { opacity: 0.5; transform: none; box-shadow: none; }
+        
+        /* 選択肢の色分け */
+        .bg-A { background: #e74c3c; } .bg-B { background: #3498db; }
+        .bg-C { background: #2ecc71; } .bg-D { background: #f1c40f; color: #333; }
+        .bg-E { background: #9b59b6; } .bg-F { background: #e67e22; }
+        .bg-G { background: #34495e; }
+
+        #quiz-status { font-size: 18px; font-weight: bold; color: #e74c3c; margin-bottom: 15px; height: 24px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div id="sc-registration" class="screen active">
-            <h2>クイズ参加申込</h2>
-            <input type="text" id="userName" placeholder="名前を入力（例：坂本）">
-            <button class="btn btn-join" onclick="joinGame()">参加する！</button>
+
+    <div id="login-screen" class="screen active">
+        <h1>スピードクイズに参加！</h1>
+        <p>スクリーンに表示するあなたの<br>名前（ニックネーム）を入力してください。</p>
+        <input type="text" id="playerName" placeholder="名前を入力..." maxlength="10">
+        <button class="btn-join" onclick="joinQuiz()">参加する！</button>
+    </div>
+
+    <div id="message-screen" class="screen">
+        <div class="message-box">
+            <i id="msg-icon" class="fas fa-clock icon-large"></i>
+            <h2 id="msg-title">受付完了！</h2>
+            <p id="msg-text" style="font-size: 18px; line-height: 1.5;">クイズが始まるまで、このまま<br>スクリーンを見てお待ちください。</p>
         </div>
-        <div id="sc-starting" class="screen">
-            <h2>受付完了！</h2>
-            <p>開始までそのままお待ちください...</p>
-        </div>
-        <div id="sc-quiz" class="screen">
-            <div id="timer-display">残り <span id="time-left">30</span> 秒</div>
-            <h2 id="qNumDisplay">第 1 問</h2>
-            <div id="quizArea">
-                <button class="btn btn-a" onclick="sendAns('A')">A</button>
-                <button class="btn btn-b" onclick="sendAns('B')">B</button>
-                <button class="btn btn-c" onclick="sendAns('C')">C</button>
-                <button class="btn btn-d" onclick="sendAns('D')">D</button>
-                <button class="btn btn-e" onclick="sendAns('E')">E</button>
-            </div>
-            <p id="msg" style="font-weight:bold; margin-top:15px;"></p>
-        </div>
-        <div id="sc-finished" class="screen">
-            <h2>お疲れ様でした！</h2>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <div id="quiz-status">正解だと思うボタンをタップ！</div>
+        <div class="grid-options">
+            <button class="btn-opt bg-A" onclick="sendAnswer('A')">A</button>
+            <button class="btn-opt bg-B" onclick="sendAnswer('B')">B</button>
+            <button class="btn-opt bg-C" onclick="sendAnswer('C')">C</button>
+            <button class="btn-opt bg-D" onclick="sendAnswer('D')">D</button>
+            <button class="btn-opt bg-E" onclick="sendAnswer('E')">E</button>
+            <button class="btn-opt bg-F" onclick="sendAnswer('F')">F</button>
+            <button class="btn-opt bg-G" onclick="sendAnswer('G')">G</button>
         </div>
     </div>
 
     <script>
-        // Firebase設定
         var firebaseConfig = {
             apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
             authDomain: "speed-quiz26.firebaseapp.com",
             databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "speed-quiz26"
         };
-        // 初期化
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
-        
-        var myName = "";
-        var currentQStart = 0;
-        var countdownInterval = null;
 
-        // 状態監視
-        db.ref('status').on('value', function(snap) {
-            var status = snap.val();
-            if(!status || status.state === 'registration') {
-                switchScreen('sc-registration');
-                clearInterval(countdownInterval);
+        // 参加者を識別するためのID（間違えてリロードしても大丈夫なようにブラウザに保存）
+        let myUid = localStorage.getItem('quizUid');
+        if (!myUid) {
+            myUid = 'player_' + Date.now() + Math.floor(Math.random() * 1000);
+            localStorage.setItem('quizUid', myUid);
+        }
+
+        let questionStartTime = 0;
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function joinQuiz() {
+            const name = document.getElementById('playerName').value.trim();
+            if (!name) {
+                alert("名前を入力してください！");
                 return;
             }
-            if(status.state === 'starting') switchScreen('sc-starting');
-            if(status.state === 'quiz') {
-                switchScreen('sc-quiz');
-                document.getElementById('qNumDisplay').innerText = "第 " + (status.qIdx + 1) + " 問";
-                document.getElementById('quizArea').classList.remove('disabled');
-                document.getElementById('msg').innerText = "";
-                currentQStart = Date.now();
-                startTimer(30);
+            // Firebaseに参加者として登録
+            db.ref('players/' + myUid).set({ name: name, score: 0, totalTime: 0 });
+            switchScreen('message-screen');
+        }
+
+        // メッセージ画面の中身を書き換える便利関数
+        function showMessage(iconClass, title, text, color) {
+            switchScreen('message-screen');
+            document.getElementById('msg-icon').className = iconClass + ' icon-large';
+            document.getElementById('msg-icon').style.color = color;
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-text').innerHTML = text;
+        }
+
+        // 管理者からの命令（シグナル）を監視してスマホの画面を切り替える
+        db.ref('adminCommand').on('value', snap => {
+            const cmd = snap.val();
+            if (!cmd) return;
+
+            switch(cmd.type) {
+                case 'rules':
+                    // ルール説明中はスマホを操作させない
+                    showMessage('fas fa-chalkboard-teacher', 'ルール説明中', '前方のスクリーンをご覧ください！', '#e67e22');
+                    break;
+                case 'start':
+                case 'next':
+                    // クイズ開始！A〜Gボタンを表示
+                    switchScreen('quiz-screen');
+                    document.getElementById('quiz-status').innerText = "正解だと思うボタンをタップ！";
+                    document.getElementById('quiz-status').style.color = "#333";
+                    enableButtons(true);
+                    questionStartTime = Date.now(); // 表示された瞬間の時間を記録
+                    break;
+                case 'close':
+                    // 締め切り
+                    document.getElementById('quiz-status').innerText = "⏳ 締め切りました！スクリーンに注目！";
+                    document.getElementById('quiz-status').style.color = "#e74c3c";
+                    enableButtons(false);
+                    break;
+                case 'end':
+                case 'details':
+                case 'ranking':
+                    // 全問終了＆結果発表
+                    showMessage('fas fa-trophy', 'クイズ終了！', 'お疲れ様でした！<br>結果はスクリーンで発表されます🎉', '#f1c40f');
+                    break;
+                case 'reset':
+                    // リセットされたらログイン画面に戻す
+                    localStorage.removeItem('quizUid');
+                    location.reload();
+                    break;
             }
-            if(status.state === 'finished') switchScreen('sc-finished');
         });
 
-        function switchScreen(id) {
-            var screens = document.getElementsByClassName('screen');
-            for(var i=0; i<screens.length; i++) screens[i].classList.remove('active');
-            document.getElementById(id).classList.add('active');
+        // ボタンの有効/無効を切り替える関数
+        function enableButtons(isEnable) {
+            document.querySelectorAll('.btn-opt').forEach(btn => {
+                btn.disabled = !isEnable;
+            });
         }
 
-        function startTimer(seconds) {
-            clearInterval(countdownInterval);
-            var timeLeft = seconds;
-            document.getElementById('time-left').innerText = timeLeft;
-            countdownInterval = setInterval(function() {
-                timeLeft--;
-                document.getElementById('time-left').innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(countdownInterval);
-                    document.getElementById('quizArea').classList.add('disabled');
-                    document.getElementById('msg').innerText = "⏰ 時間切れ！";
-                }
-            }, 1000);
-        }
-
-        function joinGame() {
-            myName = document.getElementById('userName').value;
-            if(!myName) return alert("名前を入れてね");
+        // 回答を送信する関数
+        function sendAnswer(choice) {
+            // 二度押し防止のためにボタンをロック
+            enableButtons(false);
             
-            db.ref('players/' + myName).set(true, function(error) {
-                if (error) {
-                    alert("送信エラー: " + error.message);
-                } else {
-                    switchScreen('sc-starting');
-                }
+            // かかった時間を計算（ミリ秒）
+            const timeTaken = Date.now() - questionStartTime;
+            
+            // データベースに「選んだ記号」と「かかった時間」を送信
+            db.ref('answers/' + myUid).set({ 
+                choice: choice, 
+                time: timeTaken 
             });
-        }
 
-        function sendAns(choice) {
-            if(!myName) return;
-            db.ref('answers/' + myName).set({
-                name: myName, choice: choice, timestamp: Date.now(), qStart: currentQStart
-            }, function(error) {
-                if(!error) {
-                    clearInterval(countdownInterval);
-                    document.getElementById('quizArea').classList.add('disabled');
-                    document.getElementById('msg').innerText = choice + " で送信完了！";
-                }
-            });
+            document.getElementById('quiz-status').innerText = `【 ${choice} 】を送信しました！`;
+            document.getElementById('quiz-status').style.color = "#2ecc71";
         }
     </script>
 </body>
