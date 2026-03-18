@@ -24,7 +24,6 @@
         .btn-delete { background: #e74c3c; color: white; padding: 5px 10px; margin: 0; font-size: 12px; }
         .img-preview { max-height: 50px; border-radius: 4px; display: none; margin-left: 10px; }
         
-        /* 自動で問題番号を振るための設定 */
         #questions-container { counter-reset: qnum; }
         .q-row-title::before { counter-increment: qnum; content: "【第 " counter(qnum) " 問】"; font-weight: bold; font-size: 18px; }
     </style>
@@ -33,10 +32,11 @@
     <h1>⚙️ 運営パネル (V2)</h1>
     
     <div class="section">
-        <h2>🎵 音源設定</h2>
-        <div>開始音: <input type="file" onchange="loadSnd(this, 'sndStart')"></div>
-        <div>正解音: <input type="file" onchange="loadSnd(this, 'sndCorrect')"></div>
-        <div>時間切: <input type="file" onchange="loadSnd(this, 'sndTimeout')"></div>
+        <h2>🎵 音源設定（ボタンと連動）</h2>
+        <div>① 締め切り音: <input type="file" onchange="loadSnd(this, 'sndClose')"></div>
+        <div>② 開　始　音: <input type="file" onchange="loadSnd(this, 'sndStart')"></div>
+        <div>③ 次　へ　音: <input type="file" onchange="loadSnd(this, 'sndNext')"></div>
+        <div>④ 結果発表音: <input type="file" onchange="loadSnd(this, 'sndResult')"></div>
     </div>
     
     <div class="section">
@@ -80,7 +80,10 @@
         <button class="btn" style="background:#777" onclick="controlGame('reset')">🔄 参加者だけリセット</button>
     </div>
     
-    <audio id="sndStart"></audio><audio id="sndCorrect"></audio><audio id="sndTimeout"></audio>
+    <audio id="sndClose"></audio>
+    <audio id="sndStart"></audio>
+    <audio id="sndNext"></audio>
+    <audio id="sndResult"></audio>
     
     <script>
         var firebaseConfig = {
@@ -120,7 +123,6 @@
             reader.onload = function(e) {
                 const inputLine = fileInput.parentElement;
                 inputLine.querySelector('.q-img').value = e.target.result;
-                
                 const previewImg = inputLine.querySelector('.img-preview');
                 previewImg.src = e.target.result;
                 previewImg.style.display = 'block';
@@ -132,7 +134,6 @@
         
         function saveQuizConfig() {
             const data = [];
-            // 画面に残っている問題だけを集めて保存します
             document.querySelectorAll('.q-row').forEach(r => {
                 data.push({ text: r.querySelector('.q-txt').value, img: r.querySelector('.q-img').value, ans: r.querySelector('.q-ans').value });
             });
@@ -147,20 +148,29 @@
                         db.ref('adminCommand').remove(),
                         db.ref('status').remove()
                     ]).then(() => {
-                        // 【重要】画面をリロードしないように修正しました
                         alert("参加者データをリセットしました。クイズの進行は最初に戻ります。");
                     });
                 }
                 return; 
             }
-            if(a==='start') document.getElementById('sndStart').play();
-            if(a==='next') document.getElementById('sndCorrect').play();
+            
+            // ★ボタンに対応する効果音を再生するプログラム
+            try {
+                if(a==='close') document.getElementById('sndClose').play();
+                if(a==='start') document.getElementById('sndStart').play();
+                if(a==='next') document.getElementById('sndNext').play();
+                if(a==='result') document.getElementById('sndResult').play();
+            } catch(e) {
+                console.log("音が設定されていないか、再生エラーです");
+            }
+            
             db.ref('adminCommand').set({ type: a, ts: Date.now() });
         }
         
+        // 自動で時間切れになった時の音（締め切り音と同じ音を鳴らします）
         db.ref('status/playTimeout').on('value', snap => { 
             if(snap.val()===true){ 
-                document.getElementById('sndTimeout').play(); 
+                try { document.getElementById('sndClose').play(); } catch(e){}
                 db.ref('status/playTimeout').set(false); 
             } 
         });
