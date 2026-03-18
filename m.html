@@ -7,17 +7,13 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        /* ベーススタイル（プロジェクター映えするダークテーマ） */
         body { margin: 0; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: radial-gradient(circle, #1a2a6c, #112b3c, #000000); color: #fff; overflow: hidden; }
         .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 50px; box-sizing: border-box; animation: fadeIn 0.8s ease-out forwards; }
         .active { display: flex; }
         
-        /* アニメーション */
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes popUp { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-        /* 各画面の専用デザイン */
-        /* 1. 待機画面 */
         #wait-screen h1 { font-size: 60px; color: #f1c40f; margin-bottom: 20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.5); }
         .qr-box { background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 30px; }
         .qr-box img { width: 300px; height: 300px; object-fit: contain; }
@@ -25,14 +21,11 @@
         .player-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; max-width: 90%; }
         .player-badge { background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 10px; font-size: 24px; font-weight: bold; animation: popUp 0.5s ease-out forwards; }
 
-        /* 2. ルール説明画面 */
         #rules-screen h1 { font-size: 80px; color: #e74c3c; margin-bottom: 50px; text-shadow: 0 0 30px rgba(231, 76, 60, 0.8); }
         .rule-text { font-size: 50px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.6); padding: 60px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 80%; }
 
-        /* 4. 終了画面 */
         #end-screen h1 { font-size: 150px; color: #fff; text-shadow: 0 0 50px #e74c3c, 0 0 100px #e74c3c; animation: popUp 1s ease-out forwards; letter-spacing: 20px; margin: 0; }
 
-        /* 5 & 6. 結果・ランキング画面 */
         .title-text { font-size: 70px; color: #f1c40f; margin-bottom: 40px; border-bottom: 5px solid #f1c40f; padding-bottom: 10px; }
         .ranking-box { display: flex; flex-direction: column; gap: 20px; width: 80%; }
         .rank-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 15px; font-size: 40px; font-weight: bold; }
@@ -46,7 +39,7 @@
     <div id="wait-screen" class="screen active">
         <h1>スピードクイズ 大会会場</h1>
         <div class="qr-box">
-            <img src="./qr-code.png" alt="参加用QRコード">
+            <img src="./qrcode.png" alt="参加用QRコード">
         </div>
         <div class="player-count">現在の参加者: <span id="p-count">0</span> 名</div>
         <div class="player-list" id="p-list"></div>
@@ -92,18 +85,14 @@
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
-        // 画面を切り替える魔法の関数
         function switchScreen(screenId) {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
         }
 
-        // 管理者からの命令（シグナル）を受け取る！
         db.ref('adminCommand').on('value', snap => {
             const cmd = snap.val();
             if (!cmd) return;
-
-            console.log("管理者からの指示を受信:", cmd.type);
 
             switch(cmd.type) {
                 case 'rules':
@@ -112,7 +101,6 @@
                 case 'start':
                 case 'next':
                 case 'close':
-                    // クイズ進行中はクイズ画面を出す
                     switchScreen('quiz-screen');
                     break;
                 case 'end':
@@ -120,11 +108,10 @@
                     break;
                 case 'details':
                     switchScreen('details-screen');
-                    // ※ここに全員の結果を描画する処理を繋げます
                     break;
                 case 'ranking':
                     switchScreen('ranking-screen');
-                    generateMockRanking(); // トップ3を描画
+                    generateMockRanking();
                     break;
                 case 'reset':
                     switchScreen('wait-screen');
@@ -132,7 +119,6 @@
             }
         });
 
-        // 待機画面の「参加者リスト」をリアルタイム更新
         db.ref('players').on('value', snap => {
             const players = snap.val() || {};
             const listDiv = document.getElementById('p-list');
@@ -149,9 +135,7 @@
             document.getElementById('p-count').innerText = count;
         });
 
-        // トップ3ランキングを描画する関数（※本番の点数計算プログラムと繋げます）
         function generateMockRanking() {
-            // 本来は participants データからソートしますが、今回はデモ表示用の枠組みです
             const container = document.getElementById('ranking-container');
             container.innerHTML = `
                 <div class="rank-row rank-1">
