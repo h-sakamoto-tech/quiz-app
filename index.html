@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>運営パネル (V2)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <div style="text-align: right; margin-bottom: 20px;">
-    <a href="Manual.pptx" target="_blank" style="background-color: #4b5563; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; border: 1px solid #6b7280;">
-        <i class="fas fa-file-powerpoint"></i> 運営マニュアルを開く
-    </a>
-</div>
+        <a href="Manual.pptx" target="_blank" style="background-color: #4b5563; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; border: 1px solid #6b7280;">
+            <i class="fas fa-file-powerpoint"></i> 運営マニュアルを開く
+        </a>
+    </div>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         body { font-family: sans-serif; background: #222; color: #fff; padding: 20px; }
         .section { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
         .q-row { background: #444; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
-        .input-line { margin: 5px 0; display: flex; gap: 10px; }
+        .input-line { margin: 5px 0; display: flex; gap: 10px; align-items: center; }
         input[type="text"] { flex: 1; padding: 8px; border-radius: 4px; border: none; }
         .btn { padding: 10px 20px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; margin: 5px; }
-        .btn-add { background: #3498db; color: white; width: 100%; font-size: 18px; }
-        .btn-save { background: #27ae60; color: white; width: 100%; font-size: 16px; }
+        .btn-add { background: #3498db; color: white; width: 100%; font-size: 18px; margin-top: 10px; }
+        .btn-save { background: #27ae60; color: white; width: 100%; font-size: 16px; margin-top: 10px; }
         .btn-next { background: #e94560; color: white; }
     </style>
 </head>
@@ -37,7 +38,17 @@
                 <strong>【第 1 問】</strong>
                 <div class="input-line">問題文: <input type="text" class="q-txt"></div>
                 <div class="input-line">画像URL: <input type="text" class="q-img"></div>
-                <div class="input-line">正解: <select class="q-ans"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option></select></div>
+                <div class="input-line">正解: 
+                    <select class="q-ans">
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="G">G</option>
+                    </select>
+                </div>
             </div>
         </div>
         <button type="button" class="btn btn-add" onclick="addQuestionRow()">＋ 問題を追加する</button>
@@ -62,14 +73,18 @@
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
         let qCount = 1;
+        
         function addQuestionRow() {
             qCount++;
             const div = document.createElement('div');
             div.className = 'q-row';
-            div.innerHTML = `<strong>【第 ${qCount} 問】</strong><div class="input-line">問題文: <input type="text" class="q-txt"></div><div class="input-line">画像URL: <input type="text" class="q-img"></div><div class="input-line">正解: <select class="q-ans"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option></select></div>`;
+            // ★追加される問題のドロップダウンにも F と G を追加しました
+            div.innerHTML = `<strong>【第 ${qCount} 問】</strong><div class="input-line">問題文: <input type="text" class="q-txt"></div><div class="input-line">画像URL: <input type="text" class="q-img"></div><div class="input-line">正解: <select class="q-ans"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option></select></div>`;
             document.getElementById('questions-container').appendChild(div);
         }
+        
         function loadSnd(i, id) { if(i.files[0]) document.getElementById(id).src = URL.createObjectURL(i.files[0]); }
+        
         function saveQuizConfig() {
             const data = [];
             document.querySelectorAll('.q-row').forEach(r => {
@@ -77,13 +92,30 @@
             });
             db.ref('quizConfig').set(data).then(() => alert("保存しました！"));
         }
+        
         function controlGame(a) {
-            if(a==='reset'){ db.ref('/').remove().then(()=>location.reload()); return; }
+            if(a==='reset'){ 
+                // ★ここだけ修正：問題データが消えないようにする安全装置
+                if(confirm("進行状況と参加者データをリセットしますか？\n（登録した問題は消えません）")) {
+                    Promise.all([
+                        db.ref('players').remove(),
+                        db.ref('adminCommand').remove(),
+                        db.ref('status').remove()
+                    ]).then(()=>location.reload());
+                }
+                return; 
+            }
             if(a==='start') document.getElementById('sndStart').play();
             if(a==='next') document.getElementById('sndCorrect').play();
             db.ref('adminCommand').set({ type: a, ts: Date.now() });
         }
-        db.ref('status/playTimeout').on('value', snap => { if(snap.val()===true){ document.getElementById('sndTimeout').play(); db.ref('status/playTimeout').set(false); } });
+        
+        db.ref('status/playTimeout').on('value', snap => { 
+            if(snap.val()===true){ 
+                document.getElementById('sndTimeout').play(); 
+                db.ref('status/playTimeout').set(false); 
+            } 
+        });
     </script>
 </body>
 </html>
