@@ -33,7 +33,7 @@
         .player-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; width: 100%; justify-content: center; }
         .player-badge { background: rgba(255,255,255,0.2); padding: 15px 30px; border-radius: 20px; font-size: 40px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 15px; animation: popUp 0.5s ease-out forwards; }
 
-        /* ★ルール画面（ご指定の文章に合わせた調整） */
+        /* ルール画面 */
         #rules-screen h1 { font-size: 80px; color: #e74c3c; margin-bottom: 50px; text-shadow: 0 0 30px rgba(231, 76, 60, 0.8); }
         .rule-text { font-size: 45px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.6); padding: 60px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 90%; }
 
@@ -90,7 +90,8 @@
         <h1>受付終了！</h1>
         <div class="rule-text">
             それではスピードクイズの時間がやってまいりました！全部で10問出題します。<br><br>
-            スマホ画面の選択肢の中から正解と思ったボタンを押してください。<span style="color: #e74c3c; font-weight: bold;">各問題の制限時間は「20秒」です。</span><br><br>
+            スマホ画面の選択肢の中から正解と思ったボタンを押してください。<br>
+            <span style="color: #e74c3c; font-weight: bold;">各問題の制限時間は「20秒」です。</span><br><br>
             このクイズは正解しただけの得点ではありません。<br>
             正解の基本点100点に加え、早く回答するほど<span style="color: #f1c40f; font-weight: bold;">「残り時間(秒) × 1点」のボーナス</span>が加算されます！<br>
             <span style="color: #3498db; font-weight: bold;">正答数が同じ場合は、回答までの時間が短いチームが優勝です！！</span><br><br>
@@ -292,7 +293,6 @@
                                 let remainSec = Math.floor((20000 - timeTaken) / 1000);
                                 if(remainSec < 0) remainSec = 0;
                                 
-                                // ★修正：スピードボーナスを「残り秒数 × 1ポイント」に変更
                                 points = 100 + (remainSec * 1);
                                 currentScore += points;
                             }
