@@ -29,7 +29,7 @@
         .q-text { font-size: 70px; font-weight: bold; margin-bottom: 30px; line-height: 1.3; text-shadow: 2px 2px 10px #000; }
         .q-image { max-width: 600px; max-height: 400px; border-radius: 15px; border: 5px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 30px; display: none; }
         
-        /* タイマー表示のスタイル追加 */
+        /* タイマー表示 */
         .timer-box { position: absolute; top: 30px; right: 40px; font-size: 50px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 20px; border: 3px solid #f1c40f; display: flex; align-items: center; gap: 15px; transition: color 0.3s; }
         .timer-urgent { color: #e74c3c; animation: popUp 0.5s infinite alternate; border-color: #e74c3c; }
         
@@ -39,13 +39,24 @@
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .correct-ans { font-size: 80px; color: #2ecc71; font-weight: bold; margin-top: 30px; animation: popUp 0.5s ease-out forwards; text-shadow: 0 0 30px #2ecc71; display: none; }
 
-        /* 終了・結果画面 */
+        /* 終了・結果・ランキング画面 */
         #end-screen h1 { font-size: 150px; color: #fff; text-shadow: 0 0 50px #e74c3c, 0 0 100px #e74c3c; animation: popUp 1s ease-out forwards; letter-spacing: 20px; margin: 0; }
         .title-text { font-size: 70px; color: #f1c40f; margin-bottom: 40px; border-bottom: 5px solid #f1c40f; padding-bottom: 10px; }
+        
+        /* 詳細テーブルのデザイン */
+        .details-table-wrapper { width: 95%; max-height: 65vh; overflow-y: auto; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 15px; border: 2px solid #555; }
+        table { width: 100%; border-collapse: collapse; color: #fff; font-size: 24px; }
+        th, td { border: 1px solid #7f8c8d; padding: 15px 10px; text-align: center; }
+        th { background: #2980b9; position: sticky; top: -20px; z-index: 10; font-size: 26px; }
+        .td-correct { color: #2ecc71; font-weight: bold; }
+        .td-wrong { color: #e74c3c; font-weight: bold; }
+        .td-time { font-size: 16px; color: #bdc3c7; display: block; margin-top: 5px; }
+        
+        /* ランキングのデザイン */
         .ranking-box { display: flex; flex-direction: column; gap: 20px; width: 80%; }
         .rank-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 15px; font-size: 40px; font-weight: bold; }
-        .rank-1 { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7); color: #000; transform: scale(1.05); border: 2px solid #fff; }
-        .rank-2 { background: linear-gradient(135deg, #e3e3e3, #ffffff, #a3a3a3); color: #000; }
+        .rank-1 { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7); color: #000; transform: scale(1.1); border: 3px solid #fff; box-shadow: 0 0 30px rgba(241, 196, 15, 0.5); z-index: 3; }
+        .rank-2 { background: linear-gradient(135deg, #e3e3e3, #ffffff, #a3a3a3); color: #000; transform: scale(1.05); z-index: 2; }
         .rank-3 { background: linear-gradient(135deg, #cd7f32, #ffdab9, #8b4513); color: #000; }
     </style>
 </head>
@@ -64,8 +75,9 @@
         <h1>受付終了！</h1>
         <div class="rule-text">
             それではスピードクイズの時間がやってまいりました！全部で10問出題します。<br><br>
-            スマホ画面の選択肢の中から正解と思ったボタンを押してください。<br>
-            このスピードクイズは正解しただけの得点ではありません。<span style="color: #f1c40f; font-weight: bold;">どれだけ早く回答したかという時間でも点数になります。</span><br><br>
+            スマホ画面の選択肢の中から正解と思ったボタンを押してください。<span style="color: #e74c3c; font-weight: bold;">各問題の制限時間は「20秒」です。</span><br><br>
+            このクイズは正解しただけの得点ではありません。<br>
+            <span style="color: #f1c40f; font-weight: bold;">正解の基本点100点に加え、早く回答するほど「残り時間(秒) × 10点」のボーナスが加算されます！</span><br><br>
             皆さん全力でがんばってください！
         </div>
     </div>
@@ -84,10 +96,12 @@
     <div id="end-screen" class="screen">
         <h1>終了！</h1>
     </div>
+    
     <div id="details-screen" class="screen">
         <div class="title-text">📊 全員の結果発表</div>
-        <p style="font-size: 40px;">（システム集計中... 各問題の正解・不正解とタイムが表示されます）</p>
+        <div id="details-container" class="details-table-wrapper"></div>
     </div>
+    
     <div id="ranking-screen" class="screen">
         <div class="title-text">🏆 総合ランキング トップ3 🏆</div>
         <div class="ranking-box" id="ranking-container"></div>
@@ -106,10 +120,10 @@
         let quizData = [];
         let currentQuestionIndex = 0;
         
-        // タイマー用の変数
+        // ★タイマー制御用変数
         let timerInterval = null;
-        const TIME_LIMIT = 20; // 制限時間を20秒に設定
-        let isClosed = false; // 締め切られたかどうかの判定
+        const TIME_LIMIT = 20; 
+        let isClosed = false;
 
         function switchScreen(screenId) {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
@@ -120,6 +134,7 @@
             quizData = snap.val() || [];
         });
 
+        // 管理者からのコマンド受信
         db.ref('adminCommand').on('value', snap => {
             const cmd = snap.val();
             if (!cmd) return;
@@ -128,7 +143,7 @@
                 case 'rules':
                     switchScreen('rules-screen');
                     currentQuestionIndex = 0;
-                    stopTimer(); // タイマーリセット
+                    stopTimer();
                     break;
                 case 'start':
                 case 'next':
@@ -137,14 +152,14 @@
                     if (currentQuestionIndex < quizData.length) {
                         showQuestion(currentQuestionIndex);
                         switchScreen('quiz-screen');
-                        startTimer(); // タイマースタート
+                        startTimer();
                     } else {
                         switchScreen('end-screen');
                         stopTimer();
                     }
                     break;
                 case 'close':
-                    closeQuestion(); // 手動で締め切り
+                    closeQuestion();
                     break;
                 case 'end':
                     switchScreen('end-screen');
@@ -153,11 +168,12 @@
                 case 'details':
                     switchScreen('details-screen');
                     stopTimer();
+                    generateDetailsTable();
                     break;
                 case 'ranking':
                     switchScreen('ranking-screen');
-                    generateMockRanking();
                     stopTimer();
+                    generateRanking();
                     break;
                 case 'reset':
                     switchScreen('wait-screen');
@@ -167,7 +183,6 @@
             }
         });
 
-        // 問題を表示する処理
         function showQuestion(index) {
             if (!quizData[index]) return;
             const q = quizData[index];
@@ -189,35 +204,29 @@
             isClosed = false;
         }
 
-        // タイマーを開始する処理
+        // タイマー処理
         function startTimer() {
-            stopTimer(); // 前のタイマーが残っていたら消す
+            stopTimer();
             let timeLeft = TIME_LIMIT;
             const timerDisplay = document.getElementById('time-left');
             const timerBox = document.getElementById('timer-display');
             
             timerDisplay.innerText = timeLeft;
-            timerBox.className = "timer-box"; // 色を元に戻す
+            timerBox.className = "timer-box";
 
             timerInterval = setInterval(() => {
-                if (isClosed) {
-                    stopTimer();
-                    return;
-                }
+                if (isClosed) { stopTimer(); return; }
                 
                 timeLeft--;
                 timerDisplay.innerText = timeLeft;
 
-                // 残り5秒で赤く点滅させる
                 if (timeLeft <= 5 && timeLeft > 0) {
                     timerBox.className = "timer-box timer-urgent";
                 }
 
-                // 0秒になったら強制締め切り
                 if (timeLeft <= 0) {
                     stopTimer();
                     closeQuestion();
-                    // Firebaseに「自動で時間切れになった」という信号を送り、スマホをロックさせる
                     db.ref('adminCommand').set({ type: 'close', ts: Date.now(), auto: true });
                 }
             }, 1000);
@@ -227,21 +236,74 @@
             if(timerInterval) clearInterval(timerInterval);
         }
 
-        // 締め切り処理（正解発表）
+        // ★★★ 締め切り＆自動得点計算 ★★★
         function closeQuestion() {
-            if (isClosed) return; // 既に締め切られていたら何もしない
+            if (isClosed) return; 
             isClosed = true;
             stopTimer();
             
             document.getElementById('disp-status').className = "status-badge status-closed";
             document.getElementById('disp-status').innerText = "🛑 締め切りました！";
             
-            if (quizData[currentQuestionIndex]) {
-                document.getElementById('ans-text').innerText = quizData[currentQuestionIndex].ans;
-                document.getElementById('disp-ans').style.display = "block";
-            }
+            if (!quizData[currentQuestionIndex]) return;
+
+            const correctAns = quizData[currentQuestionIndex].ans;
+            document.getElementById('ans-text').innerText = correctAns;
+            document.getElementById('disp-ans').style.display = "block";
+
+            // 回答の採点
+            db.ref('answers').once('value', snap => {
+                const answers = snap.val() || {};
+                
+                db.ref('players').once('value', pSnap => {
+                    const players = pSnap.val() || {};
+                    let updates = {};
+                    
+                    for(let uid in players) {
+                        let p = players[uid];
+                        let currentScore = p.score || 0;
+                        let history = p.history || {};
+                        
+                        let isCorrect = false;
+                        let timeTaken = 20000; // 答えていない人は20秒扱い
+                        let points = 0;
+                        
+                        if(answers[uid]) {
+                            timeTaken = answers[uid].time;
+                            if(timeTaken > 20000) timeTaken = 20000;
+                            
+                            if(answers[uid].choice === correctAns) {
+                                isCorrect = true;
+                                let remainSec = Math.floor((20000 - timeTaken) / 1000);
+                                if(remainSec < 0) remainSec = 0;
+                                // 100点 ＋ (残り時間 × 10点)
+                                points = 100 + (remainSec * 10);
+                                currentScore += points;
+                            }
+                        }
+                        
+                        history[currentQuestionIndex] = {
+                            isCorrect: isCorrect,
+                            time: timeTaken,
+                            points: points
+                        };
+                        
+                        updates['players/' + uid + '/score'] = currentScore;
+                        updates['players/' + uid + '/history'] = history;
+                    }
+                    
+                    if(Object.keys(updates).length > 0) {
+                        db.ref().update(updates).then(() => {
+                            db.ref('answers').remove();
+                        });
+                    } else {
+                        db.ref('answers').remove();
+                    }
+                });
+            });
         }
 
+        // 待機画面のリスト更新
         db.ref('players').on('value', snap => {
             const players = snap.val() || {};
             const listDiv = document.getElementById('p-list');
@@ -257,13 +319,76 @@
             document.getElementById('p-count').innerText = count;
         });
 
-        function generateMockRanking() {
-            const container = document.getElementById('ranking-container');
-            container.innerHTML = `
-                <div class="rank-row rank-1"><div>🥇 第1位</div><div>計算中... さん</div><div>最高得点 / 最速タイム</div></div>
-                <div class="rank-row rank-2"><div>🥈 第2位</div><div>計算中... さん</div><div>得点 / タイム</div></div>
-                <div class="rank-row rank-3"><div>🥉 第3位</div><div>計算中... さん</div><div>得点 / タイム</div></div>
-            `;
+        // 結果一覧の生成
+        function generateDetailsTable() {
+            db.ref('players').once('value', snap => {
+                const players = snap.val() || {};
+                const qCount = quizData.length;
+                
+                let html = '<table><thead><tr><th>参加者名</th>';
+                for(let i=0; i<qCount; i++) {
+                    html += `<th>Q${i+1}</th>`;
+                }
+                html += '<th>合計点</th></tr></thead><tbody>';
+                
+                let playerArray = Object.values(players).sort((a,b) => (b.score||0) - (a.score||0));
+                
+                playerArray.forEach(p => {
+                    html += `<tr><td style="font-weight:bold;">${p.name}</td>`;
+                    for(let i=0; i<qCount; i++) {
+                        if(p.history && p.history[i]) {
+                            const h = p.history[i];
+                            if(h.isCorrect) {
+                                html += `<td class="td-correct">⭕<span class="td-time">(${(h.time/1000).toFixed(2)}秒)</span></td>`;
+                            } else {
+                                html += `<td class="td-wrong">❌</td>`;
+                            }
+                        } else {
+                            html += `<td style="color:#777;">-</td>`;
+                        }
+                    }
+                    html += `<td style="font-weight:bold; color:#f1c40f; font-size: 28px;">${p.score||0} pt</td></tr>`;
+                });
+                
+                html += '</tbody></table>';
+                document.getElementById('details-container').innerHTML = html;
+            });
+        }
+
+        // トップ3ランキングの生成
+        function generateRanking() {
+            db.ref('players').once('value', snap => {
+                const players = snap.val() || {};
+                
+                let playerArray = Object.values(players).sort((a,b) => {
+                    if((b.score||0) !== (a.score||0)) return (b.score||0) - (a.score||0);
+                    let timeA = 0; let timeB = 0;
+                    if(a.history) Object.values(a.history).forEach(h => timeA += h.time);
+                    if(b.history) Object.values(b.history).forEach(h => timeB += h.time);
+                    return timeA - timeB; 
+                });
+                
+                let html = '';
+                const medals = ['🥇 優勝', '🥈 第2位', '🥉 第3位'];
+                const classes = ['rank-1', 'rank-2', 'rank-3'];
+                
+                for(let i=0; i<3; i++) {
+                    if(playerArray[i]) {
+                        const p = playerArray[i];
+                        html += `
+                            <div class="rank-row ${classes[i]}">
+                                <div style="width: 20%;">${medals[i]}</div>
+                                <div style="flex-grow: 1; text-align: center;">${p.name} さん</div>
+                                <div style="width: 30%; text-align: right;">${p.score||0} pt</div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                if(html === '') html = '<div style="font-size:30px;">参加者がいませんでした</div>';
+                
+                document.getElementById('ranking-container').innerHTML = html;
+            });
         }
     </script>
 </body>
