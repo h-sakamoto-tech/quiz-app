@@ -5,7 +5,7 @@
     <title>運営パネル (V2)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <div style="text-align: right; margin-bottom: 20px;">
-        <a href="Manual.pptx" target="_blank" style="background-color: #4b5563; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; border: 1px solid #6b7280;">
+        <a href="manual.pptx" target="_blank" style="background-color: #4b5563; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; border: 1px solid #6b7280;">
             <i class="fas fa-file-powerpoint"></i> 運営マニュアルを開く
         </a>
     </div>
@@ -21,23 +21,31 @@
         .btn-add { background: #3498db; color: white; width: 100%; font-size: 18px; margin-top: 10px; }
         .btn-save { background: #27ae60; color: white; width: 100%; font-size: 16px; margin-top: 10px; }
         .btn-next { background: #e94560; color: white; }
+        .img-preview { max-height: 50px; border-radius: 4px; display: none; margin-left: 10px; }
     </style>
 </head>
 <body>
     <h1>⚙️ 運営パネル (V2)</h1>
+    
     <div class="section">
         <h2>🎵 音源設定</h2>
         <div>開始音: <input type="file" onchange="loadSnd(this, 'sndStart')"></div>
         <div>正解音: <input type="file" onchange="loadSnd(this, 'sndCorrect')"></div>
         <div>時間切: <input type="file" onchange="loadSnd(this, 'sndTimeout')"></div>
     </div>
+    
     <div class="section">
         <h2>🖼️ クイズ内容の設定</h2>
         <div id="questions-container">
             <div class="q-row">
                 <strong>【第 1 問】</strong>
                 <div class="input-line">問題文: <input type="text" class="q-txt"></div>
-                <div class="input-line">画像URL: <input type="text" class="q-img"></div>
+                <div class="input-line">
+                    画像: 
+                    <input type="file" accept="image/*" onchange="encodeImage(this)" style="flex: 1;">
+                    <input type="hidden" class="q-img">
+                    <img class="img-preview" src="">
+                </div>
                 <div class="input-line">正解: 
                     <select class="q-ans">
                         <option value="A">A</option>
@@ -54,6 +62,7 @@
         <button type="button" class="btn btn-add" onclick="addQuestionRow()">＋ 問題を追加する</button>
         <button type="button" class="btn btn-save" onclick="saveQuizConfig()">設定を保存して反映</button>
     </div>
+    
     <div class="section">
         <h2>🎮 進行管理</h2>
         <button class="btn btn-next" onclick="controlGame('close')">① 締め切り</button>
@@ -62,7 +71,9 @@
         <button class="btn btn-next" onclick="controlGame('result')">④ 結果表示</button>
         <button class="btn" style="background:#777" onclick="controlGame('reset')">🔄 リセット</button>
     </div>
+    
     <audio id="sndStart"></audio><audio id="sndCorrect"></audio><audio id="sndTimeout"></audio>
+    
     <script>
         var firebaseConfig = {
             apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
@@ -78,11 +89,36 @@
             qCount++;
             const div = document.createElement('div');
             div.className = 'q-row';
-            // ★追加される問題のドロップダウンにも F と G を追加しました
-            div.innerHTML = `<strong>【第 ${qCount} 問】</strong><div class="input-line">問題文: <input type="text" class="q-txt"></div><div class="input-line">画像URL: <input type="text" class="q-img"></div><div class="input-line">正解: <select class="q-ans"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option></select></div>`;
+            div.innerHTML = `<strong>【第 ${qCount} 問】</strong>
+                <div class="input-line">問題文: <input type="text" class="q-txt"></div>
+                <div class="input-line">画像: <input type="file" accept="image/*" onchange="encodeImage(this)" style="flex: 1;"><input type="hidden" class="q-img"><img class="img-preview" src=""></div>
+                <div class="input-line">正解: <select class="q-ans"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option></select></div>`;
             document.getElementById('questions-container').appendChild(div);
         }
         
+        function encodeImage(fileInput) {
+            const file = fileInput.files[0];
+            if (!file) return;
+            
+            if(file.size > 2 * 1024 * 1024) {
+                alert("画像サイズが大きすぎます！ 2MB以下の画像を選んでください。");
+                fileInput.value = "";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const inputLine = fileInput.parentElement;
+                // 隠してあるURL欄(hidden)にデータをセットする
+                inputLine.querySelector('.q-img').value = e.target.result;
+                
+                const previewImg = inputLine.querySelector('.img-preview');
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
         function loadSnd(i, id) { if(i.files[0]) document.getElementById(id).src = URL.createObjectURL(i.files[0]); }
         
         function saveQuizConfig() {
@@ -95,7 +131,6 @@
         
         function controlGame(a) {
             if(a==='reset'){ 
-                // ★ここだけ修正：問題データが消えないようにする安全装置
                 if(confirm("進行状況と参加者データをリセットしますか？\n（登録した問題は消えません）")) {
                     Promise.all([
                         db.ref('players').remove(),
