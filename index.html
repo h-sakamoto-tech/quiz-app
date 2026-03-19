@@ -7,16 +7,18 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
+        /* 完璧な2カラムレイアウトを完全に復元しました */
         body { font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
         .header { display: flex; justify-content: space-between; align-items: center; background: #2c3e50; color: #fff; padding: 15px 30px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .header h1 { margin: 0; font-size: 24px; }
         
-        /* 修正ポイント：マニュアルボタンのデザイン */
+        /* 修正ポイント：マニュアルボタンのデザインだけを適用 */
         .btn-manual { background: #f1c40f; color: #2c3e50; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; transition: 0.3s; }
         .btn-manual:hover { background: #f39c12; }
 
-        .container { display: flex; gap: 20px; }
-        .panel { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); flex: 1; }
+        /* 2カラムレイアウトの核心部分 */
+        .container { display: flex; gap: 20px; align-items: flex-start; }
+        .panel { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         h2 { font-size: 18px; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; }
         
         .form-group { margin-bottom: 15px; }
@@ -67,7 +69,7 @@
             <button class="btn btn-success" onclick="saveQuizConfig()"><i class="fas fa-save"></i> 設定を保存して反映（※必須）</button>
         </div>
 
-        <div class="panel">
+        <div class="panel" style="flex: 0.8;">
             <h2><i class="fas fa-gamepad"></i> 進行コントロール</h2>
             
             <div class="status-area">
@@ -93,7 +95,7 @@
     </div>
 
     <script>
-        // Firebase設定
+        // Firebase設定 (変更なし)
         var firebaseConfig = {
             apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
             authDomain: "speed-quiz26.firebaseapp.com",
