@@ -13,7 +13,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes popUp { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-        /* 待機画面 */
         #wait-screen { grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; justify-items: center; padding: 40px; }
         #wait-screen.wait-active { display: grid; }
         .wait-left { display: flex; flex-direction: column; align-items: center; gap: 20px; }
@@ -25,38 +24,19 @@
         .player-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; width: 100%; justify-content: center; }
         .player-badge { background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 15px; font-size: 28px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; animation: popUp 0.5s ease-out forwards; }
 
-        /* ルール説明 */
         #rules-screen h1 { font-size: 60px; color: #e74c3c; margin-bottom: 30px; }
         .rule-text { font-size: 32px; line-height: 1.5; text-align: left; background: rgba(0,0,0,0.6); padding: 40px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 90%; }
 
-        /* クイズ画面（ここがメインの修正ポイント） */
         #quiz-screen { justify-content: flex-start; padding-top: 40px; }
         .q-header { font-size: 40px; color: #f1c40f; margin-bottom: 10px; font-weight: bold; width: 90%; text-align: left; }
-        
-        /* ① 20行入るようにフォントサイズを調整（38px前後） & 左寄せ & 改行反映 */
-        .q-text { 
-            font-size: 36px; 
-            font-weight: bold; 
-            margin-bottom: 20px; 
-            line-height: 1.25; 
-            text-align: left; 
-            width: 95%; 
-            white-space: pre-wrap; /* 改行をそのまま表示 */
-            background: rgba(255, 255, 255, 0.05);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-        }
-        
+        .q-text { font-size: 36px; font-weight: bold; margin-bottom: 20px; line-height: 1.25; text-align: left; width: 95%; white-space: pre-wrap; background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 10px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
         .q-image { max-width: 400px; max-height: 250px; border-radius: 10px; border: 3px solid #fff; margin-bottom: 15px; display: none; }
         .timer-box { font-size: 80px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 10px 50px; border-radius: 40px; border: 6px solid #f1c40f; display: flex; align-items: center; justify-content: center; gap: 20px; position: absolute; top: 20px; right: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .timer-urgent { color: #e74c3c; animation: popUp 0.5s infinite alternate; border-color: #e74c3c; }
-        
         .status-badge { font-size: 30px; padding: 10px 30px; border-radius: 40px; font-weight: bold; margin-bottom: 10px; }
         .status-thinking { background: #3498db; animation: pulse 2s infinite; }
         .status-closed { background: #e74c3c; }
 
-        /* ② 回答状況グラフの演出 */
         .stats-container { display: none; flex-direction: column; gap: 10px; width: 95%; margin-top: 10px; animation: fadeIn 0.5s forwards; }
         .stat-row { display: flex; align-items: center; background: rgba(255,255,255,0.1); border-radius: 10px; height: 45px; position: relative; overflow: hidden; border: 2px solid #555; }
         .stat-bar { height: 100%; background: #3498db; width: 0%; transition: width 1.2s ease-out; }
@@ -64,22 +44,30 @@
         .stat-count { position: absolute; right: 15px; font-size: 28px; font-weight: bold; color: #fff; z-index: 2; }
         .is-correct-row { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.2); }
         .is-correct-row .stat-bar { background: #2ecc71; }
-
         .correct-ans { font-size: 60px; color: #2ecc71; font-weight: bold; margin-top: 15px; animation: popUp 0.5s ease-out forwards; display: none; text-shadow: 0 0 20px rgba(46, 204, 113, 0.5); }
 
-        /* 終了画面（ド派手） */
+        /* --- 結果発表（改善：20チーム10問対応） --- */
+        .title-text { font-size: 45px; color: #f1c40f; margin-bottom: 15px; border-bottom: 4px solid #f1c40f; padding-bottom: 5px; width: 95%; }
+        .details-table-wrapper { width: 98%; max-height: 80vh; overflow-y: auto; background: rgba(0,0,0,0.8); border-radius: 10px; border: 2px solid #444; }
+        table { width: 100%; border-collapse: collapse; color: #fff; font-size: 18px; }
+        th, td { border: 1px solid #555; padding: 8px 4px; text-align: center; }
+        th { background: #2c3e50; position: sticky; top: 0; z-index: 10; font-size: 20px; }
+        
+        /* 1〜3位の行を強調 */
+        .row-rank-1 { background: rgba(241, 196, 15, 0.3) !important; font-weight: bold; }
+        .row-rank-2 { background: rgba(189, 195, 199, 0.2) !important; font-weight: bold; }
+        .row-rank-3 { background: rgba(211, 84, 0, 0.2) !important; font-weight: bold; }
+        
+        .td-rank { width: 50px; font-weight: bold; color: #f1c40f; }
+        .td-name { text-align: left; padding-left: 15px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .td-correct { color: #2ecc71; font-size: 22px; }
+        .td-wrong { color: #e74c3c; opacity: 0.5; }
+        .td-time-small { font-size: 10px; display: block; color: #aaa; }
+        .td-score { color: #f1c40f; font-weight: bold; font-size: 20px; }
+
         #end-screen { background: radial-gradient(circle, #000 0%, #111 60%, #e74c3c 100%); overflow: visible; }
         #end-screen h1 { font-size: 250px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: -10px; margin: 0; padding: 0; line-height: 1; text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff, 0 0 40px #f1c40f, 0 0 70px #f1c40f, 0 0 80px #f1c40f, 0 0 100px #f1c40f, 0 0 150px #f1c40f; animation: explodePop 0.8s ease-out forwards, neonBlink 1.5s infinite alternate; transform-origin: center center; }
 
-        /* 結果発表テーブル */
-        .title-text { font-size: 50px; color: #f1c40f; margin-bottom: 20px; border-bottom: 5px solid #f1c40f; padding-bottom: 10px; }
-        .details-table-wrapper { width: 98%; max-height: 70vh; overflow-y: auto; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 15px; }
-        table { width: 100%; border-collapse: collapse; color: #fff; font-size: 20px; }
-        th, td { border: 1px solid #7f8c8d; padding: 10px 5px; text-align: center; }
-        th { background: #2980b9; position: sticky; top: -15px; z-index: 10; font-size: 22px; }
-        .td-correct { color: #2ecc71; font-weight: bold; }
-        .td-wrong { color: #e74c3c; font-weight: bold; }
-        
         .ranking-box { display: flex; flex-direction: column; gap: 15px; width: 90%; }
         .rank-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 15px; font-size: 35px; font-weight: bold; }
         .rank-1 { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7); color: #000; transform: scale(1.05); border: 2px solid #fff; }
@@ -113,18 +101,17 @@
         <div class="q-text" id="disp-qtext"></div>
         <img id="disp-qimg" class="q-image" src="">
         <div id="disp-status" class="status-badge status-thinking">⏳ 回答受付中...</div>
-        
         <div id="stats-area" class="stats-container"></div>
         <div id="disp-ans" class="correct-ans">正解は：<span id="ans-text"></span></div>
     </div>
 
     <div id="end-screen" class="screen"><h1>終了！</h1></div>
     <div id="details-screen" class="screen">
-        <div class="title-text">📊 結果発表</div>
+        <div class="title-text">📊 全チーム 結果発表</div>
         <div id="details-container" class="details-table-wrapper"></div>
     </div>
     <div id="ranking-screen" class="screen">
-        <div class="title-text">🏆 Ranking 🏆</div>
+        <div class="title-text">🏆 Final Ranking 🏆</div>
         <div class="ranking-box" id="ranking-container"></div>
     </div>
 
@@ -171,7 +158,6 @@
             document.getElementById('disp-qtext').innerText = q.text;
             const imgEl = document.getElementById('disp-qimg');
             if (q.img) { imgEl.src = q.img; imgEl.style.display = "block"; } else { imgEl.style.display = "none"; }
-            
             document.getElementById('timer-display').style.display = "flex";
             document.getElementById('disp-status').className = "status-badge status-thinking";
             document.getElementById('disp-status').innerText = "⏳ 回答受付中...";
@@ -200,7 +186,6 @@
         function closeQuestion() {
             if (isClosed) return; isClosed = true; stopTimer();
             const correctAns = quizData[currentIdx].ans;
-            
             document.getElementById('timer-display').style.display = "none";
             document.getElementById('disp-status').className = "status-badge status-closed";
             document.getElementById('disp-status').innerText = "🛑 締め切りました！";
@@ -265,22 +250,42 @@
             document.getElementById('p-count').innerText = count;
         });
 
+        /* --- 【改善：20チーム・10問対応の結果表示】 --- */
         function generateDetailsTable() {
             db.ref('players').once('value', snap => {
                 const players = snap.val() || {};
                 const qCount = quizData.length;
-                let html = '<table><thead><tr><th>名前</th>';
+                
+                // 順位順にソート（スコア降順 > タイム昇順）
+                let arr = Object.values(players).sort((a,b) => {
+                    if((b.score||0) !== (a.score||0)) return (b.score||0) - (a.score||0);
+                    let tA = 0, tB = 0;
+                    if(a.history) Object.values(a.history).forEach(h => tA += h.time);
+                    if(b.history) Object.values(b.history).forEach(h => tB += h.time);
+                    return tA - tB;
+                });
+
+                let html = '<table><thead><tr><th>位</th><th>名前</th>';
                 for(let i=0; i<qCount; i++) html += `<th>Q${i+1}</th>`;
                 html += '<th>合計</th></tr></thead><tbody>';
-                let arr = Object.values(players).sort((a,b) => (b.score||0) - (a.score||0));
-                arr.forEach(p => {
-                    html += `<tr><td style="font-weight:bold;">${p.name}</td>`;
+                
+                arr.forEach((p, index) => {
+                    const rank = index + 1;
+                    let rowClass = "";
+                    if(rank === 1) rowClass = "row-rank-1";
+                    else if(rank === 2) rowClass = "row-rank-2";
+                    else if(rank === 3) rowClass = "row-rank-3";
+
+                    html += `<tr class="${rowClass}">`;
+                    html += `<td class="td-rank">${rank}</td>`;
+                    html += `<td class="td-name">${p.name}</td>`;
                     for(let i=0; i<qCount; i++) {
                         const h = p.history?.[i];
-                        if(h?.isCorrect) html += `<td class="td-correct">⭕<span style="font-size:12px;">(${(h.time/1000).toFixed(1)}s)</span></td>`;
-                        else html += `<td class="td-wrong">❌</td>`;
+                        if(h?.isCorrect) html += `<td class="td-correct">●<span class="td-time-small">${(h.time/1000).toFixed(1)}s</span></td>`;
+                        else html += `<td class="td-wrong">×</td>`;
                     }
-                    html += `<td style="font-weight:bold; color:#f1c40f;">${p.score||0}</td></tr>`;
+                    html += `<td class="td-score">${p.score||0}</td>`;
+                    html += `</tr>`;
                 });
                 document.getElementById('details-container').innerHTML = html + '</tbody></table>';
             });
@@ -289,7 +294,13 @@
         function generateRanking() {
             db.ref('players').once('value', snap => {
                 const players = snap.val() || {};
-                let arr = Object.values(players).sort((a,b) => (b.score||0) - (a.score||0));
+                let arr = Object.values(players).sort((a,b) => {
+                    if((b.score||0) !== (a.score||0)) return (b.score||0) - (a.score||0);
+                    let tA = 0, tB = 0;
+                    if(a.history) Object.values(a.history).forEach(h => tA += h.time);
+                    if(b.history) Object.values(b.history).forEach(h => tB += h.time);
+                    return tA - tB;
+                });
                 let html = ''; const m = ['🥇 優勝', '🥈 2位', '🥉 3位'];
                 const c = ['rank-1', 'rank-2', 'rank-3'];
                 for(let i=0; i<3; i++) { if(arr[i]) html += `<div class="rank-row ${c[i]}"><div>${m[i]}</div><div>${arr[i].name}</div><div>${arr[i].score||0} pt</div></div>`; }
