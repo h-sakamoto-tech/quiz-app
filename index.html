@@ -132,8 +132,13 @@
                 <div class="status-display">
                     <div class="status-title">現在のスクリーン画面</div>
                     <div class="status-text" id="current-status-text">待機画面 (QRコード)</div>
-                    <div style="margin-top: 15px; font-size: 18px; color: #ccc;">
-                        登録済みの問題: <span id="loaded-q-count" style="color: #2ecc71; font-weight: bold; font-size: 24px;">0</span> 問
+                    
+                    <div style="margin-top: 15px; font-size: 18px; color: #ccc; border-top: 1px solid #333; padding-top: 10px;">
+                        登録済みの問題: <span id="loaded-q-count" style="color: #2ecc71; font-weight: bold;">0</span> 問
+                    </div>
+                    
+                    <div style="margin-top: 10px; font-size: 20px; color: #fff; background: #222; padding: 10px; border-radius: 8px;">
+                        回答状況: <span id="answer-ratio" style="color: #3498db; font-size: 26px; font-weight: bold;">0 / 0</span> 名
                     </div>
                 </div>
 
@@ -181,6 +186,9 @@
         let currentStepIndex = -1;
         let totalQuestions = 0;
 
+        let totalParticipants = 0;
+        let answeredCount = 0;
+
         db.ref('players').on('value', snap => {
             const players = snap.val() || {};
             const listDiv = document.getElementById('admin-p-list');
@@ -188,7 +196,6 @@
             
             listDiv.innerHTML = '';
             let count = 0;
-            
             for (let id in players) {
                 count++;
                 const badge = document.createElement('span');
@@ -197,12 +204,30 @@
                 listDiv.appendChild(badge);
             }
             
+            totalParticipants = count;
             countSpan.innerText = count;
-            
+            updateAnswerProgress();
+
             if (count === 0) {
                 listDiv.innerHTML = '<span style="color: #777; font-size: 18px;">（まだ誰も参加していません）</span>';
             }
         });
+
+        db.ref('answers').on('value', snap => {
+            const answers = snap.val() || {};
+            answeredCount = Object.keys(answers).length;
+            updateAnswerProgress();
+        });
+
+        function updateAnswerProgress() {
+            const ratioEl = document.getElementById('answer-ratio');
+            ratioEl.innerText = `${answeredCount} / ${totalParticipants}`;
+            if (totalParticipants > 0 && answeredCount >= totalParticipants) {
+                ratioEl.style.color = "#2ecc71";
+            } else {
+                ratioEl.style.color = "#3498db";
+            }
+        }
 
         function addQuestionRow() {
             const div = document.createElement('div');
@@ -248,7 +273,6 @@
 
         function loadSnd(i, id) { if(i.files[0]) document.getElementById(id).src = URL.createObjectURL(i.files[0]); }
         
-        // ★修正：問題数のカウントと表示を確実に行う
         function saveQuizConfig() {
             const data = [];
             document.querySelectorAll('.q-row').forEach(r => {
@@ -291,14 +315,10 @@
             scenario.push({ type: 'ranking', title: '総合発表 (トップ3)', actionText: '終了', color: '#7f8c8d' });
         }
 
-        // ★修正：初期ロード時にも問題数を正確にカウントして表示
         db.ref('quizConfig').once('value', snap => {
             const data = snap.val();
             let count = 0;
-            if (data) {
-                // Firebaseから返ってくるデータが配列でもオブジェクトでも正確に数える
-                count = Array.isArray(data) ? data.length : Object.keys(data).length;
-            }
+            if (data) count = Array.isArray(data) ? data.length : Object.keys(data).length;
             buildScenario(count);
             document.getElementById('loaded-q-count').innerText = count;
         });
@@ -332,15 +352,13 @@
                     btnNext.style.background = '#333';
                     nextActionText.innerText = '';
                 }
-
                 btnPrev.disabled = (currentStepIndex <= 0);
             }
         }
 
-        // ★修正：問題が0問の時は明確なエラーを出し、進行を止める
         function startQuiz() {
             if (!totalQuestions || totalQuestions <= 0) { 
-                alert("⚠️ エラー：クイズ問題がシステムに保存されていません！\n\n左側の「設定を保存して反映」ボタンを押して、問題を確定させてから開始してください。"); 
+                alert("⚠️ エラー：クイズ問題が保存されていません！\n「設定を保存して反映」を押してください。"); 
                 return; 
             }
             currentStepIndex = 0; 
@@ -375,19 +393,13 @@
                 if(step.type === 'ranking') document.getElementById('sndRanking').play();
             } catch(e) {}
             
-            let commandData = {
-                type: step.type,
-                ts: Date.now()
-            };
-            if (step.qIndex !== undefined) {
-                commandData.qIndex = step.qIndex;
-            }
-            
+            let commandData = { type: step.type, ts: Date.now() };
+            if (step.qIndex !== undefined) commandData.qIndex = step.qIndex;
             db.ref('adminCommand').set(commandData);
         }
 
         function resetGame() {
-            if(confirm("参加者データと進行状況をリセットして待機画面に戻りますか？\n（問題設定は残ります）")) {
+            if(confirm("参加者データと進行状況をリセットしますか？")) {
                 currentStepIndex = -1;
                 updateUI();
                 db.ref('adminCommand').set({ type: 'reset', ts: Date.now() });
@@ -400,7 +412,6 @@
             const cmd = snap.val();
             if (cmd && cmd.type === 'close' && cmd.auto === true) {
                 try { document.getElementById('sndRules').play(); } catch(e) {}
-                
                 if (currentStepIndex >= 0 && scenario[currentStepIndex].type !== 'close') {
                     const expectedCloseIndex = currentStepIndex + 1;
                     if (scenario[expectedCloseIndex] && scenario[expectedCloseIndex].type === 'close') {
@@ -412,7 +423,6 @@
         });
         
         updateUI();
-
     </script>
 </body>
 </html>

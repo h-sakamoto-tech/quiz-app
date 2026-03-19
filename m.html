@@ -7,21 +7,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        /* 背景は全画面を覆うように設定 */
         body { margin: 0; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: radial-gradient(circle, #1a2a6c, #112b3c, #000000); color: #fff; overflow: hidden; }
-        
-        /* 画面の中身を中央に配置 */
         .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 50px; box-sizing: border-box; animation: fadeIn 0.8s ease-out forwards; position: relative; }
         .active { display: flex; }
-        
-        /* 全体を「85%」に縮小 */
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: scale(0.75); } 
-            to { opacity: 1; transform: scale(0.85); } 
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.75); } to { opacity: 1; transform: scale(0.85); } }
         @keyframes popUp { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-        /* 待機画面 */
         #wait-screen { grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; justify-items: center; padding: 80px; }
         #wait-screen.wait-active { display: grid; }
         .wait-left { display: flex; flex-direction: column; align-items: center; gap: 30px; }
@@ -33,28 +24,21 @@
         .player-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; width: 100%; justify-content: center; }
         .player-badge { background: rgba(255,255,255,0.2); padding: 15px 30px; border-radius: 20px; font-size: 40px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 15px; animation: popUp 0.5s ease-out forwards; }
 
-        /* ルール画面 */
         #rules-screen h1 { font-size: 80px; color: #e74c3c; margin-bottom: 50px; text-shadow: 0 0 30px rgba(231, 76, 60, 0.8); }
-        .rule-text { font-size: 45px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.6); padding: 60px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 90%; }
+        .rule-text { font-size: 42px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.6); padding: 50px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 90%; }
 
-        /* クイズ画面 */
-        .q-header { font-size: 50px; color: #f1c40f; margin-bottom: 20px; font-weight: bold; text-shadow: 2px 2px 10px #000; }
-        .q-text { font-size: 70px; font-weight: bold; margin-bottom: 30px; line-height: 1.3; text-shadow: 2px 2px 10px #000; }
-        .q-image { max-width: 600px; max-height: 400px; border-radius: 15px; border: 5px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 30px; display: none; }
-        
-        .timer-box { font-size: 130px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 20px 80px; border-radius: 60px; border: 10px solid #f1c40f; display: flex; align-items: center; justify-content: center; gap: 40px; transition: color 0.3s; margin-bottom: 50px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        .q-header { font-size: 50px; color: #f1c40f; margin-bottom: 20px; font-weight: bold; }
+        .q-text { font-size: 70px; font-weight: bold; margin-bottom: 30px; line-height: 1.3; }
+        .q-image { max-width: 600px; max-height: 400px; border-radius: 15px; border: 5px solid #fff; margin-bottom: 30px; display: none; }
+        .timer-box { font-size: 130px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 20px 80px; border-radius: 60px; border: 10px solid #f1c40f; display: flex; align-items: center; justify-content: center; gap: 40px; margin-bottom: 50px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
         .timer-urgent { color: #e74c3c; animation: popUp 0.5s infinite alternate; border-color: #e74c3c; }
-        
         .status-badge { font-size: 40px; padding: 15px 40px; border-radius: 50px; font-weight: bold; margin-top: 20px; }
         .status-thinking { background: #3498db; animation: pulse 2s infinite; }
         .status-closed { background: #e74c3c; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .correct-ans { font-size: 80px; color: #2ecc71; font-weight: bold; margin-top: 30px; animation: popUp 0.5s ease-out forwards; text-shadow: 0 0 30px #2ecc71; display: none; }
+        .correct-ans { font-size: 80px; color: #2ecc71; font-weight: bold; margin-top: 30px; animation: popUp 0.5s ease-out forwards; display: none; }
 
-        /* 終了・結果・ランキング画面 */
-        #end-screen h1 { font-size: 150px; color: #fff; text-shadow: 0 0 50px #e74c3c, 0 0 100px #e74c3c; animation: popUp 1s ease-out forwards; letter-spacing: 20px; margin: 0; }
         .title-text { font-size: 70px; color: #f1c40f; margin-bottom: 40px; border-bottom: 5px solid #f1c40f; padding-bottom: 10px; }
-        
         .details-table-wrapper { width: 95%; max-height: 65vh; overflow-y: auto; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 15px; border: 2px solid #555; }
         table { width: 100%; border-collapse: collapse; color: #fff; font-size: 24px; }
         th, td { border: 1px solid #7f8c8d; padding: 15px 10px; text-align: center; }
@@ -62,12 +46,9 @@
         .td-correct { color: #2ecc71; font-weight: bold; }
         .td-wrong { color: #e74c3c; font-weight: bold; }
         .td-time { font-size: 16px; color: #bdc3c7; display: block; margin-top: 5px; }
-        
         .ranking-box { display: flex; flex-direction: column; gap: 20px; width: 80%; }
         .rank-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 15px; font-size: 40px; font-weight: bold; }
-        .rank-1 { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7); color: #000; transform: scale(1.1); border: 3px solid #fff; box-shadow: 0 0 30px rgba(241, 196, 15, 0.5); z-index: 3; }
-        .rank-2 { background: linear-gradient(135deg, #e3e3e3, #ffffff, #a3a3a3); color: #000; transform: scale(1.05); z-index: 2; }
-        .rank-3 { background: linear-gradient(135deg, #cd7f32, #ffdab9, #8b4513); color: #000; }
+        .rank-1 { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7); color: #000; transform: scale(1.1); border: 3px solid #fff; }
     </style>
 </head>
 <body>
@@ -75,11 +56,8 @@
     <div id="wait-screen" class="screen wait-active">
         <div class="wait-left">
             <h1>スピードクイズ 大会会場</h1>
-            <div class="qr-box">
-                <img src="./qrcode.png" alt="参加用QRコード">
-            </div>
+            <div class="qr-box"><img src="./qrcode.png" alt="QR"></div>
         </div>
-        
         <div class="wait-right">
             <div class="player-count">現在の参加者: <span id="p-count">0</span> 名</div>
             <div class="player-list" id="p-list"></div>
@@ -102,121 +80,68 @@
     <div id="quiz-screen" class="screen">
         <div class="timer-box" id="timer-display"><i class="fas fa-stopwatch"></i> <span id="time-left">20</span> 秒</div>
         <div class="q-header" id="disp-qnum">第 1 問</div>
-        <div class="q-text" id="disp-qtext">問題がここに表示されます</div>
+        <div class="q-text" id="disp-qtext"></div>
         <img id="disp-qimg" class="q-image" src="">
         <div id="disp-status" class="status-badge status-thinking">⏳ 回答受付中...</div>
         <div id="disp-ans" class="correct-ans">正解は：<span id="ans-text"></span></div>
     </div>
 
-    <div id="end-screen" class="screen">
-        <h1>終了！</h1>
-    </div>
-    
+    <div id="end-screen" class="screen"><h1>終了！</h1></div>
     <div id="details-screen" class="screen">
         <div class="title-text">📊 全員の結果発表</div>
         <div id="details-container" class="details-table-wrapper"></div>
     </div>
-    
     <div id="ranking-screen" class="screen">
         <div class="title-text">🏆 総合ランキング トップ3 🏆</div>
         <div class="ranking-box" id="ranking-container"></div>
     </div>
 
     <script>
-        var firebaseConfig = {
-            apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0",
-            authDomain: "speed-quiz26.firebaseapp.com",
-            databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "speed-quiz26"
-        };
+        var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
         let quizData = [];
-        let currentQuestionIndex = 0;
-        let timerInterval = null;
-        const TIME_LIMIT = 20; 
+        let currentIdx = 0;
+        let timer = null;
         let isClosed = false;
 
-        function switchScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(el => {
-                el.classList.remove('active', 'wait-active');
-            });
-            const targetScreen = document.getElementById(screenId);
-            if (screenId === 'wait-screen') {
-                targetScreen.classList.add('wait-active');
-            } else {
-                targetScreen.classList.add('active');
-            }
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active', 'wait-active'));
+            const target = document.getElementById(id);
+            if (id === 'wait-screen') target.classList.add('wait-active');
+            else target.classList.add('active');
         }
 
-        db.ref('quizConfig').on('value', snap => {
-            quizData = snap.val() || [];
-        });
+        db.ref('quizConfig').on('value', snap => { quizData = snap.val() || []; });
 
         db.ref('adminCommand').on('value', snap => {
             const cmd = snap.val();
             if (!cmd) return;
-
             switch(cmd.type) {
-                case 'rules':
-                    switchScreen('rules-screen');
-                    currentQuestionIndex = 0;
-                    stopTimer();
-                    break;
-                case 'start':
-                case 'next':
-                    if(cmd.type === 'next') currentQuestionIndex++;
-                    
-                    if (currentQuestionIndex < quizData.length) {
-                        showQuestion(currentQuestionIndex);
+                case 'rules': switchScreen('rules-screen'); currentIdx = 0; stopTimer(); break;
+                case 'start': case 'next':
+                    if(cmd.type === 'next') currentIdx++;
+                    if (currentIdx < quizData.length) {
+                        showQuestion(currentIdx);
                         switchScreen('quiz-screen');
                         startTimer();
-                    } else {
-                        switchScreen('end-screen');
-                        stopTimer();
-                    }
+                    } else { switchScreen('end-screen'); }
                     break;
-                case 'close':
-                    closeQuestion();
-                    break;
-                case 'end':
-                    switchScreen('end-screen');
-                    stopTimer();
-                    break;
-                case 'details':
-                    switchScreen('details-screen');
-                    stopTimer();
-                    generateDetailsTable();
-                    break;
-                case 'ranking':
-                    switchScreen('ranking-screen');
-                    stopTimer();
-                    generateRanking();
-                    break;
-                case 'reset':
-                    switchScreen('wait-screen');
-                    currentQuestionIndex = 0;
-                    stopTimer();
-                    break;
+                case 'close': closeQuestion(); break;
+                case 'end': switchScreen('end-screen'); stopTimer(); break;
+                case 'details': switchScreen('details-screen'); generateDetailsTable(); break;
+                case 'ranking': switchScreen('ranking-screen'); generateRanking(); break;
+                case 'reset': switchScreen('wait-screen'); currentIdx = 0; stopTimer(); break;
             }
         });
 
-        function showQuestion(index) {
-            if (!quizData[index]) return;
-            const q = quizData[index];
-            document.getElementById('disp-qnum').innerText = `第 ${index + 1} 問`;
+        function showQuestion(idx) {
+            const q = quizData[idx];
+            document.getElementById('disp-qnum').innerText = `第 ${idx + 1} 問`;
             document.getElementById('disp-qtext').innerText = q.text;
-            
             const imgEl = document.getElementById('disp-qimg');
-            if (q.img) {
-                imgEl.src = q.img;
-                imgEl.style.display = "block";
-            } else {
-                imgEl.style.display = "none";
-                imgEl.src = "";
-            }
-
+            if (q.img) { imgEl.src = q.img; imgEl.style.display = "block"; } else { imgEl.style.display = "none"; }
             document.getElementById('disp-status').className = "status-badge status-thinking";
             document.getElementById('disp-status').innerText = "⏳ 回答受付中...";
             document.getElementById('disp-ans').style.display = "none";
@@ -225,96 +150,54 @@
 
         function startTimer() {
             stopTimer();
-            let timeLeft = TIME_LIMIT;
-            const timerDisplay = document.getElementById('time-left');
-            const timerBox = document.getElementById('timer-display');
-            
-            timerDisplay.innerText = timeLeft;
-            timerBox.className = "timer-box"; 
-
-            timerInterval = setInterval(() => {
+            let left = 20;
+            const disp = document.getElementById('time-left');
+            const box = document.getElementById('timer-display');
+            disp.innerText = left; box.className = "timer-box";
+            timer = setInterval(() => {
                 if (isClosed) { stopTimer(); return; }
-                
-                timeLeft--;
-                timerDisplay.innerText = timeLeft;
-
-                if (timeLeft <= 5 && timeLeft > 0) {
-                    timerBox.className = "timer-box timer-urgent";
-                }
-
-                if (timeLeft <= 0) {
-                    stopTimer();
-                    closeQuestion();
-                    db.ref('adminCommand').set({ type: 'close', ts: Date.now(), auto: true });
-                }
+                left--; disp.innerText = left;
+                if (left <= 5 && left > 0) box.className = "timer-box timer-urgent";
+                if (left <= 0) { stopTimer(); closeQuestion(); db.ref('adminCommand').set({ type: 'close', ts: Date.now(), auto: true }); }
             }, 1000);
         }
 
-        function stopTimer() {
-            if(timerInterval) clearInterval(timerInterval);
-        }
+        function stopTimer() { if(timer) clearInterval(timer); }
 
         function closeQuestion() {
-            if (isClosed) return; 
-            isClosed = true;
-            stopTimer();
-            
+            if (isClosed) return; isClosed = true; stopTimer();
             document.getElementById('disp-status').className = "status-badge status-closed";
             document.getElementById('disp-status').innerText = "🛑 締め切りました！";
-            
-            if (!quizData[currentQuestionIndex]) return;
-
-            const correctAns = quizData[currentQuestionIndex].ans;
+            const correctAns = quizData[currentIdx].ans;
             document.getElementById('ans-text').innerText = correctAns;
             document.getElementById('disp-ans').style.display = "block";
 
             db.ref('answers').once('value', snap => {
-                const answers = snap.val() || {}; 
-                
+                const answers = snap.val() || {};
                 db.ref('players').once('value', pSnap => {
-                    const players = pSnap.val() || {}; 
+                    const players = pSnap.val() || {};
                     let updates = {};
-                    
                     for(let uid in players) {
                         let p = players[uid];
-                        let currentScore = p.score || 0;
-                        let history = p.history || {};
-                        
-                        let isCorrect = false;
-                        let timeTaken = 20000; 
-                        let points = 0;
-                        
+                        let score = p.score || 0;
+                        let hist = p.history || {};
+                        let isCorrect = false; let timeTaken = 20000; let points = 0;
                         if(answers[uid]) {
                             timeTaken = answers[uid].time;
-                            if(timeTaken > 20000) timeTaken = 20000; 
-                            
+                            if(timeTaken > 20000) timeTaken = 20000;
                             if(answers[uid].choice === correctAns) {
                                 isCorrect = true;
                                 let remainSec = Math.floor((20000 - timeTaken) / 1000);
                                 if(remainSec < 0) remainSec = 0;
-                                
                                 points = 100 + (remainSec * 1);
-                                currentScore += points;
+                                score += points;
                             }
                         }
-                        
-                        history[currentQuestionIndex] = {
-                            isCorrect: isCorrect,
-                            time: timeTaken,
-                            points: points
-                        };
-                        
-                        updates['players/' + uid + '/score'] = currentScore;
-                        updates['players/' + uid + '/history'] = history;
+                        hist[currentIdx] = { isCorrect, time: timeTaken, points };
+                        updates['players/' + uid + '/score'] = score;
+                        updates['players/' + uid + '/history'] = hist;
                     }
-                    
-                    if(Object.keys(updates).length > 0) {
-                        db.ref().update(updates).then(() => {
-                            db.ref('answers').remove();
-                        });
-                    } else {
-                        db.ref('answers').remove();
-                    }
+                    db.ref().update(updates).then(() => db.ref('answers').remove());
                 });
             });
         }
@@ -323,7 +206,6 @@
             const players = snap.val() || {};
             const listDiv = document.getElementById('p-list');
             listDiv.innerHTML = '';
-            
             let count = 0;
             for (let id in players) {
                 count++;
@@ -339,70 +221,39 @@
             db.ref('players').once('value', snap => {
                 const players = snap.val() || {};
                 const qCount = quizData.length;
-                
-                let html = '<table><thead><tr><th>参加者名</th>';
-                for(let i=0; i<qCount; i++) {
-                    html += `<th>Q${i+1}</th>`;
-                }
-                html += '<th>合計点</th></tr></thead><tbody>';
-                
-                let playerArray = Object.values(players).sort((a,b) => (b.score||0) - (a.score||0));
-                
-                playerArray.forEach(p => {
-                    html += `<tr><td style="font-weight:bold; font-size: 30px;">${p.name}</td>`;
-                    
+                let html = '<table><thead><tr><th>名前</th>';
+                for(let i=0; i<qCount; i++) html += `<th>Q${i+1}</th>`;
+                html += '<th>合計</th></tr></thead><tbody>';
+                let arr = Object.values(players).sort((a,b) => (b.score||0) - (a.score||0));
+                arr.forEach(p => {
+                    html += `<tr><td style="font-weight:bold;">${p.name}</td>`;
                     for(let i=0; i<qCount; i++) {
-                        if(p.history && p.history[i]) {
-                            const h = p.history[i];
-                            if(h.isCorrect) {
-                                html += `<td class="td-correct">⭕<span class="td-time">(${(h.time/1000).toFixed(2)}秒)</span></td>`;
-                            } else {
-                                html += `<td class="td-wrong">❌</td>`;
-                            }
-                        } else {
-                            html += `<td style="color:#777;">-</td>`;
-                        }
+                        const h = p.history?.[i];
+                        if(h?.isCorrect) html += `<td class="td-correct">⭕<span class="td-time">(${(h.time/1000).toFixed(2)}s)</span></td>`;
+                        else html += `<td class="td-wrong">❌</td>`;
                     }
-                    html += `<td style="font-weight:bold; color:#f1c40f; font-size: 36px;">${p.score||0} pt</td></tr>`;
+                    html += `<td style="font-weight:bold; color:#f1c40f;">${p.score||0} pt</td></tr>`;
                 });
-                
-                html += '</tbody></table>';
-                document.getElementById('details-container').innerHTML = html;
+                document.getElementById('details-container').innerHTML = html + '</tbody></table>';
             });
         }
 
         function generateRanking() {
             db.ref('players').once('value', snap => {
                 const players = snap.val() || {};
-                
-                let playerArray = Object.values(players).sort((a,b) => {
+                let arr = Object.values(players).sort((a,b) => {
                     if((b.score||0) !== (a.score||0)) return (b.score||0) - (a.score||0);
-                    let timeA = 0; let timeB = 0;
-                    if(a.history) Object.values(a.history).forEach(h => timeA += h.time);
-                    if(b.history) Object.values(b.history).forEach(h => timeB += h.time);
-                    return timeA - timeB; 
+                    let tA = 0; let tB = 0;
+                    if(a.history) Object.values(a.history).forEach(h => tA += h.time);
+                    if(b.history) Object.values(b.history).forEach(h => tB += h.time);
+                    return tA - tB;
                 });
-                
-                let html = '';
-                const medals = ['🥇 優勝', '🥈 第2位', '🥉 第3位'];
-                const classes = ['rank-1', 'rank-2', 'rank-3'];
-                
+                let html = ''; const m = ['🥇 優勝', '🥈 第2位', '🥉 第3位'];
+                const c = ['rank-1', 'rank-2', 'rank-3'];
                 for(let i=0; i<3; i++) {
-                    if(playerArray[i]) {
-                        const p = playerArray[i];
-                        html += `
-                            <div class="rank-row ${classes[i]}">
-                                <div style="width: 25%; font-size: 50px;">${medals[i]}</div>
-                                <div style="flex-grow: 1; text-align: center; font-size: 60px;">${p.name} さん</div>
-                                <div style="width: 30%; text-align: right; font-size: 60px;">${p.score||0} pt</div>
-                            </div>
-                        `;
-                    }
+                    if(arr[i]) html += `<div class="rank-row ${c[i]}"><div>${m[i]}</div><div>${arr[i].name} さん</div><div>${arr[i].score||0} pt</div></div>`;
                 }
-                
-                if(html === '') html = '<div style="font-size:30px;">参加者がいませんでした</div>';
-                
-                document.getElementById('ranking-container').innerHTML = html;
+                document.getElementById('ranking-container').innerHTML = html || '参加者なし';
             });
         }
     </script>

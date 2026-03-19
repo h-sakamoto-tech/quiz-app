@@ -89,8 +89,6 @@
         let questionStartTime = 0;
         let hasJoined = false; 
         let currentCmd = null; 
-        
-        // ★ ページを開いた時刻を記録（無限ループ防止の要）
         const pageLoadTime = Date.now(); 
 
         function switchScreen(screenId) {
@@ -114,7 +112,6 @@
             db.ref('players/' + myUid).update({ name: name });
             hasJoined = true; 
             
-            // ★ リセット待機中、またはクイズが始まっていない時は「待機画面」へ
             if (!currentCmd || currentCmd.type === 'reset') {
                 showMessage('fas fa-clock', '受付完了！', 'クイズが始まるまで、このまま<br>スクリーンを見てお待ちください。', '#3498db');
             } else {
@@ -125,7 +122,6 @@
         db.ref('adminCommand').on('value', snap => {
             currentCmd = snap.val();
             
-            // ★ 管理者が「今」リセットボタンを押した時だけ、静かにログイン画面に戻す（リロードはしない）
             if (currentCmd && currentCmd.type === 'reset' && currentCmd.ts > pageLoadTime) {
                 hasJoined = false;
                 localStorage.removeItem('quizUid');
@@ -133,7 +129,6 @@
                 return;
             }
             
-            // 参加済みの場合は画面を切り替える
             if (hasJoined && currentCmd) {
                 applyCommand(currentCmd);
             }
@@ -163,7 +158,6 @@
                     showMessage('fas fa-trophy', 'クイズ終了！', 'お疲れ様でした！<br>結果はスクリーンで発表されます🎉', '#f1c40f');
                     break;
                 case 'reset':
-                    // 古いリセット信号の場合は無視する（待機画面のまま）
                     break;
             }
         }
