@@ -38,80 +38,10 @@
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .correct-ans { font-size: 80px; color: #2ecc71; font-weight: bold; margin-top: 30px; animation: popUp 0.5s ease-out forwards; display: none; }
 
-        /* --- 【ド派手修正】ここから終了画面のスタイル --- */
-        #end-screen {
-            background: radial-gradient(circle, #000 0%, #111 60%, #e74c3c 100%); /* 終了時だけ背景を少し赤く */
-            overflow: visible; /* アニメーションがはみ出さないように */
-        }
-
-        #end-screen h1 {
-            font-size: 300px; /* 超巨大化 */
-            font-weight: 900;
-            color: #fff;
-            text-transform: uppercase;
-            letter-spacing: -10px;
-            margin: 0;
-            padding: 0;
-            line-height: 1;
-
-            /* ド派手なネオン＋ゴールドの多重シャドウ */
-            text-shadow:
-                0 0 10px #fff,
-                0 0 20px #fff,
-                0 0 30px #fff,
-                0 0 40px #f1c40f,
-                0 0 70px #f1c40f,
-                0 0 80px #f1c40f,
-                0 0 100px #f1c40f,
-                0 0 150px #f1c40f;
-
-            /* アニメーション: 爆発的な登場と点滅 */
-            animation: explodePop 0.8s ease-out forwards, neonBlink 1.5s infinite alternate;
-            transform-origin: center center;
-        }
-
-        /* 爆発的なポップアップアニメーション */
-        @keyframes explodePop {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-            60% {
-                transform: scale(1.4);
-                opacity: 1;
-            }
-            80% {
-                transform: scale(0.9);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        /* ネオン点滅アニメーション */
-        @keyframes neonBlink {
-            0%, 100% {
-                text-shadow:
-                    0 0 10px #fff,
-                    0 0 20px #fff,
-                    0 0 30px #f1c40f,
-                    0 0 40px #f1c40f,
-                    0 0 70px #f1c40f,
-                    0 0 80px #f1c40f;
-            }
-            50% {
-                text-shadow:
-                    0 0 5px #fff,
-                    0 0 10px #fff,
-                    0 0 15px #f1c40f,
-                    0 0 20px #f1c40f,
-                    0 0 35px #f1c40f,
-                    0 0 40px #f1c40f;
-                color: #ddd; /* 少し暗く */
-            }
-        }
-        /* --- 【ド派手修正】ここまで終了画面のスタイル --- */
+        #end-screen { background: radial-gradient(circle, #000 0%, #111 60%, #e74c3c 100%); overflow: visible; }
+        #end-screen h1 { font-size: 300px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: -10px; margin: 0; padding: 0; line-height: 1; text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff, 0 0 40px #f1c40f, 0 0 70px #f1c40f, 0 0 80px #f1c40f, 0 0 100px #f1c40f, 0 0 150px #f1c40f; animation: explodePop 0.8s ease-out forwards, neonBlink 1.5s infinite alternate; transform-origin: center center; }
+        @keyframes explodePop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.4); opacity: 1; } 80% { transform: scale(0.9); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes neonBlink { 0%, 100% { text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #f1c40f, 0 0 40px #f1c40f, 0 0 70px #f1c40f, 0 0 80px #f1c40f; } 50% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #f1c40f, 0 0 20px #f1c40f, 0 0 35px #f1c40f, 0 0 40px #f1c40f; color: #ddd; } }
 
         .title-text { font-size: 70px; color: #f1c40f; margin-bottom: 40px; border-bottom: 5px solid #f1c40f; padding-bottom: 10px; }
         .details-table-wrapper { width: 95%; max-height: 65vh; overflow-y: auto; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 15px; border: 2px solid #555; }
@@ -144,7 +74,7 @@
         <div class="rule-text">
             それではスピードクイズの時間がやってまいりました！全部で10問出題します。<br><br>
             スマホ画面の選択肢の中から正解と思ったボタンを押してください。<br>
-            <span style="color: #e74c3c; font-weight: bold;">各問題の制限時間は「20秒」です。</span><br><br>
+            <span style="color: #e74c3c; font-weight: bold;">各問題の制限時間は「60秒」です。</span><br><br>
             このクイズは正解しただけの得点ではありません。<br>
             正解の基本点100点に加え、早く回答するほど<span style="color: #f1c40f; font-weight: bold;">「残り時間(秒) × 1点」のボーナス</span>が加算されます！<br>
             <span style="color: #3498db; font-weight: bold;">正答数が同じ場合は、回答までの時間が短いチームが優勝です！！</span><br><br>
@@ -153,11 +83,11 @@
     </div>
 
     <div id="quiz-screen" class="screen">
-        <div class="timer-box" id="timer-display"><i class="fas fa-stopwatch"></i> <span id="time-left">20</span> 秒</div>
+        <div class="timer-box" id="timer-display"><i class="fas fa-stopwatch"></i> <span id="time-left">60</span> 秒</div>
         <div class="q-header" id="disp-qnum">第 1 問</div>
         <div class="q-text" id="disp-qtext"></div>
         <img id="disp-qimg" class="q-image" src="">
-        <div id="disp-status" class="status-badge status-thinking">⏳ 回回答受付中...</div>
+        <div id="disp-status" class="status-badge status-thinking">⏳ 回答受付中...</div>
         <div id="disp-ans" class="correct-ans">正解は：<span id="ans-text"></span></div>
     </div>
 
@@ -218,21 +148,21 @@
             const imgEl = document.getElementById('disp-qimg');
             if (q.img) { imgEl.src = q.img; imgEl.style.display = "block"; } else { imgEl.style.display = "none"; }
             document.getElementById('disp-status').className = "status-badge status-thinking";
-            document.getElementById('disp-status').innerText = "⏳ 回回答受付中.../span>";
+            document.getElementById('disp-status').innerText = "⏳ 回答受付中...";
             document.getElementById('disp-ans').style.display = "none";
             isClosed = false;
         }
 
         function startTimer() {
             stopTimer();
-            let left = 20;
+            let left = 60; // 【修正】20秒から60秒へ
             const disp = document.getElementById('time-left');
             const box = document.getElementById('timer-display');
             disp.innerText = left; box.className = "timer-box";
             timer = setInterval(() => {
                 if (isClosed) { stopTimer(); return; }
                 left--; disp.innerText = left;
-                if (left <= 5 && left > 0) box.className = "timer-box timer-urgent";
+                if (left <= 10 && left > 0) box.className = "timer-box timer-urgent"; // 10秒前から警告色へ
                 if (left <= 0) { stopTimer(); closeQuestion(); db.ref('adminCommand').set({ type: 'close', ts: Date.now(), auto: true }); }
             }, 1000);
         }
@@ -256,13 +186,13 @@
                         let p = players[uid];
                         let score = p.score || 0;
                         let hist = p.history || {};
-                        let isCorrect = false; let timeTaken = 20000; let points = 0;
+                        let isCorrect = false; let timeTaken = 60000; let points = 0; // 【修正】60000ms
                         if(answers[uid]) {
                             timeTaken = answers[uid].time;
-                            if(timeTaken > 20000) timeTaken = 20000;
+                            if(timeTaken > 60000) timeTaken = 60000; // 【修正】60000ms
                             if(answers[uid].choice === correctAns) {
                                 isCorrect = true;
-                                let remainSec = Math.floor((20000 - timeTaken) / 1000);
+                                let remainSec = Math.floor((60000 - timeTaken) / 1000); // 【修正】60000ms基準で残り時間を計算
                                 if(remainSec < 0) remainSec = 0;
                                 points = 100 + (remainSec * 1);
                                 score += points;
