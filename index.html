@@ -11,8 +11,6 @@
         
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
         .header h1 { margin: 0; color: #f1c40f; font-size: 2.5rem; }
-        
-        /* マニュアルボタンのデザイン（元のまま） */
         .manual-btn { background-color: #4b5563; color: white; padding: 15px 30px; border-radius: 10px; text-decoration: none; font-size: 20px; font-weight: bold; border: 2px solid #6b7280; transition: background 0.2s; }
         .manual-btn:hover { background-color: #6b7280; }
 
@@ -25,9 +23,24 @@
         .admin-player-badge { background: #2980b9; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 
         .q-row { background: #3d3d3d; padding: 25px; border-radius: 12px; margin-bottom: 20px; border-left: 8px solid #3498db; }
-        .input-line { margin: 15px 0; display: flex; gap: 20px; align-items: center; }
-        .input-label { width: 90px; font-weight: bold; color: #ccc; text-align: right; font-size: 20px; }
-        input[type="text"] { flex: 1; padding: 15px; border-radius: 8px; border: 2px solid #555; background: #222; color: #fff; font-size: 22px; }
+        .input-line { margin: 15px 0; display: flex; gap: 20px; align-items: flex-start; } /* align-itemsをtopに変更 */
+        .input-label { width: 90px; font-weight: bold; color: #ccc; text-align: right; font-size: 20px; margin-top: 15px; }
+        
+        /* 問題文入力欄を長文対応（textarea）に */
+        textarea.q-txt { 
+            flex: 1; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 2px solid #555; 
+            background: #222; 
+            color: #fff; 
+            font-size: 22px; 
+            height: 300px; /* 20行程度入る高さ */
+            line-height: 1.4;
+            resize: vertical; /* ユーザーが自由に高さを変えられる */
+            font-family: inherit;
+        }
+
         input[type="file"] { flex: 1; padding: 10px; color: #ccc; font-size: 18px; }
         select { padding: 15px; border-radius: 8px; border: 2px solid #555; background: #222; color: #fff; font-size: 22px; cursor: pointer; }
         
@@ -106,7 +119,7 @@
                         </div>
                         <div class="input-line">
                             <span class="input-label">問題文</span>
-                            <input type="text" class="q-txt" placeholder="問題をここに入力してください">
+                            <textarea class="q-txt" placeholder="ランキング形式など、長文の問題をここに入力してください。&#13;&#10;Enterキーで改行できます。"></textarea>
                         </div>
                         <div class="input-line">
                             <span class="input-label">画　像</span>
@@ -231,6 +244,7 @@
             }
         }
 
+        // 問題追加時もtextareaを生成するように修正
         function addQuestionRow() {
             const div = document.createElement('div');
             div.className = 'q-row';
@@ -241,7 +255,7 @@
                 </div>
                 <div class="input-line">
                     <span class="input-label">問題文</span>
-                    <input type="text" class="q-txt" placeholder="問題をここに入力してください">
+                    <textarea class="q-txt" placeholder="問題をここに入力してください。Enterで改行できます。"></textarea>
                 </div>
                 <div class="input-line">
                     <span class="input-label">画　像</span>
