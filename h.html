@@ -46,6 +46,7 @@
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
     let uid = localStorage.getItem('quid') || "u"+Math.random().toString(36).substr(2,7); localStorage.setItem('quid', uid);
     let joined = false;
+    let qStartTime = 0; // ★スマホ側での計測用
 
     function join() {
         const n = document.getElementById('nn').value.trim(); if(!n) return alert("チーム名を入力してください");
@@ -57,10 +58,11 @@
         if(!joined) return;
 
         if(c.type==='start'||c.type==='next') { 
+            qStartTime = Date.now(); // ★問題が表示された時間を記録
+            
             document.getElementById('qn').innerText=`第 ${c.qIndex+1} 問`; 
             document.getElementById('msg').innerText="回答を選んでください！";
             document.getElementById('msg').style.color = "#fff";
-            // ★ボタンの色と状態を青色に戻す
             document.querySelectorAll('.btn-ans').forEach(b => {
                 b.disabled = false;
                 b.style.background = '#3498db';
@@ -78,11 +80,16 @@
     });
 
     function ans(v) { 
-        db.ref('answers/'+uid).set({choice:v, ts:Date.now()}); 
+        // ★かかった秒数をスマホ側で計算して送る
+        let elapsed = Math.floor((Date.now() - qStartTime) / 1000);
+        if (elapsed < 0) elapsed = 0;
+        if (elapsed > 60) elapsed = 60;
+
+        db.ref('answers/'+uid).set({choice: v, time: elapsed, ts: Date.now()}); 
+        
         document.getElementById('msg').innerText = "「" + v + "」を送信しました！"; 
         document.getElementById('msg').style.color = "#2ecc71";
         
-        // ★押したボタンの色を赤に変え、他をグレーにする
         document.querySelectorAll('.btn-ans').forEach(b => {
             b.disabled = true;
             if (b.innerText === v) {
