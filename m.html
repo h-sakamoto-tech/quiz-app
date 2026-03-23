@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>会場スクリーン - 同期修正版</title>
+    <meta charset="UTF-8"><title>会場スクリーン - 進行修正版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         body { margin:0; background:#000; color:#fff; font-family:sans-serif; overflow:hidden; }
-        .screen { display:none; width:100vw; height:100vh; flex-direction:column; align-items:center; justify-content:center; }
+        .screen { display:none; width:100vw; height:100vh; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
         .active { display:flex !important; }
         .qr-container { background:#fff; padding:20px; border-radius:20px; }
         .qr-container img { width:400px; height:400px; }
-        .q-text { font-size:40px; text-align:left; width:90%; white-space:pre-wrap; background:rgba(255,255,255,0.1); padding:20px; }
+        .q-text { font-size:45px; text-align:left; width:90%; white-space:pre-wrap; background:rgba(255,255,255,0.1); padding:30px; border-radius:15px; }
         .timer { font-size:100px; position:absolute; top:20px; right:40px; color:#f1c40f; }
+        .title-large { font-size:100px; color:#f1c40f; margin:0; }
     </style>
 </head>
 <body>
@@ -20,18 +21,26 @@
         <h1 style="font-size:60px; color:#f1c40f;">スピードクイズ</h1>
         <div class="qr-container"><img src="./qrcode.png"></div>
         <h2 style="font-size:30px; margin-top:20px;">参加チーム: <span id="p-count">0</span></h2>
-        <div id="p-list" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;"></div>
+        <div id="p-list" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; justify-content:center; width:90%;"></div>
+    </div>
+
+    <div id="rules-screen" class="screen" style="background:#2c3e50;">
+        <h1 class="title-large">ルール説明</h1>
+        <p style="font-size:40px; margin-top:30px;">
+            一番早く正解したチームが<br>
+            高得点を獲得します！<br>
+            お手元のスマホで回答してください。
+        </p>
     </div>
 
     <div id="quiz-screen" class="screen">
         <div class="timer" id="timer-disp">60</div>
-        <h2 id="q-num" style="font-size:40px; color:#f1c40f;">第 1 問</h2>
+        <h2 id="q-num" style="font-size:40px; color:#f1c40f; margin:0 0 20px 0;">第 1 問</h2>
         <div class="q-text" id="q-txt"></div>
-        <h1 id="ans-disp" style="font-size:100px; color:#2ecc71; display:none;">正解: <span></span></h1>
+        <h1 id="ans-disp" style="font-size:120px; color:#2ecc71; display:none; margin-top:30px;">正解: <span></span></h1>
     </div>
 
-    <div id="rules-screen" class="screen"><h1>ルール説明</h1></div>
-    <div id="end-screen" class="screen"><h1>終了！</h1></div>
+    <div id="end-screen" class="screen"><h1 class="title-large">全問終了！</h1></div>
     <audio id="snd"></audio>
 
 <script>
@@ -44,30 +53,31 @@
     db.ref('soundConfig').on('value', s => sUrls = s.val() || {});
     db.ref('players').on('value', s => {
         const p = s.val() || {}; document.getElementById('p-count').innerText = Object.keys(p).length;
-        document.getElementById('p-list').innerHTML = Object.values(p).map(v => `<span style="background:#2980b9; padding:5px 15px; border-radius:10px;">${v.name}</span>`).join('');
+        document.getElementById('p-list').innerHTML = Object.values(p).map(v => `<span style="background:#2980b9; padding:8px 15px; border-radius:10px; font-size:20px;">${v.name}</span>`).join('');
     });
 
-    // 命令を受け取る
     db.ref('adminCommand').on('value', snap => {
         const c = snap.val(); if(!c) return;
-        console.log("命令受信:", c.type); // デバッグ用
+        if(c.type === 'reset') { location.reload(); return; }
 
-        if(c.type === 'wait' || c.type === 'reset') { switchScreen('wait-screen'); return; }
-        if(c.type === 'rules') { switchScreen('rules-screen'); play('sndRules'); }
-        if(c.type === 'start' || c.type === 'next') {
+        if(c.type === 'rules') { 
+            switchScreen('rules-screen'); play('sndRules'); 
+        } else if(c.type === 'start' || c.type === 'next') {
             const q = qData[c.qIndex]; if(!q) return;
-            document.getElementById('q-num').innerText = `第${c.qIndex+1}問`;
+            document.getElementById('q-num').innerText = `第 ${c.qIndex+1} 問`;
             document.getElementById('q-txt').innerText = q.text;
             document.getElementById('ans-disp').style.display = 'none';
-            switchScreen('quiz-screen'); play(c.type==='start'?'sndStart':'sndNext'); startTimer();
-        }
-        if(c.type === 'close') {
+            switchScreen('quiz-screen'); 
+            play(c.type==='start'?'sndStart':'sndNext'); 
+            startTimer();
+        } else if(c.type === 'close') {
             if(timer) clearInterval(timer);
             document.getElementById('ans-disp').querySelector('span').innerText = qData[c.qIndex].ans;
             document.getElementById('ans-disp').style.display = 'block';
-            play('sndRules'); // 締め切り音
+            play('sndRules'); 
+        } else if(c.type === 'end') { 
+            switchScreen('end-screen'); play('sndEnd'); 
         }
-        if(c.type === 'end') { switchScreen('end-screen'); play('sndEnd'); }
     });
 
     function switchScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
