@@ -1,18 +1,37 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>会場スクリーン - 完全自動版</title>
+    <meta charset="UTF-8"><title>会場スクリーン - 完全自動・ルール追加版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         body { margin:0; background:#000; color:#fff; font-family:sans-serif; overflow:hidden; cursor: none; }
-        .screen { display:none; width:100vw; height:100vh; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+        .screen { display:none; width:100vw; height:100vh; flex-direction:column; align-items:center; justify-content:center; text-align:center; box-sizing:border-box;}
         .active { display:flex !important; }
         .qr-container { background:#fff; padding:20px; border-radius:20px; }
         .qr-container img { width:400px; height:400px; }
         .q-text { font-size:45px; text-align:left; width:90%; white-space:pre-wrap; background:rgba(255,255,255,0.1); padding:30px; border-radius:15px; }
         .timer { font-size:100px; position:absolute; top:20px; right:40px; color:#f1c40f; }
-        .title-large { font-size:100px; color:#f1c40f; margin:0; }
+        
+        /* タイトルのスタイル */
+        .title-large { font-size:80px; color:#f1c40f; margin:0 0 20px 0; }
+        
+        /* 📝 新しいルール説明用の専用スタイル */
+        .rule-box {
+            font-size: 32px;
+            line-height: 1.6;
+            text-align: left;
+            background: rgba(0,0,0,0.5);
+            padding: 40px 60px;
+            border-radius: 20px;
+            border: 3px solid #3498db;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        /* 強調文字の色設定 */
+        .highlight-y { color: #f1c40f; font-weight: bold; }
+        .highlight-g { color: #2ecc71; font-weight: bold; }
+        .highlight-r { color: #e74c3c; font-weight: bold; }
     </style>
 </head>
 <body onclick="enableAudio()"> <div id="wait-screen" class="screen active">
@@ -24,7 +43,15 @@
 
     <div id="rules-screen" class="screen" style="background:#2c3e50;">
         <h1 class="title-large">ルール説明</h1>
-        <p style="font-size:40px; margin-top:30px;">一番早く正解したチームが<br>高得点を獲得します！</p>
+        <div class="rule-box">
+            それではスピードクイズの時間がやってまいりました！全部で<span class="highlight-y">10問</span>出題します。<br><br>
+            スマホ画面の選択肢の中から正解と思ったボタンを押してください。<br>
+            各問題の制限時間は<span class="highlight-r">「60秒」</span>です。<br><br>
+            このクイズは正解しただけの得点ではありません。<br>
+            正解の基本点100点に加え、早く回答するほど<span class="highlight-g">「残り時間(秒) × 1点」のボーナス</span>が加算されます！<br>
+            正答数が同じ場合は、回答までの時間が短いチームが優勝です！<br><br>
+            <div style="text-align:center; font-size:45px; margin-top:15px;" class="highlight-y">皆さん全力でがんばってください！</div>
+        </div>
     </div>
 
     <div id="quiz-screen" class="screen">
@@ -45,7 +72,6 @@
     let qData = []; let sUrls = {}; let timer = null;
     let audioReady = false;
 
-    // 画面のどこかがクリックされたら音声再生を許可する
     function enableAudio() { audioReady = true; console.log("Audio Enabled"); }
 
     db.ref('quizConfig').on('value', s => qData = s.val() || []);
