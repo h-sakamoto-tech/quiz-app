@@ -10,34 +10,31 @@
         body { font-family: sans-serif; margin: 0; background: #121212; color: white; text-align: center; }
         .screen { display: none; padding: 20px; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
         .active { display: flex !important; }
-        
-        input { font-size: 20px; padding: 10px; border-radius: 5px; border: none; width: 80%; margin-bottom: 20px; }
+        input { font-size: 20px; padding: 12px; border-radius: 8px; border: none; width: 80%; margin-bottom: 20px; }
         button { font-size: 24px; padding: 15px 30px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; }
-        
-        .btn-join { background: #27ae60; color: white; }
+        .btn-join { background: #27ae60; color: white; width: 80%; }
         .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 400px; }
         .btn-ans { background: #3498db; color: white; height: 100px; font-size: 40px; }
-        .btn-ans:active { background: #f1c40f; transform: scale(0.95); }
-        .btn-ans:disabled { background: #555; color: #888; }
-        
         .msg { font-size: 20px; margin-top: 20px; color: #f1c40f; }
     </style>
 </head>
 <body>
 
     <div id="screen-entry" class="screen active">
-        <h2>チーム名を入力してください</h2>
-        <input type="text" id="player-name" placeholder="例：チームA" maxlength="10">
+        <h2 style="color:#f1c40f;">スピードクイズ</h2>
+        <p>チーム名を入力してください</p>
+        <input type="text" id="player-name" placeholder="例：チーム坂本" maxlength="10">
         <button class="btn-join" onclick="joinGame()">参加する！</button>
     </div>
 
     <div id="screen-wait" class="screen">
-        <h2 id="wait-msg">参加完了！<br>開始までお待ちください...</h2>
-        <div class="msg" id="player-display"></div>
+        <h2 id="wait-msg">準備完了！</h2>
+        <p>スクリーンでクイズが始まるまで<br>そのままお待ちください...</p>
+        <div class="msg" id="player-display" style="border:1px solid #555; padding:10px; border-radius:10px;"></div>
     </div>
 
     <div id="screen-quiz" class="screen">
-        <h2 id="q-label">第 1 問</h2>
+        <h2 id="q-label" style="color:#f1c40f;">第 1 問</h2>
         <div class="choice-grid">
             <button class="btn-ans" onclick="sendAnswer('A')">A</button>
             <button class="btn-ans" onclick="sendAnswer('B')">B</button>
@@ -54,64 +51,61 @@
 
         let myId = localStorage.getItem('quiz_uid') || "uid_" + Math.random().toString(36).substr(2, 9);
         localStorage.setItem('quiz_uid', myId);
-        let myName = "";
-        let currentQIndex = -1;
+        let isJoined = false;
 
         function switchScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
 
-        // 参加するボタン
+        // 名前を入れて参加
         function joinGame() {
-            myName = document.getElementById('player-name').value.trim();
-            if (!myName) return alert("名前を入れてね！");
+            const name = document.getElementById('player-name').value.trim();
+            if (!name) return alert("名前を入れてね！");
             
-            // Firebaseに保存
-            db.ref('players/' + myId).set({
-                name: myName,
-                score: 0,
-                ts: Date.now()
-            }).then(() => {
-                document.getElementById('player-display').innerText = "チーム名：" + myName;
+            db.ref('players/' + myId).set({ name: name, score: 0, ts: Date.now() })
+            .then(() => {
+                isJoined = true;
+                document.getElementById('player-display').innerText = "チーム名：" + name;
                 switchScreen('screen-wait');
-            }).catch(e => alert("エラー！ネット繋がってる？"));
+            });
         }
 
-        // 管理者コマンドを監視して画面を切り替える
+        // 命令を監視
         db.ref('adminCommand').on('value', snap => {
             const cmd = snap.val();
-            if (!cmd) return;
+            
+            // 命令がない、またはリセットされた場合は最初の画面へ
+            if (!cmd || cmd.type === 'reset') {
+                isJoined = false;
+                switchScreen('screen-entry');
+                return;
+            }
 
+            // まだ参加登録していない人は、どの命令が来ても登録画面のまま
+            if (!isJoined) return;
+
+            // クイズ開始・次の問題
             if (cmd.type === 'start' || cmd.type === 'next') {
-                currentQIndex = cmd.qIndex;
-                document.getElementById('q-label').innerText = "第 " + (currentQIndex + 1) + " 問";
+                document.getElementById('q-label').innerText = "第 " + (cmd.qIndex + 1) + " 問";
                 document.getElementById('ans-msg').innerText = "";
-                // ボタンを復活させる
                 document.querySelectorAll('.btn-ans').forEach(b => b.disabled = false);
                 switchScreen('screen-quiz');
-            } else if (cmd.type === 'close') {
-                document.getElementById('ans-msg').innerText = "回答を締め切りました";
+            } 
+            // 締め切り
+            else if (cmd.type === 'close') {
+                document.getElementById('ans-msg').innerText = "締め切りました";
                 document.querySelectorAll('.btn-ans').forEach(b => b.disabled = true);
-            } else if (cmd.type === 'reset') {
-                localStorage.removeItem('quiz_uid');
-                location.reload();
-            } else {
-                // rules, end, details, ranking の時は待機画面へ
-                document.getElementById('wait-msg').innerText = "まもなく開始 / 結果発表中...";
+            } 
+            // それ以外（ルール説明、結果発表など）は待機画面
+            else {
                 switchScreen('screen-wait');
             }
         });
 
-        // 回答を送信
         function sendAnswer(choice) {
-            const startTime = Date.now(); // 実際はサーバー側との同期が必要だが簡易的に
-            db.ref('answers/' + myId).set({
-                choice: choice,
-                time: 0, // 時間計測は一旦簡易化
-                ts: Date.now()
-            });
-            document.getElementById('ans-msg').innerText = "「" + choice + "」で送信しました！";
+            db.ref('answers/' + myId).set({ choice: choice, ts: Date.now() });
+            document.getElementById('ans-msg').innerText = "「" + choice + "」で送信！";
             document.querySelectorAll('.btn-ans').forEach(b => b.disabled = true);
         }
     </script>
