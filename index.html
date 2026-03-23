@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>運営パネル - 設定保存版</title>
+    <title>運営パネル - 永久保存版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -12,12 +12,10 @@
         .header h1 { color: #f1c40f; margin: 0 0 20px 0; }
         .q-row { background: #3d3d3d; padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid #3498db; }
         textarea.q-txt { width: 100%; height: 120px; background: #222; color: #fff; border: 1px solid #555; padding: 10px; font-size: 18px; box-sizing: border-box; }
-        .sound-setting-item { display: grid; grid-template-columns: 150px 1fr; gap: 10px; margin-bottom: 10px; align-items: center; }
-        .url-display { font-size: 12px; color: #2ecc71; word-break: break-all; margin-top: 2px; }
-        .btn-save { background: #27ae60; color: white; width: 100%; padding: 20px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 0 #1e8449; }
-        .btn-save:active { transform: translateY(4px); box-shadow: none; }
+        .sound-setting-item { display: grid; grid-template-columns: 150px 1fr; gap: 10px; margin-bottom: 15px; align-items: start; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .url-input { width: 100%; padding: 8px; background: #111; color: #2ecc71; border: 1px solid #555; font-size: 14px; margin-top: 5px; }
+        .btn-save { background: #27ae60; color: white; width: 100%; padding: 20px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; }
         .btn-add { background: #34495e; color: white; width: 100%; padding: 15px; border: 2px dashed #7f8c8d; cursor: pointer; margin-top: 10px; font-size: 18px; }
-        .control-panel { position: sticky; top: 20px; }
         .btn-control { width: 100%; padding: 20px; font-size: 28px; color: white; border-radius: 10px; cursor: pointer; border: none; margin-bottom: 15px; }
         .status-display { background: #111; padding: 15px; border: 1px solid #f1c40f; text-align: center; margin-bottom: 15px; }
     </style>
@@ -29,80 +27,54 @@
         <div class="header"><h1>運営パネル</h1></div>
 
         <div class="section">
-            <h2>🔊 音源設定</h2>
-            <div style="background: #111; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #2ecc71;">
-                <p style="margin-top:0; font-weight:bold; color:#2ecc71;">【ここだけ入力すればOK！】GitHubの音源フォルダURL</p>
-                <input type="text" id="base-folder-url" style="width:100%; padding:12px; background:#000; color:#fff; border:1px solid #2ecc71; font-size:16px;" 
+            <h2>🔊 音源URL設定（保存される内容）</h2>
+            <div style="background: #000; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #2ecc71;">
+                <p style="margin-top:0; font-weight:bold; color:#2ecc71;">【自動設定】GitHubの音源フォルダURLを入力</p>
+                <input type="text" id="base-folder-url" style="width:100%; padding:12px; background:#222; color:#fff; border:1px solid #2ecc71;" 
                        placeholder="例: https://h-sakamoto-tech.github.io/quiz-app/sounds/" onchange="autoFillUrls()">
-                <p style="font-size:12px; color:#aaa; margin-top:8px;">
-                    ※ここにURLを入れて「保存」すれば、次回から自動的に読み込まれます。<br>
-                    ※ファイル名は rules, start, next, end, details, ranking (.mp3) に固定してください。
-                </p>
+                <p style="font-size:12px; color:#aaa; margin-top:8px;">※URLを入力して枠の外をクリックすると、下の各欄に自動反映されます。</p>
             </div>
             
-            <div id="sound-status-list">
+            <div id="sound-inputs">
                 <div class="sound-setting-item">
-                    <span>①締切＆ルール:</span>
-                    <div>
-                        <input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')">
-                        <div id="display-url-sndRules" class="url-display">未設定 (URLなし)</div>
-                        <input type="hidden" id="url-sndRules">
-                    </div>
+                    <span>①締切＆ルール</span>
+                    <input type="text" id="url-sndRules" class="url-input" placeholder="URLがここに入ります">
                 </div>
                 <div class="sound-setting-item">
-                    <span>②クイズ開始:</span>
-                    <div>
-                        <input type="file" onchange="previewSnd(this, 'sndStart', 'url-sndStart')">
-                        <div id="display-url-sndStart" class="url-display">未設定 (URLなし)</div>
-                        <input type="hidden" id="url-sndStart">
-                    </div>
+                    <span>②クイズ開始</span>
+                    <input type="text" id="url-sndStart" class="url-input" placeholder="URLがここに入ります">
                 </div>
                 <div class="sound-setting-item">
-                    <span>③次へ(正解):</span>
-                    <div>
-                        <input type="file" onchange="previewSnd(this, 'sndNext', 'url-sndNext')">
-                        <div id="display-url-sndNext" class="url-display">未設定 (URLなし)</div>
-                        <input type="hidden" id="url-sndNext">
-                    </div>
+                    <span>③次へ(正解)</span>
+                    <input type="text" id="url-sndNext" class="url-input" placeholder="URLがここに入ります">
                 </div>
                 <div class="sound-setting-item">
-                    <span>④終了表示:</span>
-                    <div>
-                        <input type="file" onchange="previewSnd(this, 'sndEnd', 'url-sndEnd')">
-                        <div id="display-url-sndEnd" class="url-display">未設定 (URLなし)</div>
-                        <input type="hidden" id="url-sndEnd">
-                    </div>
+                    <span>④終了表示</span>
+                    <input type="text" id="url-sndEnd" class="url-input" placeholder="URLがここに入ります">
                 </div>
                 <div class="sound-setting-item">
-                    <span>⑤結果発表:</span>
-                    <div>
-                        <input type="file" onchange="previewSnd(this, 'sndDetails', 'url-sndDetails')">
-                        <div id="display-url-sndDetails" class="url-display">未設定 (URLなし)</div>
-                        <input type="hidden" id="url-sndDetails">
-                    </div>
+                    <span>⑤結果発表</span>
+                    <input type="text" id="url-sndDetails" class="url-input" placeholder="URLがここに入ります">
                 </div>
                 <div class="sound-setting-item">
-                    <span>⑥総合順位:</span>
-                    <div>
-                        <input type="file" onchange="previewSnd(this, 'sndRanking', 'url-sndRanking')">
-                        <div id="display-url-sndRanking" class="url-display">未設定 (URLなし)</div>
-                        <input type="hidden" id="url-sndRanking">
-                    </div>
+                    <span>⑥総合順位</span>
+                    <input type="text" id="url-sndRanking" class="url-input" placeholder="URLがここに入ります">
                 </div>
             </div>
+            <p style="color:#e74c3c; font-size:14px;">※下の「保存」ボタンを押すまで、クラウドには保存されません。</p>
         </div>
 
         <div class="section">
             <h2>📝 クイズ内容の設定</h2>
             <div id="questions-container"></div>
             <button type="button" class="btn-add" onclick="addQuestionRow()">＋ 問題を追加</button>
-            <button type="button" class="btn-save" onclick="saveAllConfig()">💾 この内容で確定・保存（クラウド）</button>
+            <button type="button" class="btn-save" onclick="saveAllConfig()">💾 すべての設定をクラウドに保存</button>
         </div>
     </div>
 
     <div class="control-panel">
         <div class="section">
-            <h2>🎮 進行</h2>
+            <h2>🎮 進行コントロール</h2>
             <div class="status-display"><div id="current-status-text" style="font-size:24px; color:#f1c40f;">待機中</div></div>
             <button class="btn-control" style="background:#8e44ad;" id="btn-rules" onclick="startQuiz()">受付締切</button>
             <div id="nav-group" style="display:none; gap:10px;">
@@ -115,9 +87,6 @@
         </div>
     </div>
 </div>
-
-<audio id="sndRules"></audio><audio id="sndStart"></audio><audio id="sndNext"></audio>
-<audio id="sndEnd"></audio><audio id="sndDetails"></audio><audio id="sndRanking"></audio>
 
 <script>
     var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
@@ -132,61 +101,43 @@
         db.ref('soundConfig').once('value', snap => {
             const snds = snap.val() || {};
             if(snds.baseUrl) document.getElementById('base-folder-url').value = snds.baseUrl;
-            const ids = ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'];
-            ids.forEach(id => {
-                if(snds[id]) {
-                    document.getElementById('url-' + id).value = snds[id];
-                    document.getElementById('display-url-' + id).innerText = snds[id];
-                }
+            ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => {
+                if(snds[id]) document.getElementById('url-' + id).value = snds[id];
             });
         });
         // 問題の読み込み
         db.ref('quizConfig').once('value', snap => {
             const data = snap.val();
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
             if (data && data.length > 0) { data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } 
             else { addQuestionRow(); }
         });
     };
 
-    // GitHubフォルダURLから自動生成
+    // GitHubフォルダURLから各URLを自動生成して入力欄を埋める
     function autoFillUrls() {
         const base = document.getElementById('base-folder-url').value.trim();
         if(!base) return;
         const fix = base.endsWith('/') ? base : base + '/';
-        const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
-        for(let id in files) {
-            const fullUrl = fix + files[id];
-            document.getElementById('url-' + id).value = fullUrl;
-            document.getElementById('display-url-' + id).innerText = fullUrl;
-        }
-    }
-
-    // ファイル選択（プレビュー用）
-    function previewSnd(input, audioId, hiddenId) {
-        if(input.files[0]) {
-            const url = URL.createObjectURL(input.files[0]);
-            document.getElementById(audioId).src = url;
-            document.getElementById(audioId).play();
-            // ファイルを選択した際は、自動生成URLを一旦リセット（またはファイル名を推測）
-            const base = document.getElementById('base-folder-url').value.trim();
-            if(base) {
-                const fix = base.endsWith('/') ? base : base + '/';
-                const fileName = input.files[0].name;
-                const guessedUrl = fix + fileName;
-                document.getElementById(hiddenId).value = guessedUrl;
-                document.getElementById('display-url-' + hiddenId).innerText = guessedUrl + " (ファイルから推測)";
-            }
-        }
+        document.getElementById('url-sndRules').value = fix + "rules.mp3";
+        document.getElementById('url-sndStart').value = fix + "start.mp3";
+        document.getElementById('url-sndNext').value = fix + "next.mp3";
+        document.getElementById('url-sndEnd').value = fix + "end.mp3";
+        document.getElementById('url-sndDetails').value = fix + "details.mp3";
+        document.getElementById('url-sndRanking').value = fix + "ranking.mp3";
     }
 
     window.addQuestionRow = function(qData = null) {
         const container = document.getElementById('questions-container');
         const div = document.createElement('div');
         div.className = 'q-row';
+        const text = qData ? qData.text : "";
+        const ans = qData ? qData.ans : "A";
         div.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><b style="color:#f1c40f;">問題</b><button type="button" style="background:#e74c3c; color:white; border:none; padding:5px; cursor:pointer;" onclick="this.parentElement.parentElement.remove()">削除</button></div>
-            <textarea class="q-txt">${qData ? qData.text : ""}</textarea>
-            <div style="margin-top:10px;">正解: <select class="q-ans">${['A','B','C','D','E','F','G'].map(v=>`<option value="${v}" ${qData && qData.ans===v?'selected':''}>${v}</option>`).join('')}</select></div>`;
+            <textarea class="q-txt">${text}</textarea>
+            <div style="margin-top:10px;">正解: <select class="q-ans">${['A','B','C','D','E','F','G'].map(v=>`<option value="${v}" ${ans===v?'selected':''}>${v}</option>`).join('')}</select></div>`;
         container.appendChild(div);
     };
 
@@ -204,13 +155,16 @@
             sndDetails: document.getElementById('url-sndDetails').value,
             sndRanking: document.getElementById('url-sndRanking').value
         };
+
+        // Firebaseに保存（プロンプトで完了を通知）
         db.ref('quizConfig').set(quizData);
         db.ref('soundConfig').set(soundData).then(() => {
-            alert("✅ すべての設定をクラウドに保存しました！リセットされません。");
+            alert("✅ すべての設定をクラウドに保存しました！\n次回から自動でこのURLが読み込まれます。");
             location.reload();
         });
     }
 
+    // 進行ロジック
     function buildScenario(qCount) {
         scenario = [{ type: 'rules', title: 'ルール説明' }];
         for(let i=0; i<qCount; i++) {
