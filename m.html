@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>会場スクリーン - 進行修正版</title>
+    <meta charset="UTF-8"><title>会場スクリーン - 無限リロード修正版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
@@ -47,6 +47,8 @@
     var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
     firebase.initializeApp(firebaseConfig); var db = firebase.database();
     
+    // 【重要】ページが読み込まれた時間をミリ秒で記録
+    const pageLoadTime = Date.now();
     let qData = []; let sUrls = {}; let timer = null;
 
     db.ref('quizConfig').on('value', s => qData = s.val() || []);
@@ -58,7 +60,15 @@
 
     db.ref('adminCommand').on('value', snap => {
         const c = snap.val(); if(!c) return;
-        if(c.type === 'reset') { location.reload(); return; }
+
+        // 【無限リロード対策】
+        // 命令のタイムスタンプ(ts)が、ページ読み込み時間(pageLoadTime)より新しい場合のみ実行
+        if(c.type === 'reset') {
+            if(c.ts > pageLoadTime) {
+                location.reload(); 
+            }
+            return;
+        }
 
         if(c.type === 'rules') { 
             switchScreen('rules-screen'); play('sndRules'); 
@@ -77,6 +87,8 @@
             play('sndRules'); 
         } else if(c.type === 'end') { 
             switchScreen('end-screen'); play('sndEnd'); 
+        } else if(c.type === 'wait') {
+            switchScreen('wait-screen');
         }
     });
 
