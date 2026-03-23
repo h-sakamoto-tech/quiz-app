@@ -11,10 +11,8 @@
         input { font-size:24px; padding:15px; width:80%; border-radius:10px; border:none; margin-bottom:20px; text-align:center;}
         .btn-join { background:#27ae60; color:#fff; font-size:26px; padding:15px 40px; border-radius:10px; border:none; font-weight:bold; width:80%; }
         
-        /* 選択ボタンのスタイル */
         .choice-grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; width:100%; max-width:400px; }
         .btn-ans { background:#3498db; color:#fff; font-size:50px; font-weight:bold; height:120px; border-radius:15px; border:none; transition: 0.2s; }
-        
         .msg { font-size:24px; color:#f1c40f; margin-top:20px; font-weight:bold; }
     </style>
 </head>
@@ -62,10 +60,10 @@
             document.getElementById('qn').innerText=`第 ${c.qIndex+1} 問`; 
             document.getElementById('msg').innerText="回答を選んでください！";
             document.getElementById('msg').style.color = "#fff";
-            // ボタンの色と状態を元に戻す
+            // ★ボタンの色と状態を青色に戻す
             document.querySelectorAll('.btn-ans').forEach(b => {
                 b.disabled = false;
-                b.style.background = '#3498db'; // 元の青色
+                b.style.background = '#3498db';
                 b.style.opacity = '1';
                 b.style.transform = 'none';
             });
@@ -84,14 +82,14 @@
         document.getElementById('msg').innerText = "「" + v + "」を送信しました！"; 
         document.getElementById('msg').style.color = "#2ecc71";
         
-        // 押したボタンの色を変え、他を暗くする
+        // ★押したボタンの色を赤に変え、他をグレーにする
         document.querySelectorAll('.btn-ans').forEach(b => {
             b.disabled = true;
             if (b.innerText === v) {
-                b.style.background = '#e74c3c'; // 選んだボタンは赤
+                b.style.background = '#e74c3c';
                 b.style.transform = 'scale(0.95)';
             } else {
-                b.style.background = '#555'; // 選ばなかったボタンはグレー
+                b.style.background = '#555';
                 b.style.opacity = '0.4';
             }
         }); 
