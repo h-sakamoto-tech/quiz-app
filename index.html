@@ -32,6 +32,12 @@
         .mark-o { color: #2ecc71; font-weight: bold; font-size: 20px; }
         .mark-x { color: #e74c3c; font-weight: bold; font-size: 20px; }
         .time-sec { font-size: 12px; color: #aaa; }
+
+        /* 📡 右側のリアルタイムパネル用スクロール */
+        .live-status-box {
+            display: flex; flex-direction: column; gap: 5px; 
+            max-height: 350px; overflow-y: auto; padding-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -80,10 +86,17 @@
                 <button class="btn-control" style="background:#e74c3c; flex:2; font-size:24px;" onclick="goNext()">次へ進む</button>
             </div>
 
-            <div style="text-align:center; margin-top:20px; font-size:18px;">参加: <span id="admin-p-count" style="color:#f1c40f; font-weight:bold;">0</span> チーム</div>
-            <div id="admin-p-list" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:5px; justify-content:center;"></div>
+            <div style="margin-top:20px; background:#111; padding:15px; border-radius:8px; border:1px solid #444;">
+                <h3 style="margin:0 0 10px 0; font-size:18px; color:#3498db; display:flex; justify-content:space-between; align-items:center;">
+                    <span>📡 回答状況</span>
+                    <span style="font-size:14px; color:#aaa; font-weight:normal;">参加: <span id="admin-p-count" style="color:#fff; font-weight:bold;">0</span> チーム</span>
+                </h3>
+                <div id="admin-live-status" class="live-status-box">
+                    <div style="color:#aaa; text-align:center; padding:10px;">※参加者が登録すると表示されます</div>
+                </div>
+            </div>
             
-            <button onclick="resetGame()" style="margin-top:50px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer; padding:5px;">全データをリセット</button>
+            <button onclick="resetGame()" style="margin-top:30px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer; padding:5px;">全データをリセット</button>
         </div>
     </div>
 </div>
@@ -103,15 +116,50 @@
     firebase.initializeApp(firebaseConfig); var db = firebase.database();
     
     let scenario = []; let currentStepIndex = -1;
-    let currentAnswers = {}; let playersData = {}; let currentQuestionStartTs = 0;
+    let currentAnswers = {}; let playersData = {};
     let globalQCount = 0;
 
-    db.ref('answers').on('value', snap => currentAnswers = snap.val() || {});
+    // ★ リアルタイム状況パネルを更新
+    function updateLiveStatus() {
+        const container = document.getElementById('admin-live-status');
+        if (!container) return;
+        
+        let isAccepting = false;
+        if (currentStepIndex >= 0 && scenario[currentStepIndex]) {
+            isAccepting = (scenario[currentStepIndex].type === 'start' || scenario[currentStepIndex].type === 'next');
+        }
+
+        let html = '';
+        for (let uid in playersData) {
+            let p = playersData[uid];
+            
+            if (isAccepting) {
+                // 時計のズレに関係なく、データがあれば「回答済」
+                let hasAnswered = (currentAnswers[uid] && currentAnswers[uid].choice);
+                if (hasAnswered) {
+                    html += `<div style="display:flex; justify-content:space-between; background:#27ae60; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">回答済</span></div>`;
+                } else {
+                    html += `<div style="display:flex; justify-content:space-between; background:#c0392b; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">未回答</span></div>`;
+                }
+            } else {
+                html += `<div style="display:flex; justify-content:space-between; background:#2980b9; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">${p.score||0} pt</span></div>`;
+            }
+        }
+        
+        if (html === '') html = '<div style="color:#aaa; text-align:center; padding:10px;">※参加者が登録すると表示されます</div>';
+        container.innerHTML = html;
+    }
+
+    db.ref('answers').on('value', snap => {
+        currentAnswers = snap.val() || {};
+        updateLiveStatus();
+    });
+
     db.ref('players').on('value', snap => {
         playersData = snap.val() || {};
         const pCount = Object.keys(playersData).length;
         document.getElementById('admin-p-count').innerText = pCount;
-        document.getElementById('admin-p-list').innerHTML = Object.values(playersData).map(v => `<span style="background:#2980b9; padding:5px 10px; border-radius:15px; font-size:12px;">${v.name}(${v.score||0}pt)</span>`).join('');
+        updateLiveStatus(); 
         
         // フルサイズテーブルの描画
         if (globalQCount > 0 && pCount > 0) {
@@ -204,8 +252,11 @@
         document.getElementById('nav-group').style.display = 'flex';
 
         if (step.type === 'start' || step.type === 'next') {
-            currentQuestionStartTs = now; 
-            db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
+            // ★出題の瞬間に古い回答をクリアする（時計のズレ防止）
+            db.ref('answers').remove().then(() => {
+                db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
+                updateLiveStatus();
+            });
         } else if (step.type === 'close') {
             db.ref('quizConfig').once('value').then(snap => {
                 const qData = snap.val() || [];
@@ -217,8 +268,10 @@
                     let ans = currentAnswers[uid];
                     
                     let hInfo = { choice: '未', correct: false, time: '--', points: 0 };
-                    if (ans && ans.ts >= currentQuestionStartTs) {
-                        let elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
+                    
+                    // ★時計のズレに関係なく、データがあれば採点する
+                    if (ans && ans.choice) {
+                        let elapsed = ans.time !== undefined ? ans.time : 60; // スマホ側で計算した秒数を使用
                         let isCorrect = (ans.choice === correctAns);
                         let points = isCorrect ? 100 + Math.max(0, 60 - elapsed) : 0;
                         hInfo = { choice: ans.choice, correct: isCorrect, time: elapsed, points: points };
@@ -232,9 +285,11 @@
                 }
                 if (Object.keys(updates).length > 0) db.ref('players').update(updates);
                 db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
+                updateLiveStatus();
             });
         } else {
             db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex !== undefined ? step.qIndex : -1, ts: now });
+            updateLiveStatus();
         }
     }
 
