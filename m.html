@@ -1,16 +1,173 @@
-<script>
-    // ... (Firebase初期設定はそのまま) ...
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>会場スクリーン - 完全版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: radial-gradient(circle, #1a2a6c, #112b3c, #000000); color: #fff; overflow: hidden; }
+        .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; box-sizing: border-box; position: relative; }
+        .active { display: flex !important; animation: fadeIn 0.8s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes popUp { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-    // ★【重要】Firebaseから「音源URL」を自動で受け取ってセットする機能
-    db.ref('soundConfig').on('value', snap => {
-        const snds = snap.val() || {};
-        if(snds.sndRules) document.getElementById('sndRules').src = snds.sndRules;
-        if(snds.sndStart) document.getElementById('sndStart').src = snds.sndStart;
-        if(snds.sndNext) document.getElementById('sndNext').src = snds.sndNext;
-        if(snds.sndEnd) document.getElementById('sndEnd').src = snds.sndEnd;
-        if(snds.sndDetails) document.getElementById('sndDetails').src = snds.sndDetails;
-        if(snds.sndRanking) document.getElementById('sndRanking').src = snds.sndRanking;
-    });
+        /* 待機画面 */
+        #wait-screen { grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; justify-items: center; padding: 40px; }
+        #wait-screen.active { display: grid !important; }
+        .wait-left { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        #wait-screen h1 { font-size: 70px; color: #f1c40f; margin: 0; text-shadow: 0 0 20px rgba(241, 196, 15, 0.5); }
+        .qr-box { background: #fff; padding: 25px; border-radius: 30px; }
+        .qr-box img { width: 450px; height: 450px; object-fit: contain; }
+        .player-count { font-size: 50px; font-weight: bold; background: #e74c3c; padding: 15px 40px; border-radius: 60px; margin-bottom: 20px; }
+        .player-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; width: 100%; }
+        .player-badge { background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 15px; font-size: 24px; animation: popUp 0.5s forwards; }
 
-    // ... (その他の進行ロジックはそのまま) ...
-</script>
+        /* クイズ画面 */
+        #quiz-screen { justify-content: flex-start; padding-top: 40px; }
+        .q-header { font-size: 40px; color: #f1c40f; margin-bottom: 10px; text-align: left; width: 95%; font-weight: bold; }
+        .q-text { font-size: 36px; font-weight: bold; margin-bottom: 20px; line-height: 1.25; text-align: left; width: 95%; white-space: pre-wrap; background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 10px; }
+        .timer-box { font-size: 80px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 10px 50px; border-radius: 40px; border: 6px solid #f1c40f; position: absolute; top: 20px; right: 40px; }
+        .timer-urgent { color: #e74c3c; border-color: #e74c3c; animation: popUp 0.5s infinite alternate; }
+        .status-badge { font-size: 30px; padding: 10px 30px; border-radius: 40px; font-weight: bold; }
+        .status-thinking { background: #3498db; }
+        .status-closed { background: #e74c3c; }
+
+        /* 回答統計グラフ */
+        .stats-container { display: none; flex-direction: column; gap: 10px; width: 95%; margin-top: 15px; }
+        .stat-row { display: flex; align-items: center; background: rgba(255,255,255,0.1); border-radius: 10px; height: 45px; position: relative; overflow: hidden; border: 2px solid #555; }
+        .stat-bar { height: 100%; background: #3498db; width: 0%; transition: width 1.2s ease-out; }
+        .stat-label { position: absolute; left: 15px; font-size: 28px; font-weight: bold; z-index: 2; }
+        .stat-count { position: absolute; right: 15px; font-size: 28px; font-weight: bold; z-index: 2; }
+        .is-correct-row { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.2); }
+        .is-correct-row .stat-bar { background: #2ecc71; }
+        .correct-ans { font-size: 60px; color: #2ecc71; font-weight: bold; margin-top: 15px; display: none; }
+
+        /* 結果テーブル (20チーム対応) */
+        .details-table-wrapper { width: 98%; max-height: 80vh; overflow-y: auto; background: rgba(0,0,0,0.8); border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 18px; }
+        th, td { border: 1px solid #555; padding: 8px 4px; text-align: center; }
+        th { background: #2c3e50; position: sticky; top: 0; z-index: 10; }
+        .row-rank-1 { background: rgba(241, 196, 15, 0.3); }
+        .row-rank-2 { background: rgba(189, 195, 199, 0.2); }
+        .row-rank-3 { background: rgba(211, 84, 0, 0.2); }
+        .td-correct { color: #2ecc71; font-size: 22px; font-weight: bold; }
+        .td-wrong { color: #e74c3c; opacity: 0.5; }
+
+        /* ランキング */
+        .rank-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 15px; font-size: 35px; width: 80%; margin-bottom: 10px; }
+        .rank-1 { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728); color: #000; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <div id="wait-screen" class="screen active">
+        <div class="wait-left">
+            <h1>スピードクイズ 会場</h1>
+            <div class="qr-box"><img src="./qrcode.png" alt="QR"></div>
+        </div>
+        <div class="wait-right">
+            <div class="player-count">参加チーム: <span id="p-count">0</span></div>
+            <div class="player-list" id="p-list"></div>
+        </div>
+    </div>
+
+    <div id="rules-screen" class="screen">
+        <h1 style="font-size:80px; color:#f1c40f;">ルール説明</h1>
+        <div style="font-size:35px; text-align:left; background:rgba(0,0,0,0.5); padding:40px; border-radius:20px; border:3px solid #f1c40f;">
+            ・全10問のランキングクイズです！<br>
+            ・制限時間は <span style="color:#e74c3c; font-weight:bold;">60秒</span> です。<br>
+            ・正解(100点) ＋ <span style="color:#2ecc71; font-weight:bold;">早く答えるほどボーナス得点</span> が入ります。<br>
+            ・正確さとスピードの両方で勝負してください！
+        </div>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <div class="timer-box" id="timer-display"><i class="fas fa-stopwatch"></i> <span id="time-left">60</span>s</div>
+        <div class="q-header" id="disp-qnum">第 1 問</div>
+        <div class="q-text" id="disp-qtext"></div>
+        <div id="disp-status" class="status-badge status-thinking">⏳ 回答受付中...</div>
+        <div id="stats-area" class="stats-container"></div>
+        <div id="disp-ans" class="correct-ans">正解は：<span id="ans-text"></span></div>
+    </div>
+
+    <div id="end-screen" class="screen"><h1 style="font-size:200px;">全問終了！</h1></div>
+
+    <div id="details-screen" class="screen">
+        <h2 style="font-size:40px; color:#f1c40f;">📊 全チーム 結果発表</h2>
+        <div id="details-container" class="details-table-wrapper"></div>
+    </div>
+
+    <div id="ranking-screen" class="screen">
+        <h2 style="font-size:50px; color:#f1c40f; margin-bottom:30px;">🏆 Final Ranking 🏆</h2>
+        <div id="ranking-container" style="width:100%; display:flex; flex-direction:column; align-items:center;"></div>
+    </div>
+
+    <audio id="sndRules"></audio><audio id="sndStart"></audio><audio id="sndNext"></audio>
+    <audio id="sndEnd"></audio><audio id="sndDetails"></audio><audio id="sndRanking"></audio>
+
+    <script>
+        // Firebase初期化
+        var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+
+        let quizData = []; let currentIdx = 0; let timer = null; let isClosed = false;
+
+        // 音源URLをクラウドから読み込む
+        db.ref('soundConfig').on('value', snap => {
+            const snds = snap.val() || {};
+            const ids = ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'];
+            ids.forEach(id => { if(snds[id]) document.getElementById(id).src = snds[id]; });
+        });
+
+        // クイズ設定を読み込む
+        db.ref('quizConfig').on('value', snap => { quizData = snap.val() || []; });
+
+        // 画面切り替え関数
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // 管理者コマンドの監視
+        db.ref('adminCommand').on('value', snap => {
+            const cmd = snap.val(); if (!cmd) return;
+            switch(cmd.type) {
+                case 'rules': switchScreen('rules-screen'); playSnd('sndRules'); break;
+                case 'start': case 'next':
+                    currentIdx = cmd.qIndex || 0;
+                    showQuestion(currentIdx); switchScreen('quiz-screen');
+                    playSnd(cmd.type === 'start' ? 'sndStart' : 'sndNext');
+                    startTimer(); break;
+                case 'close': closeQuestion(); break;
+                case 'end': switchScreen('end-screen'); playSnd('sndEnd'); break;
+                case 'details': switchScreen('details-screen'); generateDetailsTable(); playSnd('sndDetails'); break;
+                case 'ranking': switchScreen('ranking-screen'); generateRanking(); playSnd('sndRanking'); break;
+                case 'reset': location.reload(); break;
+            }
+        });
+
+        function showQuestion(idx) {
+            const q = quizData[idx]; if(!q) return;
+            document.getElementById('disp-qnum').innerText = `第 ${idx + 1} 問`;
+            document.getElementById('disp-qtext').innerText = q.text;
+            document.getElementById('timer-display').style.display = "flex";
+            document.getElementById('disp-status').className = "status-badge status-thinking";
+            document.getElementById('disp-status').innerText = "⏳ 回答受付中...";
+            document.getElementById('stats-area').style.display = "none";
+            document.getElementById('disp-ans').style.display = "none";
+            isClosed = false;
+        }
+
+        function startTimer() {
+            if(timer) clearInterval(timer);
+            let left = 60;
+            const disp = document.getElementById('time-left');
+            const box = document.getElementById('timer-display');
+            disp.innerText = left; box.className = "timer-box";
+            timer = setInterval(() => {
+                if (isClosed) return clearInterval(timer);
+                left--; disp.innerText = left;
+                if
