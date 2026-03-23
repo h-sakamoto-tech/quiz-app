@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>運営パネル - 保存機能付き</title>
+    <title>運営パネル - ボタン修正版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -11,14 +11,14 @@
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
         .header h1 { margin: 0; color: #f1c40f; font-size: 2.5rem; }
         .container { display: grid; grid-template-columns: 2fr 1fr; gap: 40px; align-items: start; }
-        .section { background: #2d2d2d; padding: 35px; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border: 2px solid #444; }
+        .section { background: #2d2d2d; padding: 35px; border-radius: 16px; border: 2px solid #444; }
         .section h2 { margin-top: 0; border-bottom: 2px solid #555; padding-bottom: 15px; color: #3498db; font-size: 1.8rem; }
         .q-row { background: #3d3d3d; padding: 25px; border-radius: 12px; margin-bottom: 20px; border-left: 8px solid #3498db; }
-        .input-line { margin: 15px 0; display: flex; gap: 20px; align-items: flex-start; }
-        textarea.q-txt { flex: 1; padding: 15px; border-radius: 8px; border: 2px solid #555; background: #222; color: #fff; font-size: 20px; height: 250px; line-height: 1.4; resize: vertical; }
-        .snd-url { flex: 1; padding: 10px; border: 1px solid #555; background: #111; color: #2ecc71; font-size: 16px; }
-        .btn-save { background: #27ae60; color: white; width: 100%; font-size: 26px; margin-top: 25px; padding: 20px; cursor: pointer; border-radius: 10px; font-weight: bold; }
-        .btn-control { display: block; width: 100%; margin-bottom: 20px; text-align: center; padding: 25px; font-size: 32px; color: white; border-radius: 12px; cursor: pointer; border: none; }
+        textarea.q-txt { width: 100%; box-sizing: border-box; padding: 15px; border-radius: 8px; border: 2px solid #555; background: #222; color: #fff; font-size: 20px; height: 150px; line-height: 1.4; resize: vertical; }
+        .snd-url { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #555; background: #111; color: #2ecc71; font-size: 16px; margin-top: 5px; }
+        .btn-save { background: #27ae60; color: white; width: 100%; font-size: 24px; margin-top: 25px; padding: 15px; cursor: pointer; border-radius: 10px; font-weight: bold; border: none; }
+        .btn-add { background: #34495e; color: white; width: 100%; font-size: 20px; margin-top: 15px; padding: 15px; cursor: pointer; border-radius: 10px; border: 2px dashed #7f8c8d; }
+        .btn-control { display: block; width: 100%; margin-bottom: 20px; text-align: center; padding: 20px; font-size: 32px; color: white; border-radius: 12px; cursor: pointer; border: none; }
         .c-rules { background: #8e44ad; } .c-next { background: #e74c3c; }
         .player-list-box { background: #222; padding: 20px; border-radius: 10px; max-height: 200px; overflow-y: auto; }
     </style>
@@ -26,28 +26,32 @@
 <body>
     <div class="header">
         <h1>運営パネル</h1>
-        <a href="./manual.html" target="_blank" style="color:white; text-decoration:none;">📖 マニュアル</a>
     </div>
 
     <div class="container">
         <div class="left-column">
             <div class="section" style="margin-bottom: 30px;">
-                <h2>🔊 音源URL設定（GitHubに上げた音楽のURLを貼る）</h2>
+                <h2>🔊 音源URL設定</h2>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div>① 締切: <input type="text" id="url-sndRules" class="snd-url" placeholder="https://..."></div>
-                    <div>② 開始: <input type="text" id="url-sndStart" class="snd-url" placeholder="https://..."></div>
-                    <div>③ 次へ: <input type="text" id="url-sndNext" class="snd-url" placeholder="https://..."></div>
-                    <div>④ 終了: <input type="text" id="url-sndEnd" class="snd-url" placeholder="https://..."></div>
-                    <div>⑤ 結果: <input type="text" id="url-sndDetails" class="snd-url" placeholder="https://..."></div>
-                    <div>⑥ 総合: <input type="text" id="url-sndRanking" class="snd-url" placeholder="https://..."></div>
+                    <div>① 締切: <input type="text" id="url-sndRules" class="snd-url"></div>
+                    <div>② 開始: <input type="text" id="url-sndStart" class="snd-url"></div>
+                    <div>③ 次へ: <input type="text" id="url-sndNext" class="snd-url"></div>
+                    <div>④ 終了: <input type="text" id="url-sndEnd" class="snd-url"></div>
+                    <div>⑤ 結果: <input type="text" id="url-sndDetails" class="snd-url"></div>
+                    <div>⑥ 総合: <input type="text" id="url-sndRanking" class="snd-url"></div>
                 </div>
             </div>
             
             <div class="section">
-                <h2>📝 クイズ内容の設定</h2>
+                <h2>📝 クイズ設定</h2>
                 <div id="questions-container"></div>
-                <button class="btn-save" style="background:#34495e; font-size:20px;" onclick="addQuestionRow()">＋ 問題を追加</button>
-                <button class="btn-save" onclick="saveAllConfig()">💾 設定をクラウドに保存して反映</button>
+                
+                <button type="button" class="btn-add" onclick="addQuestionRow()">
+                    <i class="fas fa-plus"></i> ＋ 問題を追加
+                </button>
+                <button type="button" class="btn-save" onclick="saveAllConfig()">
+                    <i class="fas fa-cloud-upload-alt"></i> 💾 設定を保存して反映
+                </button>
             </div>
         </div>
 
@@ -57,17 +61,121 @@
                 <div id="current-status-text" style="font-size:30px; color:#f1c40f; text-align:center; margin-bottom:20px;">待機中</div>
                 <button class="btn-control c-rules" id="btn-rules" onclick="startQuiz()">受付締切</button>
                 <div id="nav-group" style="display:none; gap:10px;">
-                    <button class="btn-control" style="background:#555; flex:1;" onclick="goPrev()">戻る</button>
+                    <button class="btn-control" style="background:#555; flex:1; font-size:24px;" onclick="goPrev()">戻る</button>
                     <button class="btn-control c-next" style="flex:2;" onclick="goNext()">次へ</button>
                 </div>
                 <div style="margin-top:20px; text-align:center;">参加者: <span id="admin-p-count">0</span>名</div>
                 <div class="player-list-box" id="admin-p-list" style="margin-top:10px;"></div>
-                <button style="margin-top:30px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer;" onclick="resetGame()">参加データリセット</button>
+                <button style="margin-top:30px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer; padding:10px;" onclick="resetGame()">参加データリセット</button>
             </div>
         </div>
     </div>
 
     <script>
+        // Firebase設定
         var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
         firebase.initializeApp(firebaseConfig);
-        var db = firebase.
+        var db = firebase.database();
+        
+        let scenario = []; let currentStepIndex = -1;
+
+        // 【修正ポイント】問題を追加する関数を確実に動作させる
+        function addQuestionRow(qData = null) {
+            const container = document.getElementById('questions-container');
+            if (!container) return; // コンテナが見つからない場合は終了
+
+            const div = document.createElement('div');
+            div.className = 'q-row';
+            
+            // 入力されている値があればそれを使う、なければ空
+            const text = qData ? qData.text : "";
+            const ans = qData ? qData.ans : "A";
+
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span style="color:#f1c40f; font-weight:bold;">問題</span>
+                    <button type="button" style="background:#e74c3c; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:5px;" onclick="this.parentElement.parentElement.remove()">削除</button>
+                </div>
+                <textarea class="q-txt" placeholder="問題文を記入してください">${text}</textarea>
+                <div style="margin-top:10px;">
+                    正解: <select class="q-ans" style="font-size:18px; padding:5px;">
+                        <option value="A" ${ans==='A'?'selected':''}>A</option>
+                        <option value="B" ${ans==='B'?'selected':''}>B</option>
+                        <option value="C" ${ans==='C'?'selected':''}>C</option>
+                        <option value="D" ${ans==='D'?'selected':''}>D</option>
+                    </select>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        // 起動時にクラウドからデータを読み込む
+        window.onload = function() {
+            db.ref('quizConfig').once('value', snap => {
+                const data = snap.val();
+                if (data && data.length > 0) {
+                    data.forEach(q => addQuestionRow(q));
+                    buildScenario(data.length);
+                } else {
+                    addQuestionRow(); // 最初の一行を表示
+                }
+            });
+            db.ref('soundConfig').once('value', snap => {
+                const snds = snap.val() || {};
+                if(snds.sndRules) document.getElementById('url-sndRules').value = snds.sndRules;
+                if(snds.sndStart) document.getElementById('url-sndStart').value = snds.sndStart;
+                if(snds.sndNext) document.getElementById('url-sndNext').value = snds.sndNext;
+                if(snds.sndEnd) document.getElementById('url-sndEnd').value = snds.sndEnd;
+                if(snds.sndDetails) document.getElementById('url-sndDetails').value = snds.sndDetails;
+                if(snds.sndRanking) document.getElementById('url-sndRanking').value = snds.sndRanking;
+            });
+        };
+
+        function saveAllConfig() {
+            const quizData = [];
+            document.querySelectorAll('.q-row').forEach(r => {
+                quizData.push({ text: r.querySelector('.q-txt').value, ans: r.querySelector('.q-ans').value });
+            });
+            const soundData = {
+                sndRules: document.getElementById('url-sndRules').value,
+                sndStart: document.getElementById('url-sndStart').value,
+                sndNext: document.getElementById('url-sndNext').value,
+                sndEnd: document.getElementById('url-sndEnd').value,
+                sndDetails: document.getElementById('url-sndDetails').value,
+                sndRanking: document.getElementById('url-sndRanking').value
+            };
+            
+            db.ref('quizConfig').set(quizData);
+            db.ref('soundConfig').set(soundData);
+            alert("✅ 保存しました！");
+            location.reload();
+        }
+
+        // 進行ロジック
+        function buildScenario(qCount) {
+            scenario = [{ type: 'rules', title: 'ルール説明' }];
+            for(let i=0; i<qCount; i++) {
+                scenario.push({ type: i===0?'start':'next', qIndex: i, title: `第${i+1}問 受付中` });
+                scenario.push({ type: 'close', qIndex: i, title: `第${i+1}問 正解発表` });
+            }
+            scenario.push({ type: 'end', title: '終了' }, { type: 'details', title: '結果一覧' }, { type: 'ranking', title: '総合順位' });
+        }
+        function executeStep() {
+            const step = scenario[currentStepIndex];
+            document.getElementById('current-status-text').innerText = step.title;
+            document.getElementById('btn-rules').style.display = 'none';
+            document.getElementById('nav-group').style.display = 'flex';
+            db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: Date.now() });
+        }
+        function startQuiz() { if(scenario.length <= 1) return alert("問題を保存してください"); currentStepIndex = 0; executeStep(); }
+        function goNext() { if (currentStepIndex < scenario.length - 1) { currentStepIndex++; executeStep(); } }
+        function goPrev() { if (currentStepIndex > 0) { currentStepIndex--; executeStep(); } }
+        function resetGame() { if(confirm("リセットしますか？")) { db.ref('adminCommand').set({ type: 'reset', ts: Date.now() }); db.ref('players').remove(); db.ref('answers').remove(); location.reload(); } }
+        db.ref('players').on('value', snap => {
+            const players = snap.val() || {};
+            document.getElementById('admin-p-list').innerHTML = Object.values(players).map(p => `<span style="background:#2980b9; padding:5px 10px; border-radius:20px; font-size:14px; margin-right:5px; display:inline-block; margin-bottom:5px;">${p.name}</span>`).join('');
+            document.getElementById('admin-p-count').innerText = Object.keys(players).length;
+        });
+    </script>
+</body>
+</html>
