@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>会場スクリーン - 完全自動・ルール追加版</title>
+    <meta charset="UTF-8"><title>会場スクリーン - 結果発表追加版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
@@ -12,29 +12,14 @@
         .qr-container img { width:400px; height:400px; }
         .q-text { font-size:45px; text-align:left; width:90%; white-space:pre-wrap; background:rgba(255,255,255,0.1); padding:30px; border-radius:15px; }
         .timer { font-size:100px; position:absolute; top:20px; right:40px; color:#f1c40f; }
-        
-        /* タイトルのスタイル */
         .title-large { font-size:80px; color:#f1c40f; margin:0 0 20px 0; }
-        
-        /* 📝 新しいルール説明用の専用スタイル */
-        .rule-box {
-            font-size: 32px;
-            line-height: 1.6;
-            text-align: left;
-            background: rgba(0,0,0,0.5);
-            padding: 40px 60px;
-            border-radius: 20px;
-            border: 3px solid #3498db;
-            max-width: 90%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        /* 強調文字の色設定 */
-        .highlight-y { color: #f1c40f; font-weight: bold; }
-        .highlight-g { color: #2ecc71; font-weight: bold; }
-        .highlight-r { color: #e74c3c; font-weight: bold; }
+        .rule-box { font-size:32px; line-height:1.6; text-align:left; background:rgba(0,0,0,0.5); padding:40px 60px; border-radius:20px; border:3px solid #3498db; max-width:90%; }
+        .highlight-y { color:#f1c40f; font-weight:bold; } .highlight-g { color:#2ecc71; font-weight:bold; } .highlight-r { color:#e74c3c; font-weight:bold; }
     </style>
 </head>
-<body onclick="enableAudio()"> <div id="wait-screen" class="screen active">
+<body onclick="enableAudio()">
+
+    <div id="wait-screen" class="screen active">
         <h1 style="font-size:60px; color:#f1c40f;">スピードクイズ</h1>
         <div class="qr-container"><img src="./qrcode.png"></div>
         <h2 style="font-size:30px; margin-top:20px;">参加チーム: <span id="p-count">0</span></h2>
@@ -61,7 +46,13 @@
         <h1 id="ans-disp" style="font-size:120px; color:#2ecc71; display:none; margin-top:30px;">正解: <span></span></h1>
     </div>
 
-    <div id="end-screen" class="screen"><h1 class="title-large">全問終了！</h1></div>
+    <div id="end-screen" class="screen"><h1 class="title-large" style="font-size:120px;">全問終了！</h1></div>
+    
+    <div id="details-screen" class="screen" style="background:#2c3e50;">
+        <h1 class="title-large">👑 最終結果発表 👑</h1>
+        <div id="ranking-list" style="width:90%; max-width:900px; max-height:65vh; overflow-y:auto; display:flex; flex-direction:column; gap:15px;"></div>
+    </div>
+
     <audio id="snd"></audio>
 
 <script>
@@ -69,60 +60,53 @@
     firebase.initializeApp(firebaseConfig); var db = firebase.database();
     
     const pageLoadTime = Date.now();
-    let qData = []; let sUrls = {}; let timer = null;
-    let audioReady = false;
-
-    function enableAudio() { audioReady = true; console.log("Audio Enabled"); }
+    let qData = []; let sUrls = {}; let timer = null; let playersData = {};
+    let audioReady = false; function enableAudio() { audioReady = true; }
 
     db.ref('quizConfig').on('value', s => qData = s.val() || []);
     db.ref('soundConfig').on('value', s => sUrls = s.val() || {});
     db.ref('players').on('value', s => {
-        const p = s.val() || {}; document.getElementById('p-count').innerText = Object.keys(p).length;
-        document.getElementById('p-list').innerHTML = Object.values(p).map(v => `<span style="background:#2980b9; padding:8px 15px; border-radius:10px; font-size:20px;">${v.name}</span>`).join('');
+        playersData = s.val() || {}; 
+        document.getElementById('p-count').innerText = Object.keys(playersData).length;
+        document.getElementById('p-list').innerHTML = Object.values(playersData).map(v => `<span style="background:#2980b9; padding:8px 15px; border-radius:10px; font-size:20px;">${v.name}</span>`).join('');
     });
 
     db.ref('adminCommand').on('value', snap => {
         const c = snap.val(); if(!c) return;
+        if(c.type === 'reset' && c.ts > pageLoadTime) { location.reload(); return; }
 
-        if(c.type === 'reset') {
-            if(c.ts > pageLoadTime) location.reload();
-            return;
-        }
-
-        if(c.type === 'rules') { 
-            switchScreen('rules-screen'); play('sndRules'); 
-        } else if(c.type === 'start' || c.type === 'next') {
+        if(c.type === 'rules') { switchScreen('rules-screen'); play('sndRules'); } 
+        else if(c.type === 'start' || c.type === 'next') {
             const q = qData[c.qIndex]; if(!q) return;
             document.getElementById('q-num').innerText = `第 ${c.qIndex+1} 問`;
             document.getElementById('q-txt').innerText = q.text;
             document.getElementById('ans-disp').style.display = 'none';
-            switchScreen('quiz-screen'); 
-            play(c.type==='start'?'sndStart':'sndNext'); 
-            startTimer();
-        } else if(c.type === 'close') {
+            switchScreen('quiz-screen'); play(c.type==='start'?'sndStart':'sndNext'); startTimer();
+        } 
+        else if(c.type === 'close') {
             if(timer) clearInterval(timer);
             document.getElementById('ans-disp').querySelector('span').innerText = qData[c.qIndex]?.ans || "";
             document.getElementById('ans-disp').style.display = 'block';
             play('sndRules'); 
-        } else if(c.type === 'end') { 
-            switchScreen('end-screen'); play('sndEnd'); 
-        } else if(c.type === 'wait') {
-            switchScreen('wait-screen');
+        } 
+        else if(c.type === 'end') { switchScreen('end-screen'); play('sndEnd'); } 
+        else if(c.type === 'details') { 
+            // 点数順に並び替えてランキングを表示
+            let sorted = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
+            let html = sorted.map((p, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.6); padding:20px 40px; border-radius:15px; border:2px solid #f1c40f;">
+                    <div style="font-size:50px; font-weight:bold;"><span style="color:#f1c40f; margin-right:30px;">${i+1}位</span> ${p.name}</div>
+                    <div style="font-size:60px; color:#2ecc71; font-weight:bold;">${p.score || 0} <span style="font-size:30px; color:#fff;">pt</span></div>
+                </div>
+            `).join('');
+            document.getElementById('ranking-list').innerHTML = html;
+            switchScreen('details-screen'); play('sndDetails'); 
         }
+        else if(c.type === 'wait') { switchScreen('wait-screen'); }
     });
 
-    function switchScreen(id) { 
-        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
-        document.getElementById(id).classList.add('active'); 
-    }
-    
-    function play(k) { 
-        if(audioReady && sUrls[k]) { 
-            const a = document.getElementById('snd'); 
-            a.src = sUrls[k]; a.play().catch(e => {}); 
-        } 
-    }
-
+    function switchScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function play(k) { if(audioReady && sUrls[k]) { const a = document.getElementById('snd'); a.src = sUrls[k]; a.play().catch(e => {}); } }
     function startTimer() {
         let l = 60; document.getElementById('timer-disp').innerText = l;
         if(timer) clearInterval(timer);
