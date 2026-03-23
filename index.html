@@ -1,205 +1,125 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>運営パネル - 決定版</title>
+    <meta charset="UTF-8"><title>運営パネル - 同期修正版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #1e1e1e; color: #fff; padding: 20px; margin: 0; }
-        .section { background: #2d2d2d; padding: 25px; border-radius: 12px; border: 1px solid #444; margin-bottom: 20px; }
-        .header h1 { color: #f1c40f; margin: 0 0 20px 0; }
-        .q-row { background: #3d3d3d; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #3498db; }
-        textarea { width: 100%; height: 80px; background: #111; color: #fff; border: 1px solid #555; padding: 10px; font-size: 16px; box-sizing: border-box; }
-        
-        /* 音源設定：以前の使いやすいスタイル */
-        .sound-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        .sound-row { background: #333; padding: 15px; border-radius: 8px; border: 1px solid #555; display: flex; flex-direction: column; gap: 8px; }
-        .sound-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #f1c40f; }
-        .url-input { width: 100%; padding: 8px; background: #111; color: #2ecc71; border: 1px solid #444; font-size: 14px; border-radius: 4px; }
-        
-        .btn-save { background: #27ae60; color: white; width: 100%; padding: 20px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; box-shadow: 0 5px 0 #1e8449; }
-        .btn-save:active { transform: translateY(4px); box-shadow: none; }
-        .btn-add { background: #34495e; color: white; width: 100%; padding: 15px; border: 2px dashed #7f8c8d; cursor: pointer; margin-top: 10px; font-size: 18px; border-radius: 8px; }
+        body { font-family: sans-serif; background: #1e1e1e; color: #fff; padding: 20px; }
+        .section { background: #2d2d2d; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
+        .q-row { background: #3d3d3d; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        textarea { width: 100%; height: 80px; background: #111; color: #fff; border: 1px solid #555; padding: 10px; }
+        .btn-save { background: #27ae60; color: white; width: 100%; padding: 20px; font-size: 20px; font-weight: bold; border: none; cursor: pointer; border-radius: 10px; }
         .btn-control { width: 100%; padding: 20px; font-size: 28px; color: white; border-radius: 10px; cursor: pointer; border: none; margin-bottom: 15px; }
-        .status-display { background: #111; padding: 15px; border: 1px solid #f1c40f; text-align: center; margin-bottom: 15px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
     <div>
-        <div class="header"><h1>運営パネル</h1></div>
-
         <div class="section">
             <h2>🔊 音源設定</h2>
-            
-            <div style="background: #111; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #3498db;">
-                <p style="margin-top:0; font-weight:bold; color:#3498db;">【一括設定】GitHubのフォルダURLを入力</p>
-                <input type="text" id="base-folder-url" style="width:100%; padding:12px; background:#222; color:#fff; border:1px solid #3498db; border-radius: 5px;" 
-                       placeholder="例: https://h-sakamoto-tech.github.io/quiz-app/sounds/" onchange="autoFillUrls()">
-                <p style="font-size:12px; color:#aaa; margin-top:8px;">※URLを入れて枠の外をクリックすると、下の6つの欄が自動で埋まります。</p>
-            </div>
-
-            <div class="sound-grid">
-                <div class="sound-row">
-                    <div class="sound-header"><span>① 締切＆ルール</span><input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')"></div>
-                    <input type="text" id="url-sndRules" class="url-input" placeholder="音源URLがここに入ります">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>② クイズ開始</span><input type="file" onchange="previewSnd(this, 'sndStart', 'url-sndStart')"></div>
-                    <input type="text" id="url-sndStart" class="url-input" placeholder="音源URLがここに入ります">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>③ 次へ（正解）</span><input type="file" onchange="previewSnd(this, 'sndNext', 'url-sndNext')"></div>
-                    <input type="text" id="url-sndNext" class="url-input" placeholder="音源URLがここに入ります">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>④ 終了表示</span><input type="file" onchange="previewSnd(this, 'sndEnd', 'url-sndEnd')"></div>
-                    <input type="text" id="url-sndEnd" class="url-input" placeholder="音源URLがここに入ります">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>⑤ 結果発表</span><input type="file" onchange="previewSnd(this, 'sndDetails', 'url-sndDetails')"></div>
-                    <input type="text" id="url-sndDetails" class="url-input" placeholder="音源URLがここに入ります">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>⑥ 総合順位</span><input type="file" onchange="previewSnd(this, 'sndRanking', 'url-sndRanking')"></div>
-                    <input type="text" id="url-sndRanking" class="url-input" placeholder="音源URLがここに入ります">
-                </div>
+            <input type="text" id="base-folder-url" style="width:100%; padding:10px; background:#111; color:#2ecc71; border:1px solid #555;" placeholder="GitHubフォルダURL" onchange="autoFillUrls()">
+            <div id="url-list" style="display:none;">
+                <input type="hidden" id="url-sndRules"> <input type="hidden" id="url-sndStart">
+                <input type="hidden" id="url-sndNext"> <input type="hidden" id="url-sndEnd">
+                <input type="hidden" id="url-sndDetails"> <input type="hidden" id="url-sndRanking">
             </div>
         </div>
-
         <div class="section">
             <h2>📝 クイズ設定</h2>
             <div id="questions-container"></div>
-            <button type="button" class="btn-add" onclick="addQuestionRow()">＋ 問題を追加</button>
-            <button type="button" class="btn-save" onclick="saveAllConfig()">💾 すべての設定をクラウドに保存</button>
+            <button onclick="addQuestionRow()" style="width:100%; padding:10px; cursor:pointer;">＋ 問題を追加</button>
+            <button class="btn-save" onclick="saveAllConfig()">💾 設定を保存して反映</button>
         </div>
     </div>
 
-    <div class="control-panel">
+    <div>
         <div class="section">
-            <h2>🎮 進行</h2>
-            <div class="status-display"><div id="current-status-text" style="font-size:24px; color:#f1c40f;">待機中</div></div>
+            <h2>🎮 進行コントロール</h2>
+            <div style="background:#111; padding:15px; border:1px solid #f1c40f; text-align:center; margin-bottom:15px;">
+                <div id="current-status-text" style="font-size:24px; color:#f1c40f;">待機中</div>
+            </div>
+            
+            <button onclick="testConnection()" style="width:100%; padding:10px; background:#34495e; color:white; border:none; cursor:pointer; margin-bottom:10px;">
+                🔄 接続テスト（スクリーンをQRに戻す）
+            </button>
+
             <button class="btn-control" style="background:#8e44ad;" id="btn-rules" onclick="startQuiz()">受付締切</button>
             <div id="nav-group" style="display:none; gap:10px;">
                 <button class="btn-control" style="background:#555; flex:1;" onclick="goPrev()">戻る</button>
                 <button class="btn-control" style="background:#e74c3c; flex:2;" onclick="goNext()">次へ</button>
             </div>
-            <div style="text-align:center; margin-top:20px;">参加チーム: <span id="admin-p-count">0</span></div>
+            <div style="text-align:center; margin-top:20px;">参加: <span id="admin-p-count">0</span></div>
             <div id="admin-p-list" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:5px;"></div>
-            <button style="margin-top:30px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer; padding:10px;" onclick="resetGame()">データをリセット</button>
+            <button onclick="resetGame()" style="margin-top:30px; background:none; border:1px solid #555; color:#555; width:100%;">全リセット</button>
         </div>
     </div>
 </div>
 
-<audio id="sndRules"></audio><audio id="sndStart"></audio><audio id="sndNext"></audio>
-<audio id="sndEnd"></audio><audio id="sndDetails"></audio><audio id="sndRanking"></audio>
-
 <script>
     var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
-    firebase.initializeApp(firebaseConfig);
-    var db = firebase.database();
+    firebase.initializeApp(firebaseConfig); var db = firebase.database();
     
     let scenario = []; let currentStepIndex = -1;
 
-    // 1. クラウドから保存済みのデータを読み込む
     window.onload = function() {
         db.ref('soundConfig').once('value', snap => {
             const snds = snap.val() || {};
             if(snds.baseUrl) document.getElementById('base-folder-url').value = snds.baseUrl;
-            const ids = ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'];
-            ids.forEach(id => { if(snds[id]) document.getElementById('url-' + id).value = snds[id]; });
+            ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => { if(snds[id]) document.getElementById('url-' + id).value = snds[id]; });
         });
         db.ref('quizConfig').once('value', snap => {
             const data = snap.val();
-            document.getElementById('questions-container').innerHTML = '';
-            if (data && data.length > 0) { data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } 
-            else { addQuestionRow(); }
+            if (data) { data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } else { addQuestionRow(); }
         });
     };
 
-    // 2. フォルダURLから自動補完
     function autoFillUrls() {
-        const base = document.getElementById('base-folder-url').value.trim();
-        if(!base) return;
+        const base = document.getElementById('base-folder-url').value.trim(); if(!base) return;
         const fix = base.endsWith('/') ? base : base + '/';
         const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
         for(let id in files) { document.getElementById('url-' + id).value = fix + files[id]; }
     }
 
-    // 3. ファイル選択プレビュー
-    function previewSnd(input, audioId, urlInputId) {
-        if(input.files[0]) {
-            const url = URL.createObjectURL(input.files[0]);
-            const a = document.getElementById(audioId); a.src = url; a.play();
-            // ファイル名からGitHub URLを推測して入力
-            const base = document.getElementById('base-folder-url').value.trim();
-            if(base) {
-                const fix = base.endsWith('/') ? base : base + '/';
-                document.getElementById(urlInputId).value = fix + input.files[0].name;
-            }
-        }
-    }
-
-    // 4. 問題行の追加
     window.addQuestionRow = function(qData = null) {
         const container = document.getElementById('questions-container');
-        const div = document.createElement('div');
-        div.className = 'q-row';
-        div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><b style="color:#f1c40f;">問題</b><button type="button" style="background:#e74c3c; color:white; border:none; padding:5px; cursor:pointer;" onclick="this.parentElement.parentElement.remove()">削除</button></div>
-            <textarea class="q-txt" placeholder="問題文を記入してください">${qData ? qData.text : ""}</textarea>
-            <div style="margin-top:10px;">正解: <select class="q-ans">${['A','B','C','D','E','F','G'].map(v=>`<option value="${v}" ${qData && qData.ans===v?'selected':''}>${v}</option>`).join('')}</select></div>`;
+        const div = document.createElement('div'); div.className = 'q-row';
+        div.innerHTML = `<textarea class="q-txt">${qData?qData.text:''}</textarea>正解:<select class="q-ans">${['A','B','C','D','E','F','G'].map(v=>`<option value="${v}" ${qData&&qData.ans===v?'selected':''}>${v}</option>`).join('')}</select><button onclick="this.parentElement.remove()">削除</button>`;
         container.appendChild(div);
     };
 
-    // 5. 保存
     function saveAllConfig() {
-        const quizData = [];
-        document.querySelectorAll('.q-row').forEach(r => {
-            quizData.push({ text: r.querySelector('.q-txt').value, ans: r.querySelector('.q-ans').value });
-        });
-        const soundData = {
-            baseUrl: document.getElementById('base-folder-url').value,
-            sndRules: document.getElementById('url-sndRules').value,
-            sndStart: document.getElementById('url-sndStart').value,
-            sndNext: document.getElementById('url-sndNext').value,
-            sndEnd: document.getElementById('url-sndEnd').value,
-            sndDetails: document.getElementById('url-sndDetails').value,
-            sndRanking: document.getElementById('url-sndRanking').value
-        };
-        db.ref('quizConfig').set(quizData);
-        db.ref('soundConfig').set(soundData).then(() => {
-            alert("✅ すべての設定をクラウドに保存しました！");
-            location.reload();
-        });
+        const qData = []; document.querySelectorAll('.q-row').forEach(r => { qData.push({ text: r.querySelector('.q-txt').value, ans: r.querySelector('.q-ans').value }); });
+        const sData = { baseUrl: document.getElementById('base-folder-url').value, sndRules: document.getElementById('url-sndRules').value, sndStart: document.getElementById('url-sndStart').value, sndNext: document.getElementById('url-sndNext').value, sndEnd: document.getElementById('url-sndEnd').value, sndDetails: document.getElementById('url-sndDetails').value, sndRanking: document.getElementById('url-sndRanking').value };
+        db.ref('quizConfig').set(qData); db.ref('soundConfig').set(sData); alert("保存完了！"); location.reload();
     }
 
-    // 進行ロジック
-    function buildScenario(qCount) {
-        scenario = [{ type: 'rules', title: 'ルール説明' }];
-        for(let i=0; i<qCount; i++) {
-            scenario.push({ type: i===0?'start':'next', qIndex: i, title: `第${i+1}問 受付中` });
-            scenario.push({ type: 'close', qIndex: i, title: `第${i+1}問 正解表示` });
-        }
-        scenario.push({ type: 'end', title: '終了' }, { type: 'details', title: '結果発表' }, { type: 'ranking', title: '総合順位' });
+    function buildScenario(n) {
+        scenario = [{type:'rules',title:'ルール説明'}];
+        for(let i=0;i<n;i++) { scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`},{type:'close',qIndex:i,title:`第${i+1}問 正解発表`}); }
+        scenario.push({type:'end',title:'終了'},{type:'details',title:'結果一覧'},{type:'ranking',title:'総合順位'});
     }
+
     function executeStep() {
         const step = scenario[currentStepIndex];
         document.getElementById('current-status-text').innerText = step.title;
-        document.getElementById('btn-rules').style.display = 'none';
-        document.getElementById('nav-group').style.display = 'flex';
+        document.getElementById('btn-rules').style.display = 'none'; document.getElementById('nav-group').style.display = 'flex';
         db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: Date.now() });
     }
+
     function startQuiz() { if(scenario.length<=1) return alert("問題を保存してください"); currentStepIndex = 0; executeStep(); }
     function goNext() { if (currentStepIndex < scenario.length - 1) { currentStepIndex++; executeStep(); } }
     function goPrev() { if (currentStepIndex > 0) { currentStepIndex--; executeStep(); } }
-    function resetGame() { if(confirm("リセット？")) { db.ref('players').remove(); db.ref('answers').remove(); location.reload(); } }
+    
+    // 【接続テスト用】強制的に待機画面(QR)に戻す命令を送る
+    function testConnection() { db.ref('adminCommand').set({ type: 'wait', ts: Date.now() }); }
+
+    function resetGame() { if(confirm("リセット？")) { db.ref('adminCommand').set({ type: 'reset', ts: Date.now() }); db.ref('players').remove(); db.ref('answers').remove(); location.reload(); } }
     db.ref('players').on('value', snap => {
-        const players = snap.val() || {};
-        document.getElementById('admin-p-count').innerText = Object.keys(players).length;
-        document.getElementById('admin-p-list').innerHTML = Object.values(players).map(p => `<span style="background:#2980b9; padding:5px; border-radius:5px; font-size:12px;">${p.name}</span>`).join('');
+        const p = snap.val() || {}; document.getElementById('admin-p-count').innerText = Object.keys(p).length;
+        document.getElementById('admin-p-list').innerHTML = Object.values(p).map(v => `<span style="background:#2980b9; padding:5px; border-radius:5px; font-size:12px;">${v.name}</span>`).join('');
     });
 </script>
 </body>
