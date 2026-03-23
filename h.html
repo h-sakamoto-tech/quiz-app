@@ -1,113 +1,55 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>クイズ参加画面</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>参加</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; margin: 0; background: #121212; color: white; text-align: center; }
-        .screen { display: none; padding: 20px; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-        .active { display: flex !important; }
-        input { font-size: 20px; padding: 12px; border-radius: 8px; border: none; width: 80%; margin-bottom: 20px; }
-        button { font-size: 24px; padding: 15px 30px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-join { background: #27ae60; color: white; width: 80%; }
-        .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 400px; }
-        .btn-ans { background: #3498db; color: white; height: 100px; font-size: 40px; }
-        .msg { font-size: 20px; margin-top: 20px; color: #f1c40f; }
+        body { background:#121212; color:#fff; text-align:center; font-family:sans-serif; }
+        .screen { display:none; padding:20px; height:100vh; flex-direction:column; justify-content:center; }
+        .active { display:flex !important; }
+        button { font-size:30px; padding:20px; margin:10px; border-radius:10px; border:none; cursor:pointer; }
+        .btn-ans { background:#3498db; color:#fff; }
     </style>
 </head>
 <body>
-
-    <div id="screen-entry" class="screen active">
-        <h2 style="color:#f1c40f;">スピードクイズ</h2>
-        <p>チーム名を入力してください</p>
-        <input type="text" id="player-name" placeholder="例：チーム坂本" maxlength="10">
-        <button class="btn-join" onclick="joinGame()">参加する！</button>
+    <div id="entry" class="screen active">
+        <h2>チーム名</h2><input type="text" id="nn" style="font-size:24px; padding:10px;"><br>
+        <button onclick="join()" style="background:#27ae60; color:#fff;">参加</button>
     </div>
-
-    <div id="screen-wait" class="screen">
-        <h2 id="wait-msg">準備完了！</h2>
-        <p>スクリーンでクイズが始まるまで<br>そのままお待ちください...</p>
-        <div class="msg" id="player-display" style="border:1px solid #555; padding:10px; border-radius:10px;"></div>
-    </div>
-
-    <div id="screen-quiz" class="screen">
-        <h2 id="q-label" style="color:#f1c40f;">第 1 問</h2>
-        <div class="choice-grid">
-            <button class="btn-ans" onclick="sendAnswer('A')">A</button>
-            <button class="btn-ans" onclick="sendAnswer('B')">B</button>
-            <button class="btn-ans" onclick="sendAnswer('C')">C</button>
-            <button class="btn-ans" onclick="sendAnswer('D')">D</button>
+    <div id="wait" class="screen"><h2>待機中...</h2><p id="my-name"></p></div>
+    <div id="quiz" class="screen">
+        <h2 id="qn">問題</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr;">
+            <button class="btn-ans" onclick="ans('A')">A</button><button class="btn-ans" onclick="ans('B')">B</button>
+            <button class="btn-ans" onclick="ans('C')">C</button><button class="btn-ans" onclick="ans('D')">D</button>
         </div>
-        <div id="ans-msg" class="msg"></div>
+        <p id="msg"></p>
     </div>
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
+    firebase.initializeApp(firebaseConfig); const db = firebase.database();
+    let uid = localStorage.getItem('quid') || "u"+Math.random().toString(36).substr(2,7); localStorage.setItem('quid', uid);
+    let joined = false;
 
-    <script>
-        var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.database();
-
-        let myId = localStorage.getItem('quiz_uid') || "uid_" + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('quiz_uid', myId);
-        let isJoined = false;
-
-        function switchScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+    function join() {
+        const n = document.getElementById('nn').value; if(!n) return;
+        db.ref('players/'+uid).set({name:n, score:0}).then(()=>{ joined=true; document.getElementById('my-name').innerText=n; switchS('wait'); });
+    }
+    db.ref('adminCommand').on('value', s => {
+        const c = s.val(); if(!c || c.type==='reset') { joined=false; switchS('entry'); return; }
+        if(!joined) return;
+        if(c.type==='start'||c.type==='next') { 
+            document.getElementById('qn').innerText=`第${c.qIndex+1}問`; 
+            document.getElementById('msg').innerText="";
+            document.querySelectorAll('.btn-ans').forEach(b=>b.disabled=false);
+            switchS('quiz'); 
         }
-
-        // 名前を入れて参加
-        function joinGame() {
-            const name = document.getElementById('player-name').value.trim();
-            if (!name) return alert("名前を入れてね！");
-            
-            db.ref('players/' + myId).set({ name: name, score: 0, ts: Date.now() })
-            .then(() => {
-                isJoined = true;
-                document.getElementById('player-display').innerText = "チーム名：" + name;
-                switchScreen('screen-wait');
-            });
-        }
-
-        // 命令を監視
-        db.ref('adminCommand').on('value', snap => {
-            const cmd = snap.val();
-            
-            // 命令がない、またはリセットされた場合は最初の画面へ
-            if (!cmd || cmd.type === 'reset') {
-                isJoined = false;
-                switchScreen('screen-entry');
-                return;
-            }
-
-            // まだ参加登録していない人は、どの命令が来ても登録画面のまま
-            if (!isJoined) return;
-
-            // クイズ開始・次の問題
-            if (cmd.type === 'start' || cmd.type === 'next') {
-                document.getElementById('q-label').innerText = "第 " + (cmd.qIndex + 1) + " 問";
-                document.getElementById('ans-msg').innerText = "";
-                document.querySelectorAll('.btn-ans').forEach(b => b.disabled = false);
-                switchScreen('screen-quiz');
-            } 
-            // 締め切り
-            else if (cmd.type === 'close') {
-                document.getElementById('ans-msg').innerText = "締め切りました";
-                document.querySelectorAll('.btn-ans').forEach(b => b.disabled = true);
-            } 
-            // それ以外（ルール説明、結果発表など）は待機画面
-            else {
-                switchScreen('screen-wait');
-            }
-        });
-
-        function sendAnswer(choice) {
-            db.ref('answers/' + myId).set({ choice: choice, ts: Date.now() });
-            document.getElementById('ans-msg').innerText = "「" + choice + "」で送信！";
-            document.querySelectorAll('.btn-ans').forEach(b => b.disabled = true);
-        }
-    </script>
+        else if(c.type==='close') { document.querySelectorAll('.btn-ans').forEach(b=>b.disabled=true); document.getElementById('msg').innerText="終了"; }
+        else { switchS('wait'); }
+    });
+    function ans(v) { db.ref('answers/'+uid).set({choice:v, ts:Date.now()}); document.getElementById('msg').innerText=v+" 送信済"; document.querySelectorAll('.btn-ans').forEach(b=>b.disabled=true); }
+    function switchS(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+</script>
 </body>
 </html>
