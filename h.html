@@ -1,31 +1,48 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>参加</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>クイズ参加</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { background:#121212; color:#fff; text-align:center; font-family:sans-serif; }
-        .screen { display:none; padding:20px; height:100vh; flex-direction:column; justify-content:center; }
+        body { background:#121212; color:#fff; text-align:center; font-family:sans-serif; margin:0; }
+        .screen { display:none; padding:20px; height:100vh; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;}
         .active { display:flex !important; }
-        button { font-size:30px; padding:20px; margin:10px; border-radius:10px; border:none; cursor:pointer; }
-        .btn-ans { background:#3498db; color:#fff; }
+        input { font-size:24px; padding:15px; width:80%; border-radius:10px; border:none; margin-bottom:20px; text-align:center;}
+        .btn-join { background:#27ae60; color:#fff; font-size:26px; padding:15px 40px; border-radius:10px; border:none; font-weight:bold; width:80%; }
+        
+        /* 選択ボタンのスタイル */
+        .choice-grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; width:100%; max-width:400px; }
+        .btn-ans { background:#3498db; color:#fff; font-size:50px; font-weight:bold; height:120px; border-radius:15px; border:none; transition: 0.2s; }
+        
+        .msg { font-size:24px; color:#f1c40f; margin-top:20px; font-weight:bold; }
     </style>
 </head>
 <body>
     <div id="entry" class="screen active">
-        <h2>チーム名</h2><input type="text" id="nn" style="font-size:24px; padding:10px;"><br>
-        <button onclick="join()" style="background:#27ae60; color:#fff;">参加</button>
+        <h2 style="color:#f1c40f; font-size:35px; margin-bottom:10px;">スピードクイズ</h2>
+        <p style="font-size:18px; color:#ccc;">チーム名を入力してください</p>
+        <input type="text" id="nn" placeholder="例: チーム坂本">
+        <button class="btn-join" onclick="join()">参加する！</button>
     </div>
-    <div id="wait" class="screen"><h2>待機中...</h2><p id="my-name"></p></div>
+    
+    <div id="wait" class="screen">
+        <h2 style="font-size:40px;">待機中...</h2>
+        <p style="font-size:20px; color:#aaa;">スクリーンに注目してください</p>
+        <div style="background:#222; border:2px solid #555; padding:15px; border-radius:10px; margin-top:20px;">
+            エントリー名：<br><b id="my-name" style="font-size:28px; color:#3498db;"></b>
+        </div>
+    </div>
+    
     <div id="quiz" class="screen">
-        <h2 id="qn">問題</h2>
-        <div style="display:grid; grid-template-columns:1fr 1fr;">
+        <h2 id="qn" style="font-size:40px; color:#f1c40f; margin-bottom:30px;">問題</h2>
+        <div class="choice-grid">
             <button class="btn-ans" onclick="ans('A')">A</button><button class="btn-ans" onclick="ans('B')">B</button>
             <button class="btn-ans" onclick="ans('C')">C</button><button class="btn-ans" onclick="ans('D')">D</button>
         </div>
-        <p id="msg"></p>
+        <p id="msg" class="msg"></p>
     </div>
+    
 <script>
     const firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
@@ -33,22 +50,53 @@
     let joined = false;
 
     function join() {
-        const n = document.getElementById('nn').value; if(!n) return;
+        const n = document.getElementById('nn').value.trim(); if(!n) return alert("チーム名を入力してください");
         db.ref('players/'+uid).set({name:n, score:0}).then(()=>{ joined=true; document.getElementById('my-name').innerText=n; switchS('wait'); });
     }
+    
     db.ref('adminCommand').on('value', s => {
         const c = s.val(); if(!c || c.type==='reset') { joined=false; switchS('entry'); return; }
         if(!joined) return;
+
         if(c.type==='start'||c.type==='next') { 
-            document.getElementById('qn').innerText=`第${c.qIndex+1}問`; 
-            document.getElementById('msg').innerText="";
-            document.querySelectorAll('.btn-ans').forEach(b=>b.disabled=false);
+            document.getElementById('qn').innerText=`第 ${c.qIndex+1} 問`; 
+            document.getElementById('msg').innerText="回答を選んでください！";
+            document.getElementById('msg').style.color = "#fff";
+            // ボタンの色と状態を元に戻す
+            document.querySelectorAll('.btn-ans').forEach(b => {
+                b.disabled = false;
+                b.style.background = '#3498db'; // 元の青色
+                b.style.opacity = '1';
+                b.style.transform = 'none';
+            });
             switchS('quiz'); 
         }
-        else if(c.type==='close') { document.querySelectorAll('.btn-ans').forEach(b=>b.disabled=true); document.getElementById('msg').innerText="終了"; }
+        else if(c.type==='close') { 
+            document.querySelectorAll('.btn-ans').forEach(b=>b.disabled=true); 
+            document.getElementById('msg').innerText="回答締め切り！"; 
+            document.getElementById('msg').style.color = "#f1c40f";
+        }
         else { switchS('wait'); }
     });
-    function ans(v) { db.ref('answers/'+uid).set({choice:v, ts:Date.now()}); document.getElementById('msg').innerText=v+" 送信済"; document.querySelectorAll('.btn-ans').forEach(b=>b.disabled=true); }
+
+    function ans(v) { 
+        db.ref('answers/'+uid).set({choice:v, ts:Date.now()}); 
+        document.getElementById('msg').innerText = "「" + v + "」を送信しました！"; 
+        document.getElementById('msg').style.color = "#2ecc71";
+        
+        // 押したボタンの色を変え、他を暗くする
+        document.querySelectorAll('.btn-ans').forEach(b => {
+            b.disabled = true;
+            if (b.innerText === v) {
+                b.style.background = '#e74c3c'; // 選んだボタンは赤
+                b.style.transform = 'scale(0.95)';
+            } else {
+                b.style.background = '#555'; // 選ばなかったボタンはグレー
+                b.style.opacity = '0.4';
+            }
+        }); 
+    }
+    
     function switchS(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 </script>
 </body>
