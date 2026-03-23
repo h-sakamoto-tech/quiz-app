@@ -1,63 +1,140 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>会場スクリーン</title>
+    <meta charset="UTF-8"><title>会場スクリーン - QR修正版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { margin:0; background:#000; color:#fff; font-family:sans-serif; overflow:hidden; text-align:center; }
-        .screen { display:none; width:100vw; height:100vh; flex-direction:column; align-items:center; justify-content:center; }
+        body { margin:0; background:#000; color:#fff; font-family:'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; overflow:hidden; }
+        
+        /* 画面共通のスタイル */
+        .screen { display:none; width:100vw; height:100vh; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; }
+        /* 【重要】activeクラスが付いた時だけ表示 */
         .active { display:flex !important; }
-        .q-text { font-size:40px; text-align:left; width:90%; white-space:pre-wrap; background:rgba(255,255,255,0.1); padding:20px; }
-        .timer { font-size:100px; position:absolute; top:20px; right:40px; color:#f1c40f; }
-        .player-badge { background:#2980b9; padding:10px 20px; border-radius:10px; margin:5px; font-size:24px; }
+
+        /* -------------------------------------------
+           1. 待機画面（QRコード表示画面）
+        ------------------------------------------- */
+        #wait-screen {
+            display: none; /* デフォルトは非表示 */
+            background: #111; /* 真っ黒より少し明るく */
+            padding: 40px;
+        }
+        #wait-screen h1 { font-size:70px; color:#f1c40f; margin:0 0 20px 0; }
+        #wait-screen h2 { font-size:40px; margin:20px 0 0 0; }
+        
+        /* 【重要】QRコードを囲む白い枠（添付画像の黒い四角を白く直す） */
+        .qr-container {
+            background: #fff; /* 真っ白 */
+            padding: 25px;
+            border-radius: 30px; /* 角を丸く */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(255,255,255,0.3); /* 少し光らせる */
+        }
+        .qr-container img {
+            width: 450px; /* QRコードの大きさ */
+            height: 450px;
+            object-fit: contain;
+        }
+
+        /* 参加チーム数のバッジ */
+        .team-count-badge {
+            background: #e74c3c;
+            padding: 10px 30px;
+            border-radius: 40px;
+            font-size: 30px;
+            margin-top: 15px;
+        }
+        /* 参加者名のリスト（待機画面の下） */
+        .player-list {
+            display:flex; flex-wrap:wrap; justify-content:center; gap:10px; width:90%; margin-top:20px;
+        }
+        .player-badge {
+            background:#2980b9; padding:8px 15px; border-radius:10px; font-size:22px;
+        }
+
+        /* -------------------------------------------
+           2. クイズ画面
+        ------------------------------------------- */
+        #quiz-screen {
+            background: radial-gradient(circle, #2c3e50, #000000); /* グラデーション */
+        }
+        .timer { font-size:120px; position:absolute; top:30px; right:60px; color:#f1c40f; font-weight:bold; }
+        .timer-urgent { color: #e74c3c; animation: blink 1s infinite; } /* 10秒以下で赤く点滅 */
+        @keyframes blink { from {opacity: 1;} to {opacity: 0.3;} }
+        
+        .q-header { font-size:45px; color:#f1c40f; font-weight:bold; margin-bottom:20px; width:95%; text-align:center; }
+        .q-text { 
+            font-size:38px; font-weight:bold; line-height:1.2; text-align:left; width:95%; 
+            white-space:pre-wrap; background:rgba(255,255,255,0.1); padding:30px; border-radius:15px; 
+            margin-bottom: 20px;
+        }
+        
+        /* 回答受付状況（ゲージ） */
+        .ratio-box {
+            font-size: 28px; background: rgba(0,0,0,0.8); padding: 10px 30px; border-radius: 40px; border: 3px solid #3498db;
+        }
+        .correct-ans { font-size:130px; color:#2ecc71; font-weight:bold; margin-top:30px; display:none; animation: popUp 0.5s forwards; }
+        @keyframes popUp { from {transform: scale(0);} to {transform: scale(1);} }
+
+        /* 他の画面（ end, details, ranking など）用 */
+        .fullscreen-title { font-size:150px; font-weight:bold; color:#f1c40f; }
     </style>
 </head>
 <body>
-    <div id="wait" class="screen active">
-        <h1 style="font-size:80px;">スピードクイズ</h1>
-        <div style="background:#fff; padding:20px;"><img src="./qrcode.png" width="400"></div>
-        <h2 style="font-size:40px;">参加チーム: <span id="pc">0</span></h2>
-        <div id="pl" style="display:flex; flex-wrap:wrap; justify-content:center;"></div>
+
+    <div id="wait-screen" class="screen active">
+        <h1>スピードクイズ 会場</h1>
+        <div class="qr-container">
+            <img src="./qrcode.png" alt="QRコード">
+        </div>
+        <h2>
+            <span class="team-count-badge">参加チーム: <span id="p-count">0</span></span>
+        </h2>
+        <div id="p-list" class="player-list"></div>
     </div>
-    <div id="quiz" class="screen">
-        <div class="timer" id="tm">60</div>
-        <h2 id="q-num" style="font-size:40px;">第 1 問</h2>
-        <div class="q-text" id="q-txt"></div>
-        <h1 id="ans" style="font-size:120px; color:#2ecc71; display:none;">正解: <span></span></h1>
+
+    <div id="quiz-screen" class="screen">
+        <div class="timer" id="timer-display">60</div>
+        <div class="q-header" id="disp-qnum">第 1 問</div>
+        <div class="q-text" id="disp-qtext">ここに問題文が表示されます</div>
+        <div id="disp-status" class="ratio-box">⏳ 回答受付中...</div>
+        <div id="disp-ans" class="correct-ans">正解は：<span></span></div>
     </div>
+
+    <div id="rules-screen" class="screen"><h1 class="fullscreen-title">ルール説明</h1></div>
+    <div id="end-screen" class="screen"><h1 class="fullscreen-title">全問終了！</h1></div>
+    <div id="details-screen" class="screen"><h2>結果一覧</h2><div id="details-list"></div></div>
+    <div id="ranking-screen" class="screen"><h1 class="fullscreen-title">Final Ranking</h1></div>
+
     <audio id="snd"></audio>
 <script>
     const firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
-    let qData = []; let sUrls = {}; let timer = null;
+    let qData = []; let sUrls = {}; let timer = null; let totalTeams = 0; let answeredTeams = 0;
 
-    db.ref('quizConfig').on('value', s => qData = s.val() || []);
+    // 音源と問題を読み込む
     db.ref('soundConfig').on('value', s => sUrls = s.val() || {});
-    db.ref('players').on('value', s => {
-        const p = s.val() || {}; document.getElementById('pc').innerText = Object.keys(p).length;
-        document.getElementById('pl').innerHTML = Object.values(p).map(v => `<div class="player-badge">${v.name}</div>`).join('');
+    db.ref('quizConfig').on('value', s => qData = s.val() || []);
+
+    // 参加者リストと名前をリアルタイム監視
+    db.ref('players').on('value', snap => {
+        const players = snap.val() || {};
+        totalTeams = Object.keys(players).length;
+        document.getElementById('p-count').innerText = totalTeams;
+        document.getElementById('p-list').innerHTML = Object.values(players).map(v => `<div class="player-badge">👤 ${v.name}</div>`).join('');
+        updateRatioDisplay();
     });
 
-    db.ref('adminCommand').on('value', s => {
-        const c = s.val(); if(!c) return;
-        if(c.type === 'rules') { switchScreen('wait'); play('rules'); }
-        if(c.type === 'start' || c.type === 'next') { 
-            const q = qData[c.qIndex]; document.getElementById('q-num').innerText = `第${c.qIndex+1}問`;
-            document.getElementById('q-txt').innerText = q.text;
-            document.getElementById('ans').style.display = 'none';
-            switchScreen('quiz'); play(c.type); startTimer();
-        }
-        if(c.type === 'close') { clearInterval(timer); document.getElementById('ans').style.display='block'; document.getElementById('ans').querySelector('span').innerText = qData[c.qIndex].ans; play('rules'); }
+    // 回答状況（n/mチーム）を監視
+    db.ref('answers').on('value', snap => {
+        const answers = snap.val() || {};
+        answeredTeams = Object.keys(answers).length;
+        updateRatioDisplay();
     });
 
-    function switchScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-    function play(k) { if(sUrls[k]) { const a = document.getElementById('snd'); a.src = sUrls[k]; a.play(); } }
-    function startTimer() {
-        let l = 60; document.getElementById('tm').innerText = l;
-        if(timer) clearInterval(timer);
-        timer = setInterval(() => { l--; document.getElementById('tm').innerText = l; if(l<=0) clearInterval(timer); }, 1000);
-    }
-</script>
-</body>
-</html>
+    function updateRatioDisplay() {
+        const statusEl = document.getElementById('disp-status');
+        if(!statusEl.classList.contains('status-closed')){
