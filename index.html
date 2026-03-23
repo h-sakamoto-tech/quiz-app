@@ -12,13 +12,11 @@
         .header h1 { color: #f1c40f; margin: 0; font-size: 2.5rem; }
         .section { background: #2d2d2d; padding: 25px; border-radius: 12px; border: 1px solid #444; margin-bottom: 20px; }
         
-        /* 音源設定のスタイル */
         .sound-grid { display: grid; gap: 10px; margin-top: 15px; }
         .sound-row { background: #333; padding: 15px; border-radius: 8px; border: 1px solid #555; }
         .sound-header { display: flex; justify-content: space-between; align-items: center; color: #f1c40f; font-weight: bold; margin-bottom: 8px; }
         .url-input { width: 100%; padding: 8px; background: #111; color: #2ecc71; border: 1px solid #555; font-size: 14px; border-radius: 4px; box-sizing: border-box; }
         
-        /* 問題設定のスタイル */
         .q-row { background: #3d3d3d; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #3498db; }
         textarea { width: 100%; height: 80px; background: #111; color: #fff; border: 1px solid #555; padding: 10px; font-size: 16px; box-sizing: border-box; resize: vertical; }
         .btn-save { background: #27ae60; color: white; width: 100%; padding: 20px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; }
@@ -26,20 +24,21 @@
         .btn-control { width: 100%; padding: 20px; font-size: 28px; color: white; border-radius: 10px; cursor: pointer; border: none; margin-bottom: 15px; }
         .status-display { background: #111; padding: 15px; border: 1px solid #f1c40f; text-align: center; margin-bottom: 15px; border-radius: 8px; }
         
-        /* 📊 詳細結果テーブルのスタイル */
-        .result-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: center; background: #222; }
-        .result-table th { background: #444; color: #f1c40f; border: 1px solid #555; padding: 8px; white-space: nowrap; }
-        .result-table td { border: 1px solid #555; padding: 8px; white-space: nowrap; }
-        .mark-o { color: #2ecc71; font-weight: bold; font-size: 18px; }
-        .mark-x { color: #e74c3c; font-weight: bold; font-size: 18px; }
-        .time-sec { font-size: 11px; color: #aaa; }
+        /* 📊 フルサイズ詳細結果テーブル */
+        .table-container { width: 100%; overflow-x: auto; background: #222; border-radius: 8px; border: 1px solid #444; padding: 10px; box-sizing: border-box; }
+        .result-table { width: 100%; border-collapse: collapse; font-size: 16px; text-align: center; }
+        .result-table th { background: #444; color: #f1c40f; border: 1px solid #555; padding: 12px; white-space: nowrap; position: sticky; top: 0; z-index: 1;}
+        .result-table td { border: 1px solid #555; padding: 10px; white-space: nowrap; }
+        .mark-o { color: #2ecc71; font-weight: bold; font-size: 20px; }
+        .mark-x { color: #e74c3c; font-weight: bold; font-size: 20px; }
+        .time-sec { font-size: 12px; color: #aaa; }
     </style>
 </head>
 <body>
 
 <div class="header"><h1>スピードクイズ管理画面</h1></div>
 
-<div style="display: grid; grid-template-columns: 2fr 1.5fr; gap: 30px;">
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
     <div>
         <div class="section">
             <h2>🔊 音源一括設定</h2>
@@ -49,30 +48,12 @@
             </div>
             
             <div class="sound-grid">
-                <div class="sound-row">
-                    <div class="sound-header"><span>① 締切＆ルール</span><input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')"></div>
-                    <input type="text" id="url-sndRules" class="url-input" placeholder="自動入力されます">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>② クイズ開始</span><input type="file" onchange="previewSnd(this, 'sndStart', 'url-sndStart')"></div>
-                    <input type="text" id="url-sndStart" class="url-input" placeholder="自動入力されます">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>③ 次へ（正解）</span><input type="file" onchange="previewSnd(this, 'sndNext', 'url-sndNext')"></div>
-                    <input type="text" id="url-sndNext" class="url-input" placeholder="自動入力されます">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>④ 終了表示</span><input type="file" onchange="previewSnd(this, 'sndEnd', 'url-sndEnd')"></div>
-                    <input type="text" id="url-sndEnd" class="url-input" placeholder="自動入力されます">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>⑤ 結果発表</span><input type="file" onchange="previewSnd(this, 'sndDetails', 'url-sndDetails')"></div>
-                    <input type="text" id="url-sndDetails" class="url-input" placeholder="自動入力されます">
-                </div>
-                <div class="sound-row">
-                    <div class="sound-header"><span>⑥ 総合順位</span><input type="file" onchange="previewSnd(this, 'sndRanking', 'url-sndRanking')"></div>
-                    <input type="text" id="url-sndRanking" class="url-input" placeholder="自動入力されます">
-                </div>
+                <div class="sound-row"><div class="sound-header"><span>① 締切＆ルール</span><input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')"></div><input type="text" id="url-sndRules" class="url-input" placeholder="自動入力されます"></div>
+                <div class="sound-row"><div class="sound-header"><span>② クイズ開始</span><input type="file" onchange="previewSnd(this, 'sndStart', 'url-sndStart')"></div><input type="text" id="url-sndStart" class="url-input" placeholder="自動入力されます"></div>
+                <div class="sound-row"><div class="sound-header"><span>③ 次へ（正解）</span><input type="file" onchange="previewSnd(this, 'sndNext', 'url-sndNext')"></div><input type="text" id="url-sndNext" class="url-input" placeholder="自動入力されます"></div>
+                <div class="sound-row"><div class="sound-header"><span>④ 終了表示</span><input type="file" onchange="previewSnd(this, 'sndEnd', 'url-sndEnd')"></div><input type="text" id="url-sndEnd" class="url-input" placeholder="自動入力されます"></div>
+                <div class="sound-row"><div class="sound-header"><span>⑤ 結果発表</span><input type="file" onchange="previewSnd(this, 'sndDetails', 'url-sndDetails')"></div><input type="text" id="url-sndDetails" class="url-input" placeholder="自動入力されます"></div>
+                <div class="sound-row"><div class="sound-header"><span>⑥ 総合順位</span><input type="file" onchange="previewSnd(this, 'sndRanking', 'url-sndRanking')"></div><input type="text" id="url-sndRanking" class="url-input" placeholder="自動入力されます"></div>
             </div>
         </div>
 
@@ -99,16 +80,18 @@
                 <button class="btn-control" style="background:#e74c3c; flex:2; font-size:24px;" onclick="goNext()">次へ進む</button>
             </div>
 
-            <div style="margin-top:30px;">
-                <h3 style="color:#3498db; margin-bottom:5px;">📊 チーム別 詳細結果表</h3>
-                <div style="text-align:right; font-size:14px; color:#aaa;">参加: <span id="admin-p-count" style="color:#fff; font-weight:bold;">0</span> チーム</div>
-                <div style="overflow-x: auto;">
-                    <div id="admin-detailed-results">※参加者が登録するとここに表示されます</div>
-                </div>
-            </div>
+            <div style="text-align:center; margin-top:20px; font-size:18px;">参加: <span id="admin-p-count" style="color:#f1c40f; font-weight:bold;">0</span> チーム</div>
+            <div id="admin-p-list" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:5px; justify-content:center;"></div>
             
             <button onclick="resetGame()" style="margin-top:50px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer; padding:5px;">全データをリセット</button>
         </div>
+    </div>
+</div>
+
+<div class="section" style="margin-top: 30px;">
+    <h2 style="color:#3498db;">📊 チーム別 詳細結果表（正誤・タイム）</h2>
+    <div class="table-container" id="admin-detailed-results">
+        <div style="color:#aaa; text-align:center; padding:20px;">※参加者が登録するとここに表示されます</div>
     </div>
 </div>
 
@@ -121,28 +104,25 @@
     
     let scenario = []; let currentStepIndex = -1;
     let currentAnswers = {}; let playersData = {}; let currentQuestionStartTs = 0;
-    let globalQCount = 0; // 全問題数
+    let globalQCount = 0;
 
-    // ①回答の監視
     db.ref('answers').on('value', snap => currentAnswers = snap.val() || {});
-    
-    // ②プレイヤーデータの監視と詳細テーブルの描画
     db.ref('players').on('value', snap => {
         playersData = snap.val() || {};
         const pCount = Object.keys(playersData).length;
         document.getElementById('admin-p-count').innerText = pCount;
+        document.getElementById('admin-p-list').innerHTML = Object.values(playersData).map(v => `<span style="background:#2980b9; padding:5px 10px; border-radius:15px; font-size:12px;">${v.name}(${v.score||0}pt)</span>`).join('');
         
-        // テーブルの組み立て
+        // フルサイズテーブルの描画
         if (globalQCount > 0 && pCount > 0) {
-            let tableHtml = `<table class="result-table"><tr><th>チーム名</th><th>合計</th>`;
+            let tableHtml = `<table class="result-table"><tr><th>順位</th><th style="text-align:left;">チーム名</th><th>合計</th>`;
             for (let i = 0; i < globalQCount; i++) { tableHtml += `<th>Q${i+1}</th>`; }
             tableHtml += `</tr>`;
 
-            // 点数順にソートして表示
             let sortedPlayers = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
 
-            sortedPlayers.forEach(p => {
-                tableHtml += `<tr><td>${p.name}</td><td style="color:#f1c40f; font-weight:bold;">${p.score || 0}</td>`;
+            sortedPlayers.forEach((p, index) => {
+                tableHtml += `<tr><td>${index+1}</td><td style="text-align:left; font-weight:bold;">${p.name}</td><td style="color:#f1c40f; font-weight:bold; font-size:20px;">${p.score || 0}</td>`;
                 for (let i = 0; i < globalQCount; i++) {
                     let h = p.history ? p.history[i] : null;
                     if (h) {
@@ -150,16 +130,12 @@
                         if (h.choice === '未') mark = '<span style="color:#aaa;">-</span>';
                         let timeStr = h.time !== '--' ? `${h.time}秒` : '--';
                         tableHtml += `<td>${mark}<br><span class="time-sec">${timeStr}</span></td>`;
-                    } else {
-                        tableHtml += `<td>-</td>`;
-                    }
+                    } else { tableHtml += `<td>-</td>`; }
                 }
                 tableHtml += `</tr>`;
             });
             tableHtml += `</table>`;
             document.getElementById('admin-detailed-results').innerHTML = tableHtml;
-        } else {
-            document.getElementById('admin-detailed-results').innerHTML = '<div style="color:#aaa; text-align:center; padding:20px;">参加チームのデータがありません</div>';
         }
     });
 
@@ -191,10 +167,7 @@
             const url = URL.createObjectURL(input.files[0]);
             const a = document.getElementById(audioId); a.src = url; a.play();
             const base = document.getElementById('base-folder-url').value.trim();
-            if(base) {
-                const fix = base.endsWith('/') ? base : base + '/';
-                document.getElementById(urlInputId).value = fix + input.files[0].name;
-            }
+            if(base) { document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name; }
         }
     }
 
@@ -219,7 +192,7 @@
             scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`});
             scenario.push({type:'close',qIndex:i,title:`第${i+1}問 正解発表`});
         }
-        scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果一覧(ランキング)'});
+        scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果一覧(詳細)'});
     }
 
     function executeStep() {
@@ -231,21 +204,18 @@
         document.getElementById('nav-group').style.display = 'flex';
 
         if (step.type === 'start' || step.type === 'next') {
-            currentQuestionStartTs = now; // 問題出題の時間を記録
+            currentQuestionStartTs = now; 
             db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
         } else if (step.type === 'close') {
-            // ★自動採点・履歴保存システム
             db.ref('quizConfig').once('value').then(snap => {
                 const qData = snap.val() || [];
                 const correctAns = qData[step.qIndex]?.ans;
                 let updates = {};
                 
-                // 全参加者の成績を処理
                 for (let uid in playersData) {
                     let p = playersData[uid];
                     let ans = currentAnswers[uid];
                     
-                    // 1. 今回の問題の履歴を作成
                     let hInfo = { choice: '未', correct: false, time: '--', points: 0 };
                     if (ans && ans.ts >= currentQuestionStartTs) {
                         let elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
@@ -254,21 +224,12 @@
                         hInfo = { choice: ans.choice, correct: isCorrect, time: elapsed, points: points };
                     }
                     
-                    // Firebase上の履歴を更新するデータ
                     updates[`${uid}/history/${step.qIndex}`] = hInfo;
-                    
-                    // 2. 過去の履歴も含めて合計点を安全に再計算
-                    let totalScore = 0;
-                    let historyObj = p.history || {};
-                    historyObj[step.qIndex] = hInfo; // 今回分を仮置きして計算
-                    
-                    for (let q in historyObj) {
-                        totalScore += (historyObj[q].points || 0);
-                    }
+                    let totalScore = 0; let historyObj = p.history || {};
+                    historyObj[step.qIndex] = hInfo; 
+                    for (let q in historyObj) { totalScore += (historyObj[q].points || 0); }
                     updates[`${uid}/score`] = totalScore;
                 }
-                
-                // 一気にクラウドへ保存
                 if (Object.keys(updates).length > 0) db.ref('players').update(updates);
                 db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
             });
