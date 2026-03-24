@@ -16,7 +16,6 @@
         .rule-box { font-size:32px; line-height:1.6; text-align:left; background:rgba(0,0,0,0.5); padding:40px 60px; border-radius:20px; border:3px solid #3498db; max-width:90%; }
         .highlight-y { color:#f1c40f; font-weight:bold; } .highlight-g { color:#2ecc71; font-weight:bold; } .highlight-r { color:#e74c3c; font-weight:bold; }
         
-        /* プロジェクター用 マトリクス表 */
         .proj-table-container { width: 95%; max-height: 80vh; overflow-y: auto; background: rgba(0,0,0,0.7); border-radius: 10px; border: 2px solid #555; }
         .proj-table { width: 100%; border-collapse: collapse; font-size: 22px; text-align: center; }
         .proj-table th { background: #34495e; color: #fff; padding: 10px; position: sticky; top: 0; z-index: 1; border: 1px solid #2c3e50; }
@@ -30,7 +29,7 @@
         .pt-time { font-size: 14px; color: #ccc; display: block; }
     </style>
 </head>
-<body onclick="enableAudio()">
+<body>
 
     <div id="wait-screen" class="screen active">
         <h1 style="font-size:60px; color:#f1c40f;">スピードクイズ</h1>
@@ -75,7 +74,6 @@
     const pageLoadTime = Date.now();
     let qData = []; let sUrls = {}; let timer = null; let playersData = {};
     let globalQCount = 0;
-    let audioReady = false; function enableAudio() { audioReady = true; }
 
     db.ref('quizConfig').on('value', s => { qData = s.val() || []; globalQCount = qData.length; });
     db.ref('soundConfig').on('value', s => sUrls = s.val() || {});
@@ -105,7 +103,6 @@
         } 
         else if(c.type === 'end') { switchScreen('end-screen'); play('sndEnd'); } 
         else if(c.type === 'details') { 
-            // プロジェクター用の巨大マトリクス表を生成
             let sorted = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
             let html = `<table class="proj-table"><tr><th>順位</th><th>チーム名</th><th>合計pt</th>`;
             for(let i=0; i<globalQCount; i++) html += `<th>Q${i+1}</th>`;
@@ -132,7 +129,18 @@
     });
 
     function switchScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-    function play(k) { if(audioReady && sUrls[k]) { const a = document.getElementById('snd'); a.src = sUrls[k]; a.play().catch(e => {}); } }
+    
+    // ★ 音声ブロック対策を強化。クリックされていなくても再生を試みる
+    function play(k) { 
+        if(sUrls[k]) { 
+            const a = document.getElementById('snd'); 
+            a.src = sUrls[k]; 
+            a.play().catch(e => {
+                console.log("【注意】音声がブロックされました。画面を1度クリックしてください。");
+            }); 
+        } 
+    }
+
     function startTimer() {
         let l = 60; document.getElementById('timer-disp').innerText = l;
         if(timer) clearInterval(timer);
