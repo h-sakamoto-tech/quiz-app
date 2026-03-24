@@ -45,7 +45,7 @@
 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
     <div>
         <div class="section">
-            <h2 class="collapsible-header" onclick="toggleSection('sound-settings-content', 'sound-icon')" title="クリックで開閉">
+            <h2 class="collapsible-header" onclick="toggleSection('sound-settings-content', 'sound-icon')">
                 <span>🔊 音源一括設定</span><span id="sound-icon">▼</span>
             </h2>
             <div id="sound-settings-content">
@@ -65,7 +65,7 @@
         </div>
 
         <div class="section">
-            <h2 class="collapsible-header" onclick="toggleSection('quiz-settings-content', 'quiz-icon')" title="クリックで開閉">
+            <h2 class="collapsible-header" onclick="toggleSection('quiz-settings-content', 'quiz-icon')">
                 <span>📝 クイズ問題の設定</span><span id="quiz-icon">▼</span>
             </h2>
             <div id="quiz-settings-content">
@@ -243,13 +243,18 @@
         db.ref('quizConfig').set(qData); db.ref('soundConfig').set(sData).then(() => { alert("保存しました！"); location.reload(); });
     }
 
+    // ★修正：シナリオに「結果発表(タイトルのみ)」と「総合順位(マトリクス表)」を追加
     function buildScenario(n) {
         scenario = [{type:'rules',title:'ルール説明'}];
         for(let i=0;i<n;i++) { 
             scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`});
             scenario.push({type:'close',qIndex:i,title:`第${i+1}問 正解発表`});
         }
-        scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果一覧(詳細)'});
+        scenario.push(
+            {type:'end',title:'全問終了'},
+            {type:'details',title:'結果発表(タイトル)'},
+            {type:'ranking',title:'総合順位(マトリクス表)'}
+        );
     }
 
     function executeStep() {
@@ -260,7 +265,7 @@
         document.getElementById('btn-start-flow').style.display = 'none';
         document.getElementById('nav-group').style.display = 'flex';
 
-        // ★ 最後のステップなら「次へ進む」ボタンを隠す（レイアウトを崩さないためにvisibilityを使用）
+        // 最後のステップなら「次へ進む」ボタンを隠す
         if (currentStepIndex >= scenario.length - 1) {
             document.getElementById('btn-next-step').style.visibility = 'hidden';
         } else {
