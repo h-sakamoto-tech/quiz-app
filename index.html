@@ -116,7 +116,7 @@
     firebase.initializeApp(firebaseConfig); var db = firebase.database();
     
     let scenario = []; let currentStepIndex = -1;
-    let currentAnswers = {}; let playersData = {};
+    let currentAnswers = {}; let playersData = {}; let currentQuestionStartTs = 0;
     let globalQCount = 0;
 
     // ★ リアルタイム状況パネルを更新
@@ -134,7 +134,7 @@
             let p = playersData[uid];
             
             if (isAccepting) {
-                // 時計のズレに関係なく、データがあれば「回答済」
+                // 回答データがあれば「回答済」
                 let hasAnswered = (currentAnswers[uid] && currentAnswers[uid].choice);
                 if (hasAnswered) {
                     html += `<div style="display:flex; justify-content:space-between; background:#27ae60; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">回答済</span></div>`;
@@ -252,7 +252,8 @@
         document.getElementById('nav-group').style.display = 'flex';
 
         if (step.type === 'start' || step.type === 'next') {
-            // ★出題の瞬間に古い回答をクリアする（時計のズレ防止）
+            currentQuestionStartTs = now; 
+            // 出題の瞬間に古い回答をクリア
             db.ref('answers').remove().then(() => {
                 db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
                 updateLiveStatus();
@@ -269,20 +270,37 @@
                     
                     let hInfo = { choice: '未', correct: false, time: '--', points: 0 };
                     
-                    // ★時計のズレに関係なく、データがあれば採点する
+                    // ★ タイム計算の強力バックアップシステム
                     if (ans && ans.choice) {
-                        let elapsed = ans.time !== undefined ? ans.time : 60; // スマホ側で計算した秒数を使用
+                        let elapsed = 60; // 初期値
+                        
+                        // 1. スマホが送ってきたタイムがあればそれを優先
+                        if (ans.time !== undefined) {
+                            elapsed = ans.time;
+                        } 
+                        // 2. なければ、管理画面の時計で「出題から今までの秒数」を計算
+                        else if (ans.ts && currentQuestionStartTs) {
+                            elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
+                        }
+                        
+                        // 異常な数値を防ぐガード
+                        if (elapsed < 0) elapsed = 0;
+                        if (elapsed > 60) elapsed = 60;
+
                         let isCorrect = (ans.choice === correctAns);
+                        // 100点 + ボーナス（60秒 - かかった秒数）
                         let points = isCorrect ? 100 + Math.max(0, 60 - elapsed) : 0;
                         hInfo = { choice: ans.choice, correct: isCorrect, time: elapsed, points: points };
                     }
                     
                     updates[`${uid}/history/${step.qIndex}`] = hInfo;
+                    
                     let totalScore = 0; let historyObj = p.history || {};
                     historyObj[step.qIndex] = hInfo; 
                     for (let q in historyObj) { totalScore += (historyObj[q].points || 0); }
                     updates[`${uid}/score`] = totalScore;
                 }
+                
                 if (Object.keys(updates).length > 0) db.ref('players').update(updates);
                 db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
                 updateLiveStatus();
