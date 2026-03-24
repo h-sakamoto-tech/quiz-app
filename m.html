@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>会場スクリーン - 結果発表・順位分割版</title>
+    <meta charset="UTF-8"><title>会場スクリーン - 音声強化版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
@@ -29,7 +29,7 @@
         .pt-time { font-size: 14px; color: #ccc; display: block; }
     </style>
 </head>
-<body onclick="enableAudio()">
+<body>
 
     <div id="wait-screen" class="screen active">
         <h1 style="font-size:60px; color:#f1c40f;">スピードクイズ</h1>
@@ -59,17 +59,11 @@
     </div>
 
     <div id="end-screen" class="screen"><h1 class="title-large" style="font-size:120px;">全問終了！</h1></div>
-    
-    <div id="details-screen" class="screen" style="background:#1a252f;">
-        <h1 class="title-large" style="font-size:120px;">結果発表</h1>
-    </div>
-
+    <div id="details-screen" class="screen" style="background:#1a252f;"><h1 class="title-large" style="font-size:120px;">結果発表</h1></div>
     <div id="ranking-screen" class="screen" style="background:#1a252f;">
         <h1 class="title-large" style="font-size:60px; margin-bottom:10px;">👑 総合順位 👑</h1>
         <div class="proj-table-container" id="matrix-list"></div>
     </div>
-
-    <audio id="snd"></audio>
 
 <script>
     var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
@@ -78,7 +72,9 @@
     const pageLoadTime = Date.now();
     let qData = []; let sUrls = {}; let timer = null; let playersData = {};
     let globalQCount = 0;
-    let audioReady = false; function enableAudio() { audioReady = true; }
+
+    // ★ 独立したオーディオプレイヤー（音が途切れるのを防ぐ）
+    const audioPool = {};
 
     db.ref('quizConfig').on('value', s => { qData = s.val() || []; globalQCount = qData.length; });
     db.ref('soundConfig').on('value', s => sUrls = s.val() || {});
@@ -92,9 +88,7 @@
         const c = snap.val(); if(!c) return;
         if(c.type === 'reset' && c.ts > pageLoadTime) { location.reload(); return; }
 
-        if(c.type === 'rules') { 
-            switchScreen('rules-screen'); play('sndRules'); 
-        } 
+        if(c.type === 'rules') { switchScreen('rules-screen'); play('sndRules'); } 
         else if(c.type === 'start' || c.type === 'next') {
             const q = qData[c.qIndex]; if(!q) return;
             document.getElementById('q-num').innerText = `第 ${c.qIndex+1} 問`;
@@ -108,14 +102,8 @@
             document.getElementById('ans-disp').style.display = 'block';
             play('sndNext'); 
         } 
-        else if(c.type === 'end') { 
-            switchScreen('end-screen'); play('sndEnd'); 
-        } 
-        // ★ 結果発表（タイトルのみ・sndDetails）
-        else if(c.type === 'details') { 
-            switchScreen('details-screen'); play('sndDetails'); 
-        }
-        // ★ 総合順位（マトリクス表・sndRanking）
+        else if(c.type === 'end') { switchScreen('end-screen'); play('sndEnd'); } 
+        else if(c.type === 'details') { switchScreen('details-screen'); play('sndDetails'); }
         else if(c.type === 'ranking') { 
             let sorted = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
             let html = `<table class="proj-table"><tr><th>順位</th><th>チーム名</th><th>合計pt</th>`;
@@ -137,23 +125,33 @@
             });
             html += `</table>`;
             document.getElementById('matrix-list').innerHTML = html;
-            
-            switchScreen('ranking-screen'); 
-            play('sndRanking'); 
+            switchScreen('ranking-screen'); play('sndRanking'); 
         }
         else if(c.type === 'wait') { switchScreen('wait-screen'); }
     });
 
     function switchScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
     
+    // ★ 音声再生を超強力に（ブロックされたら赤い警告を出す！）
     function play(k) { 
-        if(sUrls[k]) { 
-            const a = document.getElementById('snd'); 
-            a.src = sUrls[k]; 
-            a.play().catch(e => {
-                console.log("【注意】音声がブロックされました。画面を1度クリックしてください。");
-            }); 
-        } 
+        if(!sUrls[k]) return;
+        
+        if (!audioPool[k]) { audioPool[k] = new Audio(sUrls[k]); }
+        const a = audioPool[k];
+        a.currentTime = 0;
+
+        a.play().catch(e => {
+            console.warn("音声がブロックされました:", e);
+            let w = document.getElementById('audio-warning');
+            if(!w) {
+                w = document.createElement('div');
+                w.id = 'audio-warning';
+                w.innerHTML = "🔇 音声がブロックされています！<br>ここを1回クリックして許可してください";
+                w.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#e74c3c; color:#fff; padding:20px 40px; border-radius:15px; font-size:28px; font-weight:bold; cursor:pointer; z-index:9999; box-shadow:0 10px 20px rgba(0,0,0,0.5); text-align:center;";
+                w.onclick = () => { w.remove(); a.play(); };
+                document.body.appendChild(w);
+            }
+        }); 
     }
 
     function startTimer() {
