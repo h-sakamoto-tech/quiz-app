@@ -113,9 +113,6 @@
     </div>
 </div>
 
-<audio id="sndRules"></audio><audio id="sndStart"></audio><audio id="sndNext"></audio>
-<audio id="sndEnd"></audio><audio id="sndDetails"></audio><audio id="sndRanking"></audio>
-
 <script>
     var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
     firebase.initializeApp(firebaseConfig); var db = firebase.database();
@@ -127,19 +124,13 @@
     function toggleSection(contentId, iconId) {
         const content = document.getElementById(contentId);
         const icon = document.getElementById(iconId);
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            icon.innerText = '▼';
-        } else {
-            content.style.display = 'none';
-            icon.innerText = '▶';
-        }
+        if (content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '▼'; } 
+        else { content.style.display = 'none'; icon.innerText = '▶'; }
     }
 
     function updateLiveStatus() {
         const container = document.getElementById('admin-live-status');
         if (!container) return;
-        
         let isAccepting = false;
         if (currentStepIndex >= 0 && scenario[currentStepIndex]) {
             isAccepting = (scenario[currentStepIndex].type === 'start' || scenario[currentStepIndex].type === 'next');
@@ -150,11 +141,8 @@
             let p = playersData[uid];
             if (isAccepting) {
                 let hasAnswered = (currentAnswers[uid] && currentAnswers[uid].choice);
-                if (hasAnswered) {
-                    html += `<div style="display:flex; justify-content:space-between; background:#27ae60; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">回答済</span></div>`;
-                } else {
-                    html += `<div style="display:flex; justify-content:space-between; background:#c0392b; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">未回答</span></div>`;
-                }
+                if (hasAnswered) html += `<div style="display:flex; justify-content:space-between; background:#27ae60; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">回答済</span></div>`;
+                else html += `<div style="display:flex; justify-content:space-between; background:#c0392b; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">未回答</span></div>`;
             } else {
                 html += `<div style="display:flex; justify-content:space-between; background:#2980b9; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">${p.score||0} pt</span></div>`;
             }
@@ -177,7 +165,6 @@
             tableHtml += `</tr>`;
 
             let sortedPlayers = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
-
             sortedPlayers.forEach((p, index) => {
                 tableHtml += `<tr><td>${index+1}</td><td style="text-align:left; font-weight:bold;">${p.name}</td><td style="color:#f1c40f; font-weight:bold; font-size:20px;">${p.score || 0}</td>`;
                 for (let i = 0; i < globalQCount; i++) {
@@ -222,7 +209,7 @@
     function previewSnd(input, audioId, urlInputId) {
         if(input.files[0]) {
             const url = URL.createObjectURL(input.files[0]);
-            const a = document.getElementById(audioId); a.src = url; a.play();
+            const a = new Audio(url); a.play();
             const base = document.getElementById('base-folder-url').value.trim();
             if(base) { document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name; }
         }
@@ -243,7 +230,6 @@
         db.ref('quizConfig').set(qData); db.ref('soundConfig').set(sData).then(() => { alert("保存しました！"); location.reload(); });
     }
 
-    // ★修正：シナリオに「結果発表(タイトルのみ)」と「総合順位(マトリクス表)」を追加
     function buildScenario(n) {
         scenario = [{type:'rules',title:'ルール説明'}];
         for(let i=0;i<n;i++) { 
@@ -265,11 +251,11 @@
         document.getElementById('btn-start-flow').style.display = 'none';
         document.getElementById('nav-group').style.display = 'flex';
 
-        // 最後のステップなら「次へ進む」ボタンを隠す
+        // ★ 最後のステップ（総合順位）になったら「次へ進む」ボタンを完全に消す！
         if (currentStepIndex >= scenario.length - 1) {
-            document.getElementById('btn-next-step').style.visibility = 'hidden';
+            document.getElementById('btn-next-step').style.display = 'none';
         } else {
-            document.getElementById('btn-next-step').style.visibility = 'visible';
+            document.getElementById('btn-next-step').style.display = 'block';
         }
 
         if (step.type === 'start' || step.type === 'next') {
@@ -283,35 +269,24 @@
                 const qData = snap.val() || [];
                 const correctAns = qData[step.qIndex]?.ans;
                 let updates = {};
-                
                 for (let uid in playersData) {
-                    let p = playersData[uid];
-                    let ans = currentAnswers[uid];
+                    let p = playersData[uid]; let ans = currentAnswers[uid];
                     let hInfo = { choice: '未', correct: false, time: '--', points: 0 };
-                    
                     if (ans && ans.choice) {
                         let elapsed = 60; 
-                        if (ans.time !== undefined) {
-                            elapsed = ans.time;
-                        } else if (ans.ts && currentQuestionStartTs) {
-                            elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
-                        }
-                        if (elapsed < 0) elapsed = 0;
-                        if (elapsed > 60) elapsed = 60;
-
+                        if (ans.time !== undefined) elapsed = ans.time;
+                        else if (ans.ts && currentQuestionStartTs) elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
+                        if (elapsed < 0) elapsed = 0; if (elapsed > 60) elapsed = 60;
                         let isCorrect = (ans.choice === correctAns);
                         let points = isCorrect ? 100 + Math.max(0, 60 - elapsed) : 0;
                         hInfo = { choice: ans.choice, correct: isCorrect, time: elapsed, points: points };
                     }
-                    
                     updates[`${uid}/history/${step.qIndex}`] = hInfo;
-                    
                     let totalScore = 0; let historyObj = p.history || {};
                     historyObj[step.qIndex] = hInfo; 
                     for (let q in historyObj) { totalScore += (historyObj[q].points || 0); }
                     updates[`${uid}/score`] = totalScore;
                 }
-                
                 if (Object.keys(updates).length > 0) db.ref('players').update(updates);
                 db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
                 updateLiveStatus();
