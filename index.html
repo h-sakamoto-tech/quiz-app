@@ -25,17 +25,18 @@
         .btn-save { background: #27ae60; color: white; width: 100%; padding: 20px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; }
         .btn-add { background: #34495e; color: white; width: 100%; padding: 15px; border: 2px dashed #7f8c8d; cursor: pointer; margin-top: 10px; font-size: 18px; border-radius: 8px; }
         .btn-control { width: 100%; padding: 20px; font-size: 28px; color: white; border-radius: 10px; cursor: pointer; border: none; margin-bottom: 15px; }
-        .status-display { background: #111; padding: 15px; border: 1px solid #f1c40f; text-align: center; margin-bottom: 15px; border-radius: 8px; }
         
         .table-container { width: 100%; overflow-x: auto; background: #222; border-radius: 8px; border: 1px solid #444; padding: 10px; box-sizing: border-box; }
         .result-table { width: 100%; border-collapse: collapse; font-size: 16px; text-align: center; }
         .result-table th { background: #444; color: #f1c40f; border: 1px solid #555; padding: 12px; white-space: nowrap; position: sticky; top: 0; z-index: 1;}
-        .result-table td { border: 1px solid #555; padding: 10px; white-space: nowrap; }
+        .result-table td { border: 1px solid #555; padding: 10px; white-space: nowrap; vertical-align: middle; }
         .mark-o { color: #2ecc71; font-weight: bold; font-size: 20px; }
         .mark-x { color: #e74c3c; font-weight: bold; font-size: 20px; }
         .time-sec { font-size: 12px; color: #aaa; }
-
         .live-status-box { display: flex; flex-direction: column; gap: 5px; max-height: 350px; overflow-y: auto; padding-right: 5px; }
+        
+        /* 📸 アイコン用CSS */
+        .avatar-small { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px; border: 1px solid #fff; }
     </style>
 </head>
 <body>
@@ -50,16 +51,15 @@
             </h2>
             <div id="sound-settings-content">
                 <div style="background: #111; padding: 15px; border-radius: 8px; border: 2px solid #3498db;">
-                    <p style="margin-top:0; font-weight:bold; color:#3498db;">GitHubフォルダURL</p>
                     <input type="text" id="base-folder-url" class="url-input" placeholder="例: https://h-sakamoto-tech.github.io/quiz-app/sounds/" onchange="autoFillUrls()">
                 </div>
                 <div class="sound-grid">
-                    <div class="sound-row"><div class="sound-header"><span>① 締切＆ルール</span><input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')"></div><input type="text" id="url-sndRules" class="url-input" placeholder="自動入力されます"></div>
-                    <div class="sound-row"><div class="sound-header"><span>② クイズ開始</span><input type="file" onchange="previewSnd(this, 'sndStart', 'url-sndStart')"></div><input type="text" id="url-sndStart" class="url-input" placeholder="自動入力されます"></div>
-                    <div class="sound-row"><div class="sound-header"><span>③ 次へ（正解）</span><input type="file" onchange="previewSnd(this, 'sndNext', 'url-sndNext')"></div><input type="text" id="url-sndNext" class="url-input" placeholder="自動入力されます"></div>
-                    <div class="sound-row"><div class="sound-header"><span>④ 終了表示</span><input type="file" onchange="previewSnd(this, 'sndEnd', 'url-sndEnd')"></div><input type="text" id="url-sndEnd" class="url-input" placeholder="自動入力されます"></div>
-                    <div class="sound-row"><div class="sound-header"><span>⑤ 結果発表</span><input type="file" onchange="previewSnd(this, 'sndDetails', 'url-sndDetails')"></div><input type="text" id="url-sndDetails" class="url-input" placeholder="自動入力されます"></div>
-                    <div class="sound-row"><div class="sound-header"><span>⑥ 総合順位</span><input type="file" onchange="previewSnd(this, 'sndRanking', 'url-sndRanking')"></div><input type="text" id="url-sndRanking" class="url-input" placeholder="自動入力されます"></div>
+                    <div class="sound-row"><div class="sound-header"><span>① 締切＆ルール</span><input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')"></div><input type="text" id="url-sndRules" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>② クイズ開始</span><input type="file" onchange="previewSnd(this, 'sndStart', 'url-sndStart')"></div><input type="text" id="url-sndStart" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>③ 次へ（正解）</span><input type="file" onchange="previewSnd(this, 'sndNext', 'url-sndNext')"></div><input type="text" id="url-sndNext" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>④ 終了表示</span><input type="file" onchange="previewSnd(this, 'sndEnd', 'url-sndEnd')"></div><input type="text" id="url-sndEnd" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>⑤ 結果発表</span><input type="file" onchange="previewSnd(this, 'sndDetails', 'url-sndDetails')"></div><input type="text" id="url-sndDetails" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>⑥ 総合順位</span><input type="file" onchange="previewSnd(this, 'sndRanking', 'url-sndRanking')"></div><input type="text" id="url-sndRanking" class="url-input"></div>
                 </div>
             </div>
         </div>
@@ -79,7 +79,7 @@
     <div>
         <div class="section" style="position: sticky; top: 20px;">
             <h2>🎮 進行管理</h2>
-            <div class="status-display">
+            <div style="background: #111; padding: 15px; border: 1px solid #f1c40f; text-align: center; margin-bottom: 15px; border-radius: 8px;">
                 <div style="font-size:14px; color:#aaa;">現在の状態</div>
                 <div id="current-status-text" style="font-size:24px; color:#f1c40f; font-weight:bold;">待機中 (QR表示)</div>
             </div>
@@ -94,13 +94,10 @@
             <div style="margin-top:20px; background:#111; padding:15px; border-radius:8px; border:1px solid #444;">
                 <h3 style="margin:0 0 10px 0; font-size:18px; color:#3498db; display:flex; justify-content:space-between; align-items:center;">
                     <span>📡 回答状況</span>
-                    <span style="font-size:14px; color:#aaa; font-weight:normal;">参加: <span id="admin-p-count" style="color:#fff; font-weight:bold;">0</span> チーム</span>
+                    <span style="font-size:14px; color:#aaa; font-weight:normal;">参加: <span id="admin-p-count" style="color:#fff; font-weight:bold;">0</span></span>
                 </h3>
-                <div id="admin-live-status" class="live-status-box">
-                    <div style="color:#aaa; text-align:center; padding:10px;">※参加者が登録すると表示されます</div>
-                </div>
+                <div id="admin-live-status" class="live-status-box"><div style="color:#aaa; text-align:center;">データなし</div></div>
             </div>
-            
             <button onclick="resetGame()" style="margin-top:30px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer; padding:5px;">全データをリセット</button>
         </div>
     </div>
@@ -108,47 +105,45 @@
 
 <div class="section" style="margin-top: 30px;">
     <h2 style="color:#3498db;">📊 チーム別 詳細結果表（正誤・タイム）</h2>
-    <div class="table-container" id="admin-detailed-results">
-        <div style="color:#aaa; text-align:center; padding:20px;">※参加者が登録するとここに表示されます</div>
-    </div>
+    <div class="table-container" id="admin-detailed-results"><div style="color:#aaa; text-align:center;">データなし</div></div>
 </div>
+
+<audio id="sndRules"></audio><audio id="sndStart"></audio><audio id="sndNext"></audio>
+<audio id="sndEnd"></audio><audio id="sndDetails"></audio><audio id="sndRanking"></audio>
 
 <script>
     var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
     firebase.initializeApp(firebaseConfig); var db = firebase.database();
     
     let scenario = []; let currentStepIndex = -1;
-    let currentAnswers = {}; let playersData = {}; let currentQuestionStartTs = 0;
-    let globalQCount = 0;
+    let currentAnswers = {}; let playersData = {}; let currentQuestionStartTs = 0; let globalQCount = 0;
 
-    function toggleSection(contentId, iconId) {
-        const content = document.getElementById(contentId);
-        const icon = document.getElementById(iconId);
-        if (content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '▼'; } 
-        else { content.style.display = 'none'; icon.innerText = '▶'; }
+    function toggleSection(cid, iid) {
+        const c = document.getElementById(cid); const i = document.getElementById(iid);
+        if(c.style.display === 'none') { c.style.display = 'block'; i.innerText = '▼'; } else { c.style.display = 'none'; i.innerText = '▶'; }
+    }
+
+    function getAvatarHTML(p) {
+        return p.photo ? `<img src="${p.photo}" class="avatar-small">` : `<span style="margin-right:5px;">👤</span>`;
     }
 
     function updateLiveStatus() {
         const container = document.getElementById('admin-live-status');
         if (!container) return;
-        let isAccepting = false;
-        if (currentStepIndex >= 0 && scenario[currentStepIndex]) {
-            isAccepting = (scenario[currentStepIndex].type === 'start' || scenario[currentStepIndex].type === 'next');
-        }
-
+        let isAccepting = (currentStepIndex >= 0 && scenario[currentStepIndex] && (scenario[currentStepIndex].type === 'start' || scenario[currentStepIndex].type === 'next'));
         let html = '';
         for (let uid in playersData) {
             let p = playersData[uid];
+            let av = getAvatarHTML(p);
             if (isAccepting) {
                 let hasAnswered = (currentAnswers[uid] && currentAnswers[uid].choice);
-                if (hasAnswered) html += `<div style="display:flex; justify-content:space-between; background:#27ae60; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">回答済</span></div>`;
-                else html += `<div style="display:flex; justify-content:space-between; background:#c0392b; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">未回答</span></div>`;
+                if (hasAnswered) html += `<div style="display:flex; justify-content:space-between; background:#27ae60; padding:8px; border-radius:5px; align-items:center;"><div>${av}${p.name}</div><span style="font-weight:bold;">回答済</span></div>`;
+                else html += `<div style="display:flex; justify-content:space-between; background:#c0392b; padding:8px; border-radius:5px; align-items:center;"><div>${av}${p.name}</div><span style="font-weight:bold;">未回答</span></div>`;
             } else {
-                html += `<div style="display:flex; justify-content:space-between; background:#2980b9; padding:8px 12px; border-radius:5px;"><span>${p.name}</span><span style="font-weight:bold;">${p.score||0} pt</span></div>`;
+                html += `<div style="display:flex; justify-content:space-between; background:#2980b9; padding:8px; border-radius:5px; align-items:center;"><div>${av}${p.name}</div><span style="font-weight:bold;">${p.score||0} pt</span></div>`;
             }
         }
-        if (html === '') html = '<div style="color:#aaa; text-align:center; padding:10px;">※参加者が登録すると表示されます</div>';
-        container.innerHTML = html;
+        container.innerHTML = html || '<div style="color:#aaa; text-align:center;">データなし</div>';
     }
 
     db.ref('answers').on('value', snap => { currentAnswers = snap.val() || {}; updateLiveStatus(); });
@@ -166,7 +161,8 @@
 
             let sortedPlayers = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
             sortedPlayers.forEach((p, index) => {
-                tableHtml += `<tr><td>${index+1}</td><td style="text-align:left; font-weight:bold;">${p.name}</td><td style="color:#f1c40f; font-weight:bold; font-size:20px;">${p.score || 0}</td>`;
+                let av = getAvatarHTML(p);
+                tableHtml += `<tr><td>${index+1}</td><td style="text-align:left; font-weight:bold;">${av}${p.name}</td><td style="color:#f1c40f; font-weight:bold; font-size:20px;">${p.score || 0}</td>`;
                 for (let i = 0; i < globalQCount; i++) {
                     let h = p.history ? p.history[i] : null;
                     if (h) {
@@ -191,11 +187,8 @@
         });
         db.ref('quizConfig').once('value', snap => {
             const data = snap.val();
-            if (data && data.length > 0) { 
-                globalQCount = data.length;
-                data.forEach(q => addQuestionRow(q)); 
-                buildScenario(data.length); 
-            } else { addQuestionRow(); }
+            if (data && data.length > 0) { globalQCount = data.length; data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } 
+            else { addQuestionRow(); }
         });
     };
 
@@ -205,98 +198,65 @@
         const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
         for(let id in files) { document.getElementById('url-' + id).value = fix + files[id]; }
     }
-
     function previewSnd(input, audioId, urlInputId) {
         if(input.files[0]) {
-            const url = URL.createObjectURL(input.files[0]);
-            const a = new Audio(url); a.play();
+            const url = URL.createObjectURL(input.files[0]); const a = new Audio(url); a.play();
             const base = document.getElementById('base-folder-url').value.trim();
-            if(base) { document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name; }
+            if(base) document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name;
         }
     }
-
     window.addQuestionRow = function(qData = null) {
         const container = document.getElementById('questions-container');
         const div = document.createElement('div'); div.className = 'q-row';
         div.innerHTML = `<textarea class="q-txt" placeholder="問題文">${qData?qData.text:''}</textarea><br>正解:<select class="q-ans">${['A','B','C','D','E','F','G'].map(v=>`<option value="${v}" ${qData&&qData.ans===v?'selected':''}>${v}</option>`).join('')}</select> <button onclick="this.parentElement.remove()" style="color:#e74c3c; background:none; border:none; cursor:pointer; font-weight:bold;">[削除]</button>`;
         container.appendChild(div);
     };
-
     function saveAllConfig() {
-        const qData = []; document.querySelectorAll('.q-row').forEach(r => { 
-            const txt = r.querySelector('.q-txt').value; if(txt) qData.push({ text: txt, ans: r.querySelector('.q-ans').value }); 
-        });
+        const qData = []; document.querySelectorAll('.q-row').forEach(r => { const txt = r.querySelector('.q-txt').value; if(txt) qData.push({ text: txt, ans: r.querySelector('.q-ans').value }); });
         const sData = { baseUrl: document.getElementById('base-folder-url').value, sndRules: document.getElementById('url-sndRules').value, sndStart: document.getElementById('url-sndStart').value, sndNext: document.getElementById('url-sndNext').value, sndEnd: document.getElementById('url-sndEnd').value, sndDetails: document.getElementById('url-sndDetails').value, sndRanking: document.getElementById('url-sndRanking').value };
         db.ref('quizConfig').set(qData); db.ref('soundConfig').set(sData).then(() => { alert("保存しました！"); location.reload(); });
     }
-
     function buildScenario(n) {
         scenario = [{type:'rules',title:'ルール説明'}];
-        for(let i=0;i<n;i++) { 
-            scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`});
-            scenario.push({type:'close',qIndex:i,title:`第${i+1}問 正解発表`});
-        }
-        scenario.push(
-            {type:'end',title:'全問終了'},
-            {type:'details',title:'結果発表(タイトル)'},
-            {type:'ranking',title:'総合順位(マトリクス表)'}
-        );
+        for(let i=0;i<n;i++) { scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`}); scenario.push({type:'close',qIndex:i,title:`第${i+1}問 正解発表`}); }
+        scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果発表(タイトル)'},{type:'ranking',title:'総合順位(マトリクス表)'});
     }
-
     function executeStep() {
         if (!scenario[currentStepIndex]) return;
-        const step = scenario[currentStepIndex];
-        const now = Date.now();
+        const step = scenario[currentStepIndex]; const now = Date.now();
         document.getElementById('current-status-text').innerText = step.title;
-        document.getElementById('btn-start-flow').style.display = 'none';
-        document.getElementById('nav-group').style.display = 'flex';
-
-        // ★ 最後のステップ（総合順位）になったら「次へ進む」ボタンを完全に消す！
-        if (currentStepIndex >= scenario.length - 1) {
-            document.getElementById('btn-next-step').style.display = 'none';
-        } else {
-            document.getElementById('btn-next-step').style.display = 'block';
-        }
+        document.getElementById('btn-start-flow').style.display = 'none'; document.getElementById('nav-group').style.display = 'flex';
+        document.getElementById('btn-next-step').style.display = (currentStepIndex >= scenario.length - 1) ? 'none' : 'block';
 
         if (step.type === 'start' || step.type === 'next') {
             currentQuestionStartTs = now; 
-            db.ref('answers').remove().then(() => {
-                db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
-                updateLiveStatus();
-            });
+            db.ref('answers').remove().then(() => { db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now }); updateLiveStatus(); });
         } else if (step.type === 'close') {
             db.ref('quizConfig').once('value').then(snap => {
-                const qData = snap.val() || [];
-                const correctAns = qData[step.qIndex]?.ans;
-                let updates = {};
+                const qData = snap.val() || []; const correctAns = qData[step.qIndex]?.ans; let updates = {};
                 for (let uid in playersData) {
                     let p = playersData[uid]; let ans = currentAnswers[uid];
                     let hInfo = { choice: '未', correct: false, time: '--', points: 0 };
                     if (ans && ans.choice) {
                         let elapsed = 60; 
-                        if (ans.time !== undefined) elapsed = ans.time;
-                        else if (ans.ts && currentQuestionStartTs) elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
+                        if (ans.time !== undefined) elapsed = ans.time; else if (ans.ts && currentQuestionStartTs) elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
                         if (elapsed < 0) elapsed = 0; if (elapsed > 60) elapsed = 60;
                         let isCorrect = (ans.choice === correctAns);
                         let points = isCorrect ? 100 + Math.max(0, 60 - elapsed) : 0;
                         hInfo = { choice: ans.choice, correct: isCorrect, time: elapsed, points: points };
                     }
                     updates[`${uid}/history/${step.qIndex}`] = hInfo;
-                    let totalScore = 0; let historyObj = p.history || {};
-                    historyObj[step.qIndex] = hInfo; 
+                    let totalScore = 0; let historyObj = p.history || {}; historyObj[step.qIndex] = hInfo; 
                     for (let q in historyObj) { totalScore += (historyObj[q].points || 0); }
                     updates[`${uid}/score`] = totalScore;
                 }
                 if (Object.keys(updates).length > 0) db.ref('players').update(updates);
-                db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now });
-                updateLiveStatus();
+                db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now }); updateLiveStatus();
             });
         } else {
-            db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex !== undefined ? step.qIndex : -1, ts: now });
-            updateLiveStatus();
+            db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex !== undefined ? step.qIndex : -1, ts: now }); updateLiveStatus();
         }
     }
-
     function startQuizFlow() { if(scenario.length <= 1) return alert("問題を保存してください！"); currentStepIndex = 0; executeStep(); }
     function goNext() { if (currentStepIndex < scenario.length - 1) { currentStepIndex++; executeStep(); } }
     function goPrev() { if (currentStepIndex > 0) { currentStepIndex--; executeStep(); } }
