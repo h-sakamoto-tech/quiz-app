@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>会場スクリーン - 音声強化版</title>
+    <meta charset="UTF-8"><title>会場スクリーン - 写真対応版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
@@ -19,17 +19,21 @@
         .proj-table-container { width: 95%; max-height: 80vh; overflow-y: auto; background: rgba(0,0,0,0.7); border-radius: 10px; border: 2px solid #555; }
         .proj-table { width: 100%; border-collapse: collapse; font-size: 22px; text-align: center; }
         .proj-table th { background: #34495e; color: #fff; padding: 10px; position: sticky; top: 0; z-index: 1; border: 1px solid #2c3e50; }
-        .proj-table td { border: 1px solid #444; padding: 8px 4px; line-height: 1.1; }
+        .proj-table td { border: 1px solid #444; padding: 8px 4px; line-height: 1.1; vertical-align:middle; }
         .proj-table tr:nth-child(even) { background: rgba(255,255,255,0.05); }
         .pt-rank { font-weight: bold; color: #f1c40f; font-size: 26px; }
-        .pt-name { text-align: left; font-weight: bold; padding-left: 10px !important; }
+        .pt-name { text-align: left; font-weight: bold; padding-left: 10px !important; display:flex; align-items:center; }
         .pt-score { color: #f1c40f; font-weight: bold; font-size: 28px; }
         .pt-o { color: #2ecc71; font-weight: bold; font-size: 26px; }
         .pt-x { color: #e74c3c; font-weight: bold; font-size: 26px; }
         .pt-time { font-size: 14px; color: #ccc; display: block; }
+        
+        /* 📸 サムネイル画像のスタイル */
+        .avatar-large { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; margin-right: 10px; }
+        .avatar-badge { display:flex; align-items:center; background:#2980b9; padding:5px 15px 5px 5px; border-radius:25px; font-size:20px; }
     </style>
 </head>
-<body>
+<body onclick="enableAudio()">
 
     <div id="wait-screen" class="screen active">
         <h1 style="font-size:60px; color:#f1c40f;">スピードクイズ</h1>
@@ -65,23 +69,31 @@
         <div class="proj-table-container" id="matrix-list"></div>
     </div>
 
+    <audio id="snd"></audio>
+
 <script>
     var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
     firebase.initializeApp(firebaseConfig); var db = firebase.database();
     
     const pageLoadTime = Date.now();
     let qData = []; let sUrls = {}; let timer = null; let playersData = {};
-    let globalQCount = 0;
+    let globalQCount = 0; const audioPool = {};
+    let audioReady = false; function enableAudio() { audioReady = true; }
 
-    // ★ 独立したオーディオプレイヤー（音が途切れるのを防ぐ）
-    const audioPool = {};
+    // 📸 画像がない場合は絵文字を返す関数
+    function getAvatarHTML(p) {
+        return p.photo ? `<img src="${p.photo}" class="avatar-large">` : `<span style="font-size:30px; margin-right:10px;">👤</span>`;
+    }
 
     db.ref('quizConfig').on('value', s => { qData = s.val() || []; globalQCount = qData.length; });
     db.ref('soundConfig').on('value', s => sUrls = s.val() || {});
     db.ref('players').on('value', s => {
         playersData = s.val() || {}; 
         document.getElementById('p-count').innerText = Object.keys(playersData).length;
-        document.getElementById('p-list').innerHTML = Object.values(playersData).map(v => `<span style="background:#2980b9; padding:8px 15px; border-radius:10px; font-size:20px;">${v.name}</span>`).join('');
+        // 待機画面の写真付きバッジ生成
+        document.getElementById('p-list').innerHTML = Object.values(playersData).map(v => `
+            <div class="avatar-badge">${getAvatarHTML(v)} ${v.name}</div>
+        `).join('');
     });
 
     db.ref('adminCommand').on('value', snap => {
@@ -111,7 +123,9 @@
             html += `</tr>`;
 
             sorted.forEach((p, index) => {
-                html += `<tr><td class="pt-rank">${index+1}</td><td class="pt-name">${p.name}</td><td class="pt-score">${p.score||0}</td>`;
+                let av = getAvatarHTML(p);
+                // 📸 テーブルの中に写真を組み込む
+                html += `<tr><td class="pt-rank">${index+1}</td><td class="pt-name">${av} ${p.name}</td><td class="pt-score">${p.score||0}</td>`;
                 for(let i=0; i<globalQCount; i++) {
                     let h = p.history ? p.history[i] : null;
                     if(h) {
@@ -132,24 +146,17 @@
 
     function switchScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
     
-    // ★ 音声再生を超強力に（ブロックされたら赤い警告を出す！）
     function play(k) { 
         if(!sUrls[k]) return;
-        
         if (!audioPool[k]) { audioPool[k] = new Audio(sUrls[k]); }
-        const a = audioPool[k];
-        a.currentTime = 0;
-
+        const a = audioPool[k]; a.currentTime = 0;
         a.play().catch(e => {
-            console.warn("音声がブロックされました:", e);
             let w = document.getElementById('audio-warning');
             if(!w) {
-                w = document.createElement('div');
-                w.id = 'audio-warning';
-                w.innerHTML = "🔇 音声がブロックされています！<br>ここを1回クリックして許可してください";
+                w = document.createElement('div'); w.id = 'audio-warning';
+                w.innerHTML = "🔇 音声がブロックされています！<br>ここを1回クリックしてください";
                 w.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#e74c3c; color:#fff; padding:20px 40px; border-radius:15px; font-size:28px; font-weight:bold; cursor:pointer; z-index:9999; box-shadow:0 10px 20px rgba(0,0,0,0.5); text-align:center;";
-                w.onclick = () => { w.remove(); a.play(); };
-                document.body.appendChild(w);
+                w.onclick = () => { w.remove(); a.play(); }; document.body.appendChild(w);
             }
         }); 
     }
