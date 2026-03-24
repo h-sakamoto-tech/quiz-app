@@ -8,8 +8,12 @@
         body { background:#121212; color:#fff; text-align:center; font-family:sans-serif; margin:0; }
         .screen { display:none; padding:20px; height:100vh; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;}
         .active { display:flex !important; }
-        input { font-size:24px; padding:15px; width:80%; border-radius:10px; border:none; margin-bottom:20px; text-align:center;}
-        .btn-join { background:#27ae60; color:#fff; font-size:26px; padding:15px 40px; border-radius:10px; border:none; font-weight:bold; width:80%; }
+        input[type="text"] { font-size:24px; padding:15px; width:80%; border-radius:10px; border:none; margin-bottom:15px; text-align:center;}
+        .btn-join { background:#27ae60; color:#fff; font-size:26px; padding:15px 40px; border-radius:10px; border:none; font-weight:bold; width:80%; margin-top:20px;}
+        
+        /* 📸 カメラ用スタイル */
+        .photo-upload-btn { background:#34495e; color:#fff; font-size:18px; padding:15px; border-radius:10px; border:2px dashed #f1c40f; width:80%; cursor:pointer; margin-bottom:10px; }
+        .preview-img { width:100px; height:100px; border-radius:50%; object-fit:cover; display:none; margin:10px auto; border:3px solid #3498db; }
         
         .choice-grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; width:100%; max-width:400px; }
         .btn-ans { background:#3498db; color:#fff; font-size:50px; font-weight:bold; height:120px; border-radius:15px; border:none; transition: 0.2s; }
@@ -19,8 +23,15 @@
 <body>
     <div id="entry" class="screen active">
         <h2 style="color:#f1c40f; font-size:35px; margin-bottom:10px;">スピードクイズ</h2>
-        <p style="font-size:18px; color:#ccc;">チーム名を入力してください</p>
-        <input type="text" id="nn" placeholder="例: チーム坂本">
+        <p style="font-size:18px; color:#ccc;">チーム名を入力し、写真を撮ってください</p>
+        <input type="text" id="nn" placeholder="例: チーム坂本" maxlength="10">
+        
+        <label class="photo-upload-btn">
+            📸 代表者の顔写真を撮る
+            <input type="file" accept="image/*" capture="camera" style="display:none;" onchange="compressImage(event)">
+        </label>
+        <img id="preview" class="preview-img">
+        
         <button class="btn-join" onclick="join()">参加する！</button>
     </div>
     
@@ -28,7 +39,8 @@
         <h2 style="font-size:40px;">待機中...</h2>
         <p style="font-size:20px; color:#aaa;">スクリーンに注目してください</p>
         <div style="background:#222; border:2px solid #555; padding:15px; border-radius:10px; margin-top:20px;">
-            エントリー名：<br><b id="my-name" style="font-size:28px; color:#3498db;"></b>
+            <img id="wait-preview" class="preview-img" style="display:inline-block; width:60px; height:60px; vertical-align:middle; margin:0 10px 0 0;">
+            <b id="my-name" style="font-size:28px; color:#3498db; vertical-align:middle;"></b>
         </div>
     </div>
     
@@ -45,12 +57,46 @@
     const firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
     let uid = localStorage.getItem('quid') || "u"+Math.random().toString(36).substr(2,7); localStorage.setItem('quid', uid);
-    let joined = false;
-    let qStartTime = 0; // ★スマホ側での計測用
+    let joined = false; let qStartTime = 0;
+    let myPhotoBase64 = ""; // 写真データ保存用
+
+    // 📸 画像を極小サイズ(150px)に圧縮する処理
+    function compressImage(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_SIZE = 150; // 最大150ピクセルに縮小
+                let w = img.width; let h = img.height;
+                if (w > h) { if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } } 
+                else { if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; } }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                // 軽量なJPEG文字列（Base64）に変換
+                myPhotoBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                document.getElementById('preview').src = myPhotoBase64;
+                document.getElementById('preview').style.display = 'block';
+                document.getElementById('wait-preview').src = myPhotoBase64;
+            }
+            img.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
 
     function join() {
-        const n = document.getElementById('nn').value.trim(); if(!n) return alert("チーム名を入力してください");
-        db.ref('players/'+uid).set({name:n, score:0}).then(()=>{ joined=true; document.getElementById('my-name').innerText=n; switchS('wait'); });
+        const n = document.getElementById('nn').value.trim(); 
+        if(!n) return alert("チーム名を入力してください");
+        // Firebaseへ写真データも一緒に保存
+        db.ref('players/'+uid).set({name:n, score:0, photo: myPhotoBase64}).then(()=>{ 
+            joined=true; 
+            document.getElementById('my-name').innerText=n; 
+            if(!myPhotoBase64) document.getElementById('wait-preview').style.display = 'none';
+            switchS('wait'); 
+        });
     }
     
     db.ref('adminCommand').on('value', s => {
@@ -58,16 +104,12 @@
         if(!joined) return;
 
         if(c.type==='start'||c.type==='next') { 
-            qStartTime = Date.now(); // ★問題が表示された時間を記録
-            
+            qStartTime = Date.now(); 
             document.getElementById('qn').innerText=`第 ${c.qIndex+1} 問`; 
             document.getElementById('msg').innerText="回答を選んでください！";
             document.getElementById('msg').style.color = "#fff";
             document.querySelectorAll('.btn-ans').forEach(b => {
-                b.disabled = false;
-                b.style.background = '#3498db';
-                b.style.opacity = '1';
-                b.style.transform = 'none';
+                b.disabled = false; b.style.background = '#3498db'; b.style.opacity = '1'; b.style.transform = 'none';
             });
             switchS('quiz'); 
         }
@@ -80,25 +122,16 @@
     });
 
     function ans(v) { 
-        // ★かかった秒数をスマホ側で計算して送る
         let elapsed = Math.floor((Date.now() - qStartTime) / 1000);
-        if (elapsed < 0) elapsed = 0;
-        if (elapsed > 60) elapsed = 60;
-
+        if (elapsed < 0) elapsed = 0; if (elapsed > 60) elapsed = 60;
         db.ref('answers/'+uid).set({choice: v, time: elapsed, ts: Date.now()}); 
         
         document.getElementById('msg').innerText = "「" + v + "」を送信しました！"; 
         document.getElementById('msg').style.color = "#2ecc71";
-        
         document.querySelectorAll('.btn-ans').forEach(b => {
             b.disabled = true;
-            if (b.innerText === v) {
-                b.style.background = '#e74c3c';
-                b.style.transform = 'scale(0.95)';
-            } else {
-                b.style.background = '#555';
-                b.style.opacity = '0.4';
-            }
+            if (b.innerText === v) { b.style.background = '#e74c3c'; b.style.transform = 'scale(0.95)'; } 
+            else { b.style.background = '#555'; b.style.opacity = '0.4'; }
         }); 
     }
     
