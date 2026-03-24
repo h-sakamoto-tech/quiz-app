@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><title>会場スクリーン - 音源修正版</title>
+    <meta charset="UTF-8"><title>会場スクリーン - 結果発表・順位分割版</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
@@ -29,7 +29,7 @@
         .pt-time { font-size: 14px; color: #ccc; display: block; }
     </style>
 </head>
-<body>
+<body onclick="enableAudio()">
 
     <div id="wait-screen" class="screen active">
         <h1 style="font-size:60px; color:#f1c40f;">スピードクイズ</h1>
@@ -61,7 +61,11 @@
     <div id="end-screen" class="screen"><h1 class="title-large" style="font-size:120px;">全問終了！</h1></div>
     
     <div id="details-screen" class="screen" style="background:#1a252f;">
-        <h1 class="title-large" style="font-size:60px; margin-bottom:10px;">👑 最終結果発表 👑</h1>
+        <h1 class="title-large" style="font-size:120px;">結果発表</h1>
+    </div>
+
+    <div id="ranking-screen" class="screen" style="background:#1a252f;">
+        <h1 class="title-large" style="font-size:60px; margin-bottom:10px;">👑 総合順位 👑</h1>
         <div class="proj-table-container" id="matrix-list"></div>
     </div>
 
@@ -74,6 +78,7 @@
     const pageLoadTime = Date.now();
     let qData = []; let sUrls = {}; let timer = null; let playersData = {};
     let globalQCount = 0;
+    let audioReady = false; function enableAudio() { audioReady = true; }
 
     db.ref('quizConfig').on('value', s => { qData = s.val() || []; globalQCount = qData.length; });
     db.ref('soundConfig').on('value', s => sUrls = s.val() || {});
@@ -88,31 +93,30 @@
         if(c.type === 'reset' && c.ts > pageLoadTime) { location.reload(); return; }
 
         if(c.type === 'rules') { 
-            switchScreen('rules-screen'); 
-            play('sndRules'); // ルール説明の音
+            switchScreen('rules-screen'); play('sndRules'); 
         } 
         else if(c.type === 'start' || c.type === 'next') {
             const q = qData[c.qIndex]; if(!q) return;
             document.getElementById('q-num').innerText = `第 ${c.qIndex+1} 問`;
             document.getElementById('q-txt').innerText = q.text;
             document.getElementById('ans-disp').style.display = 'none';
-            switchScreen('quiz-screen'); 
-            // ★修正：問題出題時はすべて「クイズ開始」の音源を使用
-            play('sndStart'); 
-            startTimer();
+            switchScreen('quiz-screen'); play('sndStart'); startTimer();
         } 
         else if(c.type === 'close') {
             if(timer) clearInterval(timer);
             document.getElementById('ans-disp').querySelector('span').innerText = qData[c.qIndex]?.ans || "";
             document.getElementById('ans-disp').style.display = 'block';
-            // ★修正：正解発表時は「次へ（正解）」の音源を使用
             play('sndNext'); 
         } 
         else if(c.type === 'end') { 
-            switchScreen('end-screen'); 
-            play('sndEnd'); // 終了の音
+            switchScreen('end-screen'); play('sndEnd'); 
         } 
+        // ★ 結果発表（タイトルのみ・sndDetails）
         else if(c.type === 'details') { 
+            switchScreen('details-screen'); play('sndDetails'); 
+        }
+        // ★ 総合順位（マトリクス表・sndRanking）
+        else if(c.type === 'ranking') { 
             let sorted = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
             let html = `<table class="proj-table"><tr><th>順位</th><th>チーム名</th><th>合計pt</th>`;
             for(let i=0; i<globalQCount; i++) html += `<th>Q${i+1}</th>`;
@@ -133,8 +137,9 @@
             });
             html += `</table>`;
             document.getElementById('matrix-list').innerHTML = html;
-            switchScreen('details-screen'); 
-            play('sndDetails'); // 結果発表の音
+            
+            switchScreen('ranking-screen'); 
+            play('sndRanking'); 
         }
         else if(c.type === 'wait') { switchScreen('wait-screen'); }
     });
@@ -145,7 +150,6 @@
         if(sUrls[k]) { 
             const a = document.getElementById('snd'); 
             a.src = sUrls[k]; 
-            // プロジェクター画面がクリックされていないとエラーになるので注意
             a.play().catch(e => {
                 console.log("【注意】音声がブロックされました。画面を1度クリックしてください。");
             }); 
