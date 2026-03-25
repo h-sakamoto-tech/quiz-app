@@ -2,126 +2,183 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>スピードクイズ・管理者画面</title>
+    <title>スピードクイズ管理画面</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #1a1a1a; color: #fff; padding: 20px; margin: 0; }
-        .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #f1c40f; padding-bottom: 15px; }
-        .header h1 { color: #f1c40f; margin: 0; font-size: 2rem; letter-spacing: 2px; }
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #1e1e1e; color: #fff; padding: 20px; margin: 0; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #f1c40f; padding-bottom: 20px; position: relative; }
+        .header h1 { color: #f1c40f; margin: 0; font-size: 2.5rem; }
+        .manual-link { display: inline-block; margin-top: 15px; padding: 10px 25px; background: #2c3e50; color: #fff; text-decoration: none; border-radius: 25px; font-size: 16px; font-weight: bold; border: 2px solid #3498db; transition: background 0.3s, transform 0.2s; }
+        .manual-link:hover { background: #3498db; transform: scale(1.05); }
+
+        .section { background: #2d2d2d; padding: 25px; border-radius: 12px; border: 1px solid #444; margin-bottom: 20px; }
+        .collapsible-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 1px dashed #555; transition: color 0.2s; }
+        .collapsible-header:hover { color: #3498db; }
         
-        .section { background: #2d2d2d; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        /* 音源設定エリア */
+        .sound-grid { display: grid; gap: 10px; margin-top: 15px; }
+        .sound-row { background: #333; padding: 15px; border-radius: 8px; border: 1px solid #555; }
+        .sound-header { display: flex; justify-content: space-between; align-items: center; color: #f1c40f; font-weight: bold; margin-bottom: 8px; }
+        .url-input { width: 100%; padding: 8px; background: #111; color: #2ecc71; border: 1px solid #555; font-size: 14px; border-radius: 4px; box-sizing: border-box; }
+        
+        /* 問題設定エリア（画像アップロード対応） */
         .q-row { background: #3d3d3d; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #3498db; }
         .q-grid { display: flex; gap: 15px; align-items: flex-start; }
-        
-        .preview-box { width: 160px; height: 120px; background: #000; border: 1px solid #555; display: flex; align-items: center; justify-content: center; position: relative; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+        .preview-box { width: 150px; height: 110px; background: #000; border: 1px solid #555; display: flex; align-items: center; justify-content: center; position: relative; border-radius: 4px; overflow: hidden; flex-shrink: 0; }
         .preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .up-status { position: absolute; background: rgba(0,0,0,0.8); width: 100%; height: 100%; display: none; align-items: center; justify-content: center; color: #f1c40f; font-size: 14px; font-weight: bold; }
-
+        .up-status { position: absolute; background: rgba(0,0,0,0.8); width: 100%; height: 100%; display: none; align-items: center; justify-content: center; color: #f1c40f; font-size: 12px; font-weight: bold; }
         .input-area { flex: 1; }
-        .btn-upload { background: #3498db; color: #fff; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; display: inline-block; margin-bottom: 10px; transition: 0.3s; }
-        .btn-upload:hover { background: #2980b9; }
-        .q-img-url { width: 100%; padding: 8px; background: #111; color: #2ecc71; border: 1px solid #444; font-size: 11px; margin-bottom: 8px; border-radius: 4px; }
-        textarea { width: 100%; height: 60px; background: #111; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 4px; resize: none; font-size: 14px; box-sizing: border-box; }
-        
-        .btn-save-all { background: #27ae60; color: white; width: 100%; padding: 18px; font-size: 22px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 0 #1e8449; }
+        .btn-upload { background: #3498db; color: #fff; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; display: inline-block; margin-bottom: 8px; }
+        .q-img-url { width: 100%; padding: 8px; background: #111; color: #888; border: 1px solid #555; font-size: 12px; margin-bottom: 5px; border-radius: 4px; box-sizing: border-box; }
+        textarea.q-txt { width: 100%; height: 60px; background: #111; color: #fff; border: 1px solid #555; padding: 8px; font-size: 14px; box-sizing: border-box; resize: vertical; border-radius: 4px; margin-bottom: 5px;}
+        .q-ans { padding: 5px; background: #111; color: #fff; border: 1px solid #555; border-radius: 4px; }
 
-        .control-panel { position: sticky; top: 20px; }
-        .status-display { background: #000; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 15px; border: 2px solid #f1c40f; }
-        .btn-control { width: 100%; padding: 15px; font-size: 20px; color: white; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 10px; font-weight: bold; }
+        .btn-save { background: #27ae60; color: white; width: 100%; padding: 20px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; }
+        .btn-add { background: #34495e; color: white; width: 100%; padding: 15px; border: 2px dashed #7f8c8d; cursor: pointer; margin-top: 10px; font-size: 18px; border-radius: 8px; }
+        .btn-control { width: 100%; padding: 20px; font-size: 28px; color: white; border-radius: 10px; cursor: pointer; border: none; margin-bottom: 15px; }
+        
+        /* 進行管理・結果表示 */
+        .live-status-box { display: flex; flex-direction: column; gap: 5px; max-height: 350px; overflow-y: auto; padding-right: 5px; }
+        .table-container { width: 100%; overflow-x: auto; background: #222; border-radius: 8px; border: 1px solid #444; padding: 10px; box-sizing: border-box; }
+        .result-table { width: 100%; border-collapse: collapse; font-size: 16px; text-align: center; }
+        .result-table th { background: #444; color: #f1c40f; border: 1px solid #555; padding: 12px; white-space: nowrap; position: sticky; top: 0; z-index: 1;}
+        .result-table td { border: 1px solid #555; padding: 10px; white-space: nowrap; vertical-align: middle; }
+        .mark-o { color: #2ecc71; font-weight: bold; font-size: 20px; }
+        .mark-x { color: #e74c3c; font-weight: bold; font-size: 20px; }
+        .time-sec { font-size: 12px; color: #aaa; }
+        
+        .avatar-small { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; flex-shrink: 0; }
+        .team-name-cell { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: max-content; margin: 0 auto; white-space: nowrap; font-weight: bold; font-size: 18px; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1><i class="fa fa-shuttle-space"></i> スピードクイズ管理者画面</h1>
+    <h1>スピードクイズ管理画面</h1>
+    <a href="speed_quiz_Manual.html" target="_blank" class="manual-link">
+        <i class="fa-solid fa-book-open"></i> 運営マニュアルを開く
+    </a>
 </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 25px;">
-    <div class="section">
-        <h2 style="margin-top:0;"><i class="fa fa-list-check"></i> 問題セットの編集</h2>
-        
-        <div style="display:none;">
-            <input type="password" id="gh-token" value="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">
-            <input type="text" id="gh-user" value="h-sakamoto-tech">
-            <input type="text" id="gh-repo" value="quiz-app">
-        </div>
-
-        <div id="questions-container"></div>
-        
-        <button onclick="addQuestionRow()" style="width:100%; background:#444; color:#fff; padding:12px; border:2px dashed #666; border-radius:8px; cursor:pointer; font-size:16px;">
-            <i class="fa fa-plus-circle"></i> 新しい問題を追加
-        </button>
-        
-        <button class="btn-save-all" onclick="saveAll()">
-            <i class="fa fa-cloud-arrow-up"></i> 全てを保存して反映
-        </button>
-    </div>
-
-    <div class="control-panel">
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+    <div>
         <div class="section">
-            <h2 style="margin-top:0;"><i class="fa fa-gamepad"></i> 進行コントロール</h2>
-            <div class="status-display">
-                <div id="status-text" style="font-size:24px; color:#f1c40f; font-weight:bold;">待機中</div>
+            <h2 class="collapsible-header" onclick="toggleSection('sound-settings-content', 'sound-icon')">
+                <span>🔊 音源一括設定</span><span id="sound-icon">▼</span>
+            </h2>
+            <div id="sound-settings-content">
+                <div style="background: #111; padding: 15px; border-radius: 8px; border: 2px solid #3498db;">
+                    <input type="text" id="base-folder-url" class="url-input" placeholder="例: https://h-sakamoto-tech.github.io/quiz-app/sounds/" onchange="autoFillUrls()">
+                </div>
+                <div class="sound-grid">
+                    <div class="sound-row"><div class="sound-header"><span>① 締切＆ルール</span><input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')"></div><input type="text" id="url-sndRules" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>② クイズ開始</span><input type="file" onchange="previewSnd(this, 'sndStart', 'url-sndStart')"></div><input type="text" id="url-sndStart" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>③ 次へ（正解）</span><input type="file" onchange="previewSnd(this, 'sndNext', 'url-sndNext')"></div><input type="text" id="url-sndNext" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>④ 終了表示</span><input type="file" onchange="previewSnd(this, 'sndEnd', 'url-sndEnd')"></div><input type="text" id="url-sndEnd" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>⑤ 結果発表</span><input type="file" onchange="previewSnd(this, 'sndDetails', 'url-sndDetails')"></div><input type="text" id="url-sndDetails" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>⑥ 総合順位</span><input type="file" onchange="previewSnd(this, 'sndRanking', 'url-sndRanking')"></div><input type="text" id="url-sndRanking" class="url-input"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="collapsible-header" onclick="toggleSection('quiz-settings-content', 'quiz-icon')">
+                <span>📝 クイズ問題の設定</span><span id="quiz-icon">▼</span>
+            </h2>
+            <div id="quiz-settings-content">
+                <div style="display:none;">
+                    <input type="password" id="gh-token" value="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">
+                    <input type="text" id="gh-user" value="h-sakamoto-tech">
+                    <input type="text" id="gh-repo" value="quiz-app">
+                </div>
+
+                <div id="questions-container"></div>
+                <button type="button" class="btn-add" onclick="addQuestionRow()">＋ 問題を追加</button>
+                <button type="button" class="btn-save" onclick="saveAllConfig()">💾 設定を保存して反映</button>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="section" style="position: sticky; top: 20px;">
+            <h2>🎮 進行管理</h2>
+            <div style="background: #111; padding: 15px; border: 1px solid #f1c40f; text-align: center; margin-bottom: 15px; border-radius: 8px;">
+                <div style="font-size:14px; color:#aaa;">現在の状態</div>
+                <div id="current-status-text" style="font-size:24px; color:#f1c40f; font-weight:bold;">待機中 (QR表示)</div>
             </div>
             
-            <button class="btn-control" style="background:#8e44ad;" id="btn-start" onclick="startFlow()">
-                🚀 クイズ開始
-            </button>
-            
-            <div id="nav-btns" style="display:none; gap:10px;">
-                <button class="btn-control" style="background:#555; flex:1;" onclick="prev()">戻る</button>
-                <button class="btn-control" style="background:#e74c3c; flex:2;" onclick="next()">次へ</button>
+            <button class="btn-control" style="background:#8e44ad;" id="btn-start-flow" onclick="startQuizFlow()">🚀 クイズ開始 (ルール説明)</button>
+
+            <div id="nav-group" style="display:none; gap:10px;">
+                <button class="btn-control" style="background:#555; flex:1; font-size:20px;" onclick="goPrev()">戻る</button>
+                <button class="btn-control" style="background:#e74c3c; flex:2; font-size:24px;" id="btn-next-step" onclick="goNext()">次へ進む</button>
             </div>
-            
-            <button onclick="resetGame()" style="width:100%; background:none; color:#555; border:1px solid #444; cursor:pointer; padding:8px; border-radius:5px; margin-top:20px;">全データをリセット</button>
+
+            <div style="margin-top:20px; background:#111; padding:15px; border-radius:8px; border:1px solid #444;">
+                <h3 style="margin:0 0 10px 0; font-size:18px; color:#3498db; display:flex; justify-content:space-between; align-items:center;">
+                    <span>📡 回答状況</span>
+                    <span style="font-size:14px; color:#aaa; font-weight:normal;">参加: <span id="admin-p-count" style="color:#fff; font-weight:bold;">0</span></span>
+                </h3>
+                <div id="admin-live-status" class="live-status-box"><div style="color:#aaa; text-align:center;">データなし</div></div>
+            </div>
+            <button onclick="resetGame()" style="margin-top:30px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer; padding:5px;">全データをリセット</button>
         </div>
     </div>
 </div>
+
+<div class="section" style="margin-top: 30px;">
+    <h2 style="color:#3498db;">📊 チーム別 詳細結果表（正誤・タイム）</h2>
+    <div class="table-container" id="admin-detailed-results"><div style="color:#aaa; text-align:center;">データなし</div></div>
+</div>
+
+<audio id="sndRules"></audio><audio id="sndStart"></audio><audio id="sndNext"></audio>
+<audio id="sndEnd"></audio><audio id="sndDetails"></audio><audio id="sndRanking"></audio>
 
 <script>
-    firebase.initializeApp({ 
-        apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", 
-        authDomain: "speed-quiz26.firebaseapp.com", 
-        databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", 
-        projectId: "speed-quiz26" 
-    });
-    const db = firebase.database();
-    let scenario = [];
-    let currentIdx = -1;
+    var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
+    firebase.initializeApp(firebaseConfig); var db = firebase.database();
+    
+    let scenario = []; let currentStepIndex = -1;
+    let currentAnswers = {}; let playersData = {}; let currentQuestionStartTs = 0; let globalQCount = 0;
 
-    function addQuestionRow(data = null) {
-        const div = document.createElement('div');
-        div.className = 'q-row';
-        const img = data ? (data.image || '') : '';
-        const txt = data ? (data.text || '') : '';
-        const ans = data ? data.ans : 'A';
-        
+    function toggleSection(cid, iid) {
+        const c = document.getElementById(cid); const i = document.getElementById(iid);
+        if(c.style.display === 'none') { c.style.display = 'block'; i.innerText = '▼'; } else { c.style.display = 'none'; i.innerText = '▶'; }
+    }
+
+    // 問題行の追加とGitHubアップロード機能
+    window.addQuestionRow = function(qData = null) {
+        const container = document.getElementById('questions-container');
+        const div = document.createElement('div'); div.className = 'q-row';
+        const imgVal = qData ? (qData.image || '') : '';
+        const txtVal = qData ? (qData.text || '') : '';
+        const ansVal = qData ? qData.ans : 'A';
+
         div.innerHTML = `
             <div class="q-grid">
                 <div class="preview-box">
-                    <div class="up-status">UPLOAD中...</div>
-                    <img src="${img}" style="${img ? 'display:block' : 'display:none'}">
+                    <div class="up-status">UP中...</div>
+                    <img src="${imgVal}" class="prev-img" style="${imgVal ? 'display:block' : 'display:none'}">
                 </div>
                 <div class="input-area">
-                    <label class="btn-upload">
-                        <i class="fa fa-folder-open"></i> 手元の画像を選択
+                    <label class="btn-upload"><i class="fa fa-folder-open"></i> パソコンから画像を選択
                         <input type="file" style="display:none" accept="image/*" onchange="uploadToGitHub(this)">
                     </label>
-                    <input type="text" class="q-img-url" value="${img}" readonly placeholder="URLは自動入力されます">
-                    <textarea class="q-txt" placeholder="画像の下に出すテキストを入力">${txt}</textarea>
-                    <div style="margin-top:5px;">
-                        正解: <select class="q-ans">${['A','B','C','D','E','F','G'].map(v=>`<option value="${v}" ${ans===v?'selected':''}>${v}</option>`).join('')}</select>
+                    <input type="text" class="q-img-url" placeholder="画像のURL（自動入力されます）" value="${imgVal}" readonly>
+                    <textarea class="q-txt" placeholder="画像の下に表示する補足テキスト">${txtVal}</textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>正解: <select class="q-ans">${['A','B','C','D','E','F'].map(v=>`<option value="${v}" ${ansVal===v?'selected':''}>${v}</option>`).join('')}</select></span>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="color:#e74c3c; background:none; border:none; cursor:pointer;">[削除]</button>
                     </div>
                 </div>
             </div>
-            <div style="text-align:right;"><button onclick="this.parentElement.parentElement.remove()" style="color:#e74c3c; background:none; border:none; cursor:pointer; font-size:12px;">[削除]</button></div>
         `;
-        document.getElementById('questions-container').appendChild(div);
-    }
+        container.appendChild(div);
+    };
 
-    async function uploadToGitHub(input) {
+    window.uploadToGitHub = async function(input) {
         const file = input.files[0]; if (!file) return;
         const row = input.closest('.q-row');
         row.querySelector('.up-status').style.display = 'flex';
@@ -134,7 +191,6 @@
         reader.readAsDataURL(file);
         reader.onload = async () => {
             const base64Content = reader.result.split(',')[1];
-            // ファイル名から空白や特殊文字を除去して安全にする
             const fileName = `q_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
             const path = `images/${fileName}`;
 
@@ -144,60 +200,168 @@
                     headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: "upload quiz image", content: base64Content })
                 });
-                
-                if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(errorData.message || "Upload failed");
-                }
-
+                if (!res.ok) throw new Error("Upload Failed");
                 const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/main/${path}`;
                 row.querySelector('.q-img-url').value = rawUrl;
-                row.querySelector('img').src = rawUrl;
-                row.querySelector('img').style.display = 'block';
-            } catch (e) { 
-                console.error("GitHub Upload Error: ", e);
-                alert("GitHubへのアップロードに失敗しました。\nトークンが有効か確認してください。エラー: " + e.message); 
-            }
+                row.querySelector('.prev-img').src = rawUrl;
+                row.querySelector('.prev-img').style.display = 'block';
+            } catch (e) { alert("GitHubアップロード失敗"); }
             row.querySelector('.up-status').style.display = 'none';
         };
-    }
+    };
 
-    function saveAll() {
-        const qList = [];
+    // データの保存（音源と問題を両方保存）
+    window.saveAllConfig = function() {
+        const qData = []; 
         document.querySelectorAll('.q-row').forEach(r => { 
-            const img = r.querySelector('.q-img-url').value;
-            const txt = r.querySelector('.q-txt').value;
-            if (img || txt) qList.push({ image: img, text: txt, ans: r.querySelector('.q-ans').value }); 
+            const img = r.querySelector('.q-img-url').value; const txt = r.querySelector('.q-txt').value;
+            if (img || txt) qData.push({ image: img, text: txt, ans: r.querySelector('.q-ans').value }); 
         });
-        db.ref('quizConfig').set(qList).then(() => { alert("保存しました！"); location.reload(); });
+        const sData = { baseUrl: document.getElementById('base-folder-url').value, sndRules: document.getElementById('url-sndRules').value, sndStart: document.getElementById('url-sndStart').value, sndNext: document.getElementById('url-sndNext').value, sndEnd: document.getElementById('url-sndEnd').value, sndDetails: document.getElementById('url-sndDetails').value, sndRanking: document.getElementById('url-sndRanking').value };
+        
+        db.ref('quizConfig').set(qData); 
+        db.ref('soundConfig').set(sData).then(() => { alert("設定を保存しました！"); location.reload(); });
+    };
+
+    // --- 以降、進行管理・スコア計算（元のロジックを完全復元） ---
+    function getAvatarHTML(p) {
+        return p.photo ? `<img src="${p.photo}" class="avatar-small">` : `<div class="avatar-small" style="display:flex;align-items:center;justify-content:center;background:#555;font-size:18px;margin:0;">👤</div>`;
     }
 
-    window.onload = () => {
-        db.ref('quizConfig').once('value', s => {
-            if (s.val()) { s.val().forEach(d => addQuestionRow(d)); buildScenario(s.val().length); } 
+    function updateLiveStatus() {
+        const container = document.getElementById('admin-live-status'); if (!container) return;
+        let isAccepting = (currentStepIndex >= 0 && scenario[currentStepIndex] && (scenario[currentStepIndex].type === 'start' || scenario[currentStepIndex].type === 'next'));
+        let html = '';
+        for (let uid in playersData) {
+            let p = playersData[uid]; let av = getAvatarHTML(p);
+            if (isAccepting) {
+                let hasAnswered = (currentAnswers[uid] && currentAnswers[uid].choice);
+                if (hasAnswered) html += `<div style="display:flex; justify-content:space-between; background:#27ae60; padding:8px; border-radius:5px; align-items:center;"><div style="display:flex; align-items:center; gap:8px;">${av}<span>${p.name}</span></div><span style="font-weight:bold;">回答済</span></div>`;
+                else html += `<div style="display:flex; justify-content:space-between; background:#c0392b; padding:8px; border-radius:5px; align-items:center;"><div style="display:flex; align-items:center; gap:8px;">${av}<span>${p.name}</span></div><span style="font-weight:bold;">未回答</span></div>`;
+            } else {
+                html += `<div style="display:flex; justify-content:space-between; background:#2980b9; padding:8px; border-radius:5px; align-items:center;"><div style="display:flex; align-items:center; gap:8px;">${av}<span>${p.name}</span></div><span style="font-weight:bold;">${p.score||0} pt</span></div>`;
+            }
+        }
+        container.innerHTML = html || '<div style="color:#aaa; text-align:center;">データなし</div>';
+    }
+
+    db.ref('answers').on('value', snap => { currentAnswers = snap.val() || {}; updateLiveStatus(); });
+
+    db.ref('players').on('value', snap => {
+        playersData = snap.val() || {};
+        const pCount = Object.keys(playersData).length;
+        document.getElementById('admin-p-count').innerText = pCount;
+        updateLiveStatus(); 
+        
+        if (globalQCount > 0 && pCount > 0) {
+            let tableHtml = `<table class="result-table"><tr><th>順位</th><th style="text-align:center;">チーム名</th><th>合計</th>`;
+            for (let i = 0; i < globalQCount; i++) { tableHtml += `<th>Q${i+1}</th>`; }
+            tableHtml += `</tr>`;
+
+            let sortedPlayers = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
+            sortedPlayers.forEach((p, index) => {
+                let av = getAvatarHTML(p);
+                let baseTotal = 0; let bonusTotal = 0;
+                for (let i = 0; i < globalQCount; i++) {
+                    let h = p.history ? p.history[i] : null;
+                    if (h && h.correct) { baseTotal += 100; bonusTotal += (h.points ? h.points - 100 : 0); }
+                }
+                tableHtml += `<tr><td>${index+1}</td>
+                <td><div class="team-name-cell">${av}<span>${p.name}</span></div></td>
+                <td style="color:#f1c40f; font-weight:bold; font-size:20px; line-height:1.3;">
+                    ${p.score || 0}<br>
+                    <span style="font-size:12px; color:#2ecc71;">正答:${baseTotal}</span><br>
+                    <span style="font-size:12px; color:#3498db;">ﾀｲﾑ:${bonusTotal}</span>
+                </td>`;
+                for (let i = 0; i < globalQCount; i++) {
+                    let h = p.history ? p.history[i] : null;
+                    if (h) {
+                        let mark = h.correct ? '<span class="mark-o">〇</span>' : '<span class="mark-x">✖</span>';
+                        if (h.choice === '未') mark = '<span style="color:#aaa;">-</span>';
+                        let timeStr = h.time !== '--' ? `${h.time}秒` : '--';
+                        tableHtml += `<td>${mark}<br><span class="time-sec">${timeStr}</span></td>`;
+                    } else { tableHtml += `<td>-</td>`; }
+                }
+                tableHtml += `</tr>`;
+            });
+            tableHtml += `</table>`;
+            document.getElementById('admin-detailed-results').innerHTML = tableHtml;
+        }
+    });
+
+    window.onload = function() {
+        db.ref('soundConfig').once('value', snap => {
+            const snds = snap.val() || {};
+            if(snds.baseUrl) document.getElementById('base-folder-url').value = snds.baseUrl;
+            ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => { if(snds[id]) document.getElementById('url-' + id).value = snds[id]; });
+        });
+        db.ref('quizConfig').once('value', snap => {
+            const data = snap.val();
+            if (data && data.length > 0) { globalQCount = data.length; data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } 
             else { addQuestionRow(); }
         });
     };
 
-    function buildScenario(n) {
-        scenario = [{type:'rules',t:'ルール説明'}];
-        for(let i=0; i<n; i++) {
-            scenario.push({type:i===0?'start':'next',qi:i,t:`第${i+1}問 受付中`}, {type:'close',qi:i,t:`第${i+1}問 正解発表`});
+    window.autoFillUrls = function() {
+        const base = document.getElementById('base-folder-url').value.trim(); if(!base) return;
+        const fix = base.endsWith('/') ? base : base + '/';
+        const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
+        for(let id in files) { document.getElementById('url-' + id).value = fix + files[id]; }
+    }
+    window.previewSnd = function(input, audioId, urlInputId) {
+        if(input.files[0]) {
+            const url = URL.createObjectURL(input.files[0]); const a = new Audio(url); a.play();
+            const base = document.getElementById('base-folder-url').value.trim();
+            if(base) document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name;
         }
-        scenario.push({type:'end',t:'全問終了'}, {type:'details',t:'結果発表'}, {type:'ranking',t:'総合順位'});
     }
 
-    function startFlow() { currentIdx = 0; exec(); }
-    function next() { if(currentIdx < scenario.length - 1) { currentIdx++; exec(); } }
-    function prev() { if(currentIdx > 0) { currentIdx--; exec(); } }
-    function exec() {
-        const s = scenario[currentIdx];
-        document.getElementById('status-text').innerText = s.t;
-        document.getElementById('btn-start').style.display = 'none';
-        document.getElementById('nav-btns').style.display = 'flex';
-        db.ref('adminCommand').set({ type: s.type, qIndex: s.qi !== undefined ? s.qi : -1, ts: Date.now() });
+    function buildScenario(n) {
+        scenario = [{type:'rules',title:'ルール説明'}];
+        for(let i=0;i<n;i++) { scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`}); scenario.push({type:'close',qIndex:i,title:`第${i+1}問 正解発表`}); }
+        scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果発表(タイトル)'},{type:'ranking',title:'総合順位(マトリクス表)'});
     }
-    function resetGame() { if(confirm("全リセットしますか？")) { db.ref('players').remove(); db.ref('answers').remove(); location.reload(); } }
+
+    window.executeStep = function() {
+        if (!scenario[currentStepIndex]) return;
+        const step = scenario[currentStepIndex]; const now = Date.now();
+        document.getElementById('current-status-text').innerText = step.title;
+        document.getElementById('btn-start-flow').style.display = 'none'; document.getElementById('nav-group').style.display = 'flex';
+        document.getElementById('btn-next-step').style.display = (currentStepIndex >= scenario.length - 1) ? 'none' : 'block';
+
+        if (step.type === 'start' || step.type === 'next') {
+            currentQuestionStartTs = now; 
+            db.ref('answers').remove().then(() => { db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now }); updateLiveStatus(); });
+        } else if (step.type === 'close') {
+            db.ref('quizConfig').once('value').then(snap => {
+                const qData = snap.val() || []; const correctAns = qData[step.qIndex]?.ans; let updates = {};
+                for (let uid in playersData) {
+                    let p = playersData[uid]; let ans = currentAnswers[uid];
+                    let hInfo = { choice: '未', correct: false, time: '--', points: 0 };
+                    if (ans && ans.choice) {
+                        let elapsed = 60; 
+                        if (ans.time !== undefined) elapsed = ans.time; else if (ans.ts && currentQuestionStartTs) elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
+                        if (elapsed < 0) elapsed = 0; if (elapsed > 60) elapsed = 60;
+                        let isCorrect = (ans.choice === correctAns);
+                        let points = isCorrect ? 100 + Math.max(0, 60 - elapsed) : 0;
+                        hInfo = { choice: ans.choice, correct: isCorrect, time: elapsed, points: points };
+                    }
+                    updates[`${uid}/history/${step.qIndex}`] = hInfo;
+                    let totalScore = 0; let historyObj = p.history || {}; historyObj[step.qIndex] = hInfo; 
+                    for (let q in historyObj) { totalScore += (historyObj[q].points || 0); }
+                    updates[`${uid}/score`] = totalScore;
+                }
+                if (Object.keys(updates).length > 0) db.ref('players').update(updates);
+                db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now }); updateLiveStatus();
+            });
+        } else {
+            db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex !== undefined ? step.qIndex : -1, ts: now }); updateLiveStatus();
+        }
+    }
+    window.startQuizFlow = function() { if(scenario.length <= 1) return alert("問題を保存してください！"); currentStepIndex = 0; executeStep(); }
+    window.goNext = function() { if (currentStepIndex < scenario.length - 1) { currentStepIndex++; executeStep(); } }
+    window.goPrev = function() { if (currentStepIndex > 0) { currentStepIndex--; executeStep(); } }
+    window.resetGame = function() { if(confirm("全てリセットしますか？")) { db.ref('adminCommand').set({ type: 'reset', ts: Date.now() }); db.ref('players').remove(); db.ref('answers').remove(); location.reload(); } }
 </script>
 </body>
 </html>
