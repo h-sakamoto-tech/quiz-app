@@ -2,92 +2,67 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スピードクイズ - 参加者画面</title>
+    <title>スピードクイズ管理画面 (URL指定版)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #0b0e14; color: #fff; margin: 0; text-align: center; }
-        .container { padding: 20px; max-width: 500px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #1e1e1e; color: #fff; padding: 20px; margin: 0; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #f1c40f; padding-bottom: 20px; }
+        .header h1 { color: #f1c40f; margin: 0; font-size: 2.5rem; }
         
-        /* 🖼️ 設問画像表示エリア */
-        .q-image-container {
-            width: 100%;
-            max-height: 250px;
-            background: #000;
-            margin-bottom: 15px;
-            border-radius: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            border: 1px solid #333;
-        }
-        .q-image-container img {
-            max-width: 100%;
-            max-height: 250px;
-            object-fit: contain;
-        }
+        .section { background: #2d2d2d; padding: 25px; border-radius: 12px; border: 1px solid #444; margin-bottom: 20px; }
+        .q-row { background: #3d3d3d; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #3498db; }
+        
+        .q-input-group { display: flex; gap: 15px; margin-bottom: 10px; align-items: flex-start; }
+        .q-preview-box { width: 150px; height: 110px; background: #111; border: 1px solid #555; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 4px; flex-shrink: 0; }
+        .q-preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        
+        .url-field { flex: 1; }
+        .q-img-url { width: 100%; padding: 10px; background: #111; color: #2ecc71; border: 1px solid #555; border-radius: 4px; font-size: 14px; margin-bottom: 8px; box-sizing: border-box; }
+        textarea.q-txt { width: 100%; height: 70px; background: #111; color: #fff; border: 1px solid #555; padding: 10px; font-size: 14px; box-sizing: border-box; resize: vertical; }
 
-        /* 📝 設問テキスト（画像の下） */
-        .q-text {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #2ecc71;
-            line-height: 1.4;
-        }
-
-        /* 🔘 回答ボタンのグリッド */
-        .options-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        .opt-btn {
-            background: #1a202c;
-            border: 2px solid #2ecc71;
-            color: #2ecc71;
-            padding: 20px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-        .opt-btn:active { background: #2ecc71; color: #0b0e14; }
-        .opt-btn:disabled { border-color: #444; color: #444; cursor: not-allowed; }
-
-        .status-msg { margin-top: 20px; color: #8892b0; font-size: 0.9rem; }
+        .btn-save { background: #27ae60; color: white; width: 100%; padding: 20px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; }
+        .btn-add { background: #34495e; color: white; width: 100%; padding: 15px; border: 2px dashed #7f8c8d; cursor: pointer; margin-top: 10px; font-size: 18px; border-radius: 8px; }
+        .btn-control { width: 100%; padding: 20px; font-size: 28px; color: white; border-radius: 10px; cursor: pointer; border: none; margin-bottom: 15px; }
+        
+        .status-box { background: #111; padding: 15px; border: 1px solid #f1c40f; text-align: center; margin-bottom: 15px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="quiz-area" style="display:none;">
-        <h2 id="q-header">第1問</h2>
-        
-        <div class="q-image-container" id="img-wrap" style="display:none;">
-            <img id="display-img" src="">
-        </div>
+<div class="header">
+    <h1>スピードクイズ管理画面 (URL指定)</h1>
+</div>
 
-        <div class="q-text" id="display-text"></div>
-
-        <div class="options-grid">
-            <button class="opt-btn" onclick="sendAnswer('A')">A</button>
-            <button class="opt-btn" onclick="sendAnswer('B')">B</button>
-            <button class="opt-btn" onclick="sendAnswer('C')">C</button>
-            <button class="opt-btn" onclick="sendAnswer('D')">D</button>
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+    <div>
+        <div class="section">
+            <h2 style="margin-top:0;">📝 クイズ問題の設定</h2>
+            <div id="questions-container"></div>
+            <button type="button" class="btn-add" onclick="addQuestionRow()">＋ 問題を追加</button>
+            <button type="button" class="btn-save" onclick="saveAllConfig()">💾 設定を保存して反映</button>
         </div>
     </div>
 
-    <div id="wait-area">
-        <h1 style="color: #f1c40f;">待機中...</h1>
-        <p>管理者がクイズを開始するまでお待ちください。</p>
+    <div>
+        <div class="section" style="position: sticky; top: 20px;">
+            <h2>🎮 進行管理</h2>
+            <div class="status-box">
+                <div id="current-status-text" style="font-size:24px; color:#f1c40f; font-weight:bold;">待機中</div>
+            </div>
+            <button class="btn-control" style="background:#8e44ad;" onclick="startQuizFlow()">🚀 クイズ開始</button>
+            <div id="nav-group" style="display:none; gap:10px;">
+                <button class="btn-control" style="background:#555; flex:1;" onclick="goPrev()">戻る</button>
+                <button class="btn-control" style="background:#e74c3c; flex:2;" id="btn-next-step" onclick="goNext()">次へ進む</button>
+            </div>
+            <button onclick="resetGame()" style="margin-top:30px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer; padding:5px;">全データをリセット</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // Firebase初期設定（管理画面と同じものを入れてください）
+    // Firebase初期設定（既存の設定をそのまま使ってください）
     var firebaseConfig = { 
         apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", 
         authDomain: "speed-quiz26.firebaseapp.com", 
@@ -97,66 +72,95 @@
     firebase.initializeApp(firebaseConfig);
     var db = firebase.database();
 
-    let currentQIndex = -1;
-    let myUid = "user_" + Math.random().toString(36).substring(2, 9); // 簡易的なユーザーID生成
+    let scenario = []; let currentStepIndex = -1;
 
-    // 管理者からの命令（adminCommand）を監視
-    db.ref('adminCommand').on('value', snap => {
-        const cmd = snap.val();
-        if (!cmd) return;
+    // 問題行を追加
+    function addQuestionRow(qData = null) {
+        const container = document.getElementById('questions-container');
+        const div = document.createElement('div'); div.className = 'q-row';
+        
+        const imgVal = qData ? (qData.image || '') : '';
+        const txtVal = qData ? (qData.text || '') : '';
+        const ansVal = qData ? qData.ans : 'A';
 
-        if (cmd.type === 'start' || cmd.type === 'next') {
-            currentQIndex = cmd.qIndex;
-            showQuestion(cmd.qIndex);
-        } else if (cmd.type === 'reset') {
-            location.reload();
+        div.innerHTML = `
+            <div class="q-input-group">
+                <div class="q-preview-box">
+                    <img src="${imgVal}" class="prev-img" style="${imgVal ? 'display:block' : 'display:none'}" onerror="this.style.display='none'">
+                    <span class="no-img-label" style="${imgVal ? 'display:none' : 'display:block'}">No Image</span>
+                </div>
+                <div class="url-field">
+                    <input type="text" class="q-img-url" placeholder="画像のURLを貼り付けてください" value="${imgVal}" oninput="updatePreview(this)">
+                    <textarea class="q-txt" placeholder="画像の下に表示する補足テキスト">${txtVal}</textarea>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>正解選択肢: 
+                    <select class="q-ans">
+                        ${['A','B','C','D','E','F','G'].map(v=>`<option value="${v}" ${ansVal===v?'selected':''}>${v}</option>`).join('')}
+                    </select>
+                </span>
+                <button onclick="this.parentElement.parentElement.remove()" style="color:#e74c3c; background:none; border:none; cursor:pointer;">[削除]</button>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    // 入力された瞬間に画像をプレビューする
+    function updatePreview(el) {
+        const row = el.closest('.q-row');
+        const img = row.querySelector('.prev-img');
+        const label = row.querySelector('.no-img-label');
+        if(el.value) {
+            img.src = el.value;
+            img.style.display = 'block';
+            label.style.display = 'none';
         } else {
-            document.getElementById('quiz-area').style.display = 'none';
-            document.getElementById('wait-area').style.display = 'block';
+            img.style.display = 'none';
+            label.style.display = 'block';
         }
-    });
+    }
 
-    // 設問を表示する関数
-    function showQuestion(index) {
-        db.ref('quizConfig/' + index).once('value', snap => {
-            const data = snap.val();
-            if (!data) return;
-
-            document.getElementById('wait-area').style.display = 'none';
-            document.getElementById('quiz-area').style.display = 'block';
-            document.getElementById('q-header').innerText = `第${index + 1}問`;
-
-            // 📸 画像の表示切り替え
-            const imgWrap = document.getElementById('img-wrap');
-            const imgEl = document.getElementById('display-img');
-            if (data.image) {
-                imgEl.src = data.image;
-                imgWrap.style.display = 'flex';
-            } else {
-                imgWrap.style.display = 'none';
+    function saveAllConfig() {
+        const qData = []; 
+        document.querySelectorAll('.q-row').forEach(r => { 
+            const imgUrl = r.querySelector('.q-img-url').value.trim();
+            const txt = r.querySelector('.q-txt').value.trim();
+            if(imgUrl || txt) {
+                qData.push({ image: imgUrl, text: txt, ans: r.querySelector('.q-ans').value }); 
             }
-
-            // 📝 テキストの表示
-            document.getElementById('display-text').innerText = data.text || "";
-
-            // ボタンを有効化
-            document.querySelectorAll('.opt-btn').forEach(b => b.disabled = false);
         });
+        db.ref('quizConfig').set(qData).then(() => { alert("保存しました！"); location.reload(); });
     }
 
-    // 回答を送信
-    function sendAnswer(choice) {
-        // 二重回答防止
-        document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
-        
-        db.ref('answers/' + myUid).set({
-            choice: choice,
-            ts: Date.now()
+    // --- 進行管理ロジック ---
+    window.onload = function() {
+        db.ref('quizConfig').once('value', snap => {
+            const data = snap.val();
+            if (data && data.length > 0) { data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } 
+            else { addQuestionRow(); }
         });
-        
-        alert(choice + " を送信しました！");
+    };
+
+    function buildScenario(n) {
+        scenario = [{type:'rules',title:'ルール説明'}];
+        for(let i=0;i<n;i++) { 
+            scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`}); 
+            scenario.push({type:'close',qIndex:i,title:`第${i+1}問 正解発表`}); 
+        }
+        scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果発表'},{type:'ranking',title:'総合順位'});
     }
+
+    function startQuizFlow() { currentStepIndex = 0; executeStep(); }
+    function goNext() { if (currentStepIndex < scenario.length - 1) { currentStepIndex++; executeStep(); } }
+    function goPrev() { if (currentStepIndex > 0) { currentStepIndex--; executeStep(); } }
+    function executeStep() {
+        const step = scenario[currentStepIndex];
+        document.getElementById('current-status-text').innerText = step.title;
+        document.getElementById('nav-group').style.display = 'flex';
+        db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex !== undefined ? step.qIndex : -1, ts: Date.now() });
+    }
+    function resetGame() { if(confirm("リセット？")) { db.ref('players').remove(); db.ref('answers').remove(); location.reload(); } }
 </script>
-
 </body>
 </html>
