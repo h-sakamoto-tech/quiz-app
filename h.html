@@ -1,141 +1,101 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>クイズ参加</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>スピードクイズ - 回答 (h)</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { background:#121212; color:#fff; text-align:center; font-family:sans-serif; margin:0; }
-        .screen { display:none; padding:20px; height:100vh; flex-direction:column; justify-content:center; align-items:center; box-sizing:border-box;}
-        .active { display:flex !important; }
-        input[type="text"] { font-size:24px; padding:15px; width:80%; border-radius:10px; border:none; margin-bottom:15px; text-align:center;}
-        .btn-join { background:#27ae60; color:#fff; font-size:26px; padding:15px 40px; border-radius:10px; border:none; font-weight:bold; width:80%; margin-top:20px;}
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #0b0e14; color: #fff; margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        /* 📸 カメラ用スタイル */
-        .photo-upload-btn { background:#34495e; color:#fff; font-size:18px; padding:15px; border-radius:10px; border:2px dashed #f1c40f; width:80%; cursor:pointer; margin-bottom:10px; }
-        .preview-img { width:100px; height:100px; border-radius:50%; object-fit:cover; display:none; margin:10px auto; border:3px solid #3498db; }
+        #wait-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .waiting-text { font-size: 1.5rem; color: #f1c40f; font-weight: bold; }
+
+        #quiz-area { display: none; flex: 1; padding: 15px; flex-direction: column; justify-content: center; }
+        .q-title { font-size: 1.2rem; margin-bottom: 20px; color: #2ecc71; font-weight: bold; text-align: center; }
+
+        /* どんな問題にも対応できるように、A〜Fの6ボタンを配置 */
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; margin: 0 auto; }
         
-        .choice-grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; width:100%; max-width:400px; }
-        .btn-ans { background:#3498db; color:#fff; font-size:50px; font-weight:bold; height:120px; border-radius:15px; border:none; transition: 0.2s; }
-        .msg { font-size:24px; color:#f1c40f; margin-top:20px; font-weight:bold; }
+        .ans-btn { background: #1a202c; border: 3px solid #2ecc71; color: #2ecc71; padding: 25px 0; font-size: 2.5rem; font-weight: bold; border-radius: 15px; cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
+        .ans-btn:active { background: #2ecc71; color: #0b0e14; transform: scale(0.95); }
+        .ans-btn:disabled { border-color: #444; color: #444; opacity: 0.3; }
+
+        #sent-msg { display: none; font-size: 1.2rem; color: #2ecc71; margin-top: 20px; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
-    <div id="entry" class="screen active">
-        <h2 style="color:#f1c40f; font-size:35px; margin-bottom:10px;">スピードクイズ</h2>
-        <p style="font-size:18px; color:#ccc;">チーム名を入力し、写真を撮ってください</p>
-        <input type="text" id="nn" placeholder="例: チーム坂本" maxlength="10">
-        
-        <label class="photo-upload-btn">
-            📸 代表者の顔写真を撮る
-            <input type="file" accept="image/*" capture="camera" style="display:none;" onchange="compressImage(event)">
-        </label>
-        <img id="preview" class="preview-img">
-        
-        <button class="btn-join" onclick="join()">参加する！</button>
+
+    <div id="wait-area">
+        <div class="waiting-text" id="status-label">待機中...</div>
+        <p style="color: #8892b0;">スクリーンに注目してください</p>
     </div>
-    
-    <div id="wait" class="screen">
-        <h2 style="font-size:40px;">待機中...</h2>
-        <p style="font-size:20px; color:#aaa;">スクリーンに注目してください</p>
-        <div style="background:#222; border:2px solid #555; padding:15px; border-radius:10px; margin-top:20px;">
-            <img id="wait-preview" class="preview-img" style="display:inline-block; width:60px; height:60px; vertical-align:middle; margin:0 10px 0 0;">
-            <b id="my-name" style="font-size:28px; color:#3498db; vertical-align:middle;"></b>
+
+    <div id="quiz-area">
+        <div class="q-title" id="q-label">第 1 問</div>
+        <div class="btn-grid">
+            <button class="ans-btn" onclick="sendAnswer('A')">A</button>
+            <button class="ans-btn" onclick="sendAnswer('B')">B</button>
+            <button class="ans-btn" onclick="sendAnswer('C')">C</button>
+            <button class="ans-btn" onclick="sendAnswer('D')">D</button>
+            <button class="ans-btn" onclick="sendAnswer('E')">E</button>
+            <button class="ans-btn" onclick="sendAnswer('F')">F</button>
         </div>
+        <div id="sent-msg">送信完了！</div>
     </div>
-    
-    <div id="quiz" class="screen">
-        <h2 id="qn" style="font-size:40px; color:#f1c40f; margin-bottom:30px;">問題</h2>
-        <div class="choice-grid">
-            <button class="btn-ans" onclick="ans('A')">A</button><button class="btn-ans" onclick="ans('B')">B</button>
-            <button class="btn-ans" onclick="ans('C')">C</button><button class="btn-ans" onclick="ans('D')">D</button>
-        </div>
-        <p id="msg" class="msg"></p>
-    </div>
-    
+
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
-    firebase.initializeApp(firebaseConfig); const db = firebase.database();
-    let uid = localStorage.getItem('quid') || "u"+Math.random().toString(36).substr(2,7); localStorage.setItem('quid', uid);
-    let joined = false; let qStartTime = 0;
-    let myPhotoBase64 = ""; // 写真データ保存用
+    firebase.initializeApp({ apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" });
+    const db = firebase.database();
+    let myUid = "u" + Math.random().toString(36).substring(2, 7);
 
-    // 📸 画像を極小サイズ(150px)に圧縮する処理
-    function compressImage(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const MAX_SIZE = 150; // 最大150ピクセルに縮小
-                let w = img.width; let h = img.height;
-                if (w > h) { if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } } 
-                else { if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; } }
-                canvas.width = w; canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                // 軽量なJPEG文字列（Base64）に変換
-                myPhotoBase64 = canvas.toDataURL('image/jpeg', 0.6);
-                document.getElementById('preview').src = myPhotoBase64;
-                document.getElementById('preview').style.display = 'block';
-                document.getElementById('wait-preview').src = myPhotoBase64;
-            }
-            img.src = e.target.result;
-        }
-        reader.readAsDataURL(file);
-    }
+    db.ref('adminCommand').on('value', snap => {
+        const cmd = snap.val();
+        if (!cmd) return;
 
-    function join() {
-        const n = document.getElementById('nn').value.trim(); 
-        if(!n) return alert("チーム名を入力してください");
-        // Firebaseへ写真データも一緒に保存
-        db.ref('players/'+uid).set({name:n, score:0, photo: myPhotoBase64}).then(()=>{ 
-            joined=true; 
-            document.getElementById('my-name').innerText=n; 
-            if(!myPhotoBase64) document.getElementById('wait-preview').style.display = 'none';
-            switchS('wait'); 
-        });
-    }
-    
-    db.ref('adminCommand').on('value', s => {
-        const c = s.val(); if(!c || c.type==='reset') { joined=false; switchS('entry'); return; }
-        if(!joined) return;
+        const waitArea = document.getElementById('wait-area');
+        const quizArea = document.getElementById('quiz-area');
+        const sentMsg = document.getElementById('sent-msg');
+        const btns = document.querySelectorAll('.ans-btn');
 
-        if(c.type==='start'||c.type==='next') { 
-            qStartTime = Date.now(); 
-            document.getElementById('qn').innerText=`第 ${c.qIndex+1} 問`; 
-            document.getElementById('msg').innerText="回答を選んでください！";
-            document.getElementById('msg').style.color = "#fff";
-            document.querySelectorAll('.btn-ans').forEach(b => {
-                b.disabled = false; b.style.background = '#3498db'; b.style.opacity = '1'; b.style.transform = 'none';
+        if (cmd.type === 'start' || cmd.type === 'next') {
+            waitArea.style.display = 'none';
+            quizArea.style.display = 'flex';
+            sentMsg.style.display = 'none';
+            document.getElementById('q-label').innerText = `第 ${cmd.qIndex + 1} 問`;
+            
+            btns.forEach(b => {
+                b.disabled = false;
+                b.style.visibility = 'visible';
             });
-            switchS('quiz'); 
+        } else if (cmd.type === 'close') {
+            document.getElementById('status-label').innerText = "受付終了";
+            waitArea.style.display = 'flex';
+            quizArea.style.display = 'none';
+        } else if (cmd.type === 'reset') {
+            location.reload();
+        } else {
+            document.getElementById('status-label').innerText = "待機中...";
+            waitArea.style.display = 'flex';
+            quizArea.style.display = 'none';
         }
-        else if(c.type==='close') { 
-            document.querySelectorAll('.btn-ans').forEach(b=>b.disabled=true); 
-            document.getElementById('msg').innerText="回答締め切り！"; 
-            document.getElementById('msg').style.color = "#f1c40f";
-        }
-        else { switchS('wait'); }
     });
 
-    function ans(v) { 
-        let elapsed = Math.floor((Date.now() - qStartTime) / 1000);
-        if (elapsed < 0) elapsed = 0; if (elapsed > 60) elapsed = 60;
-        db.ref('answers/'+uid).set({choice: v, time: elapsed, ts: Date.now()}); 
+    function sendAnswer(choice) {
+        const btns = document.querySelectorAll('.ans-btn');
+        const sentMsg = document.getElementById('sent-msg');
+
+        btns.forEach(b => b.disabled = true);
         
-        document.getElementById('msg').innerText = "「" + v + "」を送信しました！"; 
-        document.getElementById('msg').style.color = "#2ecc71";
-        document.querySelectorAll('.btn-ans').forEach(b => {
-            b.disabled = true;
-            if (b.innerText === v) { b.style.background = '#e74c3c'; b.style.transform = 'scale(0.95)'; } 
-            else { b.style.background = '#555'; b.style.opacity = '0.4'; }
-        }); 
+        db.ref('answers/' + myUid).set({ choice: choice, ts: Date.now() }).then(() => {
+            sentMsg.style.display = 'block';
+            btns.forEach(b => {
+                if(b.innerText !== choice) b.style.visibility = 'hidden';
+            });
+        });
     }
-    
-    function switchS(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 </script>
+
 </body>
 </html>
