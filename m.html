@@ -40,12 +40,7 @@
 
 <div id="display-container">
     <div id="view-area">
-        <div class="big-msg">SPEED QUIZ 2026</div>
-        <div class="qr-area">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://h-sakamoto-tech.github.io/quiz-app/h.html" alt="参加QRコード">
-            <div class="qr-text">スマホでQRコードを読み取ってエントリー！</div>
         </div>
-    </div>
 </div>
 
 <script>
@@ -53,8 +48,24 @@
     const db = firebase.database();
     const view = document.getElementById('view-area');
 
+    // 待機画面（QRコード）のHTMLを変数化
+    const standbyHTML = `
+        <div class="big-msg">SPEED QUIZ 2026</div>
+        <div class="qr-area">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://h-sakamoto-tech.github.io/quiz-app/h.html" alt="参加QRコード">
+            <div class="qr-text">スマホでQRコードを読み取ってエントリー！</div>
+        </div>
+    `;
+
     db.ref('adminCommand').on('value', snap => {
-        const cmd = snap.val(); if (!cmd) return;
+        const cmd = snap.val();
+        
+        // ★修正ポイント：命令がない、または「standby」状態の時は絶対にQRコードを表示する
+        if (!cmd || cmd.type === 'standby' || cmd.type === 'reset') {
+            view.innerHTML = standbyHTML;
+            return;
+        }
+
         if (cmd.type === 'start' || cmd.type === 'next') {
             db.ref('quizConfig/' + cmd.qIndex).once('value', s => {
                 const data = s.val(); if(!data) return;
@@ -73,8 +84,6 @@
             showRanking();
         } else if (cmd.type === 'end') {
             view.innerHTML = `<div class="big-msg">ALL FINISHED!</div><p style="font-size:3rem;">全問題が終了しました。結果発表をお楽しみに！</p>`;
-        } else if (cmd.type === 'reset') {
-            location.reload();
         }
     });
 
