@@ -30,13 +30,11 @@
         textarea { width: 100%; height: 60px; background: #111; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 4px; resize: none; font-size: 14px; box-sizing: border-box; }
         
         .btn-save-all { background: #27ae60; color: white; width: 100%; padding: 18px; font-size: 22px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 0 #1e8449; }
-        .btn-save-all:active { transform: translateY(2px); box-shadow: none; }
 
         /* 進行管理パネル */
         .control-panel { position: sticky; top: 20px; }
         .status-display { background: #000; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 15px; border: 2px solid #f1c40f; }
-        .btn-control { width: 100%; padding: 15px; font-size: 20px; color: white; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 10px; font-weight: bold; transition: 0.2s; }
-        .btn-control:active { transform: scale(0.98); }
+        .btn-control { width: 100%; padding: 15px; font-size: 20px; color: white; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -51,8 +49,8 @@
         
         <div style="display:none;">
             <input type="password" id="gh-token" value="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">
-            <input type="text" id="gh-user" value="【ここにGitHubのユーザー名を入力】">
-            <input type="text" id="gh-repo" value="【ここにリポジトリ名を入力】">
+            <input type="text" id="gh-user" value="h-sakamoto-tech">
+            <input type="text" id="gh-repo" value="quiz-app">
         </div>
 
         <div id="questions-container"></div>
@@ -62,50 +60,45 @@
         </button>
         
         <button class="btn-save-all" onclick="saveAll()">
-            <i class="fa fa-cloud-arrow-up"></i> 設定を保存して全員に反映
+            <i class="fa fa-cloud-arrow-up"></i> 全てを保存して反映
         </button>
     </div>
 
     <div class="control-panel">
         <div class="section">
-            <h2 style="margin-top:0;"><i class="fa fa-gamepad"></i> クイズ進行</h2>
+            <h2 style="margin-top:0;"><i class="fa fa-gamepad"></i> 進行コントロール</h2>
             <div class="status-display">
-                <div style="font-size:12px; color:#888;">現在のステータス</div>
                 <div id="status-text" style="font-size:24px; color:#f1c40f; font-weight:bold;">待機中</div>
             </div>
             
             <button class="btn-control" style="background:#8e44ad;" id="btn-start" onclick="startFlow()">
-                🚀 クイズ開始 (ルール説明)
+                🚀 クイズ開始
             </button>
             
             <div id="nav-btns" style="display:none; gap:10px;">
                 <button class="btn-control" style="background:#555; flex:1;" onclick="prev()">戻る</button>
-                <button class="btn-control" style="background:#e74c3c; flex:2;" onclick="next()">次へ進む</button>
+                <button class="btn-control" style="background:#e74c3c; flex:2;" onclick="next()">次へ</button>
             </div>
             
-            <hr style="border:0; border-top:1px solid #444; margin:20px 0;">
-            <button onclick="resetGame()" style="width:100%; background:none; color:#555; border:1px solid #444; cursor:pointer; padding:8px; border-radius:5px;">全データをリセット</button>
+            <button onclick="resetGame()" style="width:100%; background:none; color:#555; border:1px solid #444; cursor:pointer; padding:8px; border-radius:5px; margin-top:20px;">全データをリセット</button>
         </div>
     </div>
 </div>
 
 <script>
     // Firebase初期設定
-    const firebaseConfig = { 
+    firebase.initializeApp({ 
         apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", 
         authDomain: "speed-quiz26.firebaseapp.com", 
         databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", 
         projectId: "speed-quiz26" 
-    };
-    firebase.initializeApp(firebaseConfig);
+    });
     const db = firebase.database();
     
     let scenario = [];
     let currentIdx = -1;
 
-    // 問題行の生成
     function addQuestionRow(data = null) {
-        const container = document.getElementById('questions-container');
         const div = document.createElement('div');
         div.className = 'q-row';
         const img = data ? (data.image || '') : '';
@@ -120,41 +113,29 @@
                 </div>
                 <div class="input-area">
                     <label class="btn-upload">
-                        <i class="fa fa-folder-open"></i> 画像をアップロード
+                        <i class="fa fa-folder-open"></i> 手元の画像を選択
                         <input type="file" style="display:none" accept="image/*" onchange="uploadToGitHub(this)">
                     </label>
-                    <input type="text" class="q-img-url" value="${img}" readonly placeholder="URLは自動生成されます">
-                    <textarea class="q-txt" placeholder="画像の下に表示する補足テキストを入力してください">${txt}</textarea>
+                    <input type="text" class="q-img-url" value="${img}" readonly placeholder="URLは自動入力されます">
+                    <textarea class="q-txt" placeholder="画像の下に出すテキストを入力">${txt}</textarea>
                     <div style="margin-top:5px;">
-                        正解: <select class="q-ans" style="padding:5px; background:#111; color:#fff; border:1px solid #555;">
-                            ${['A','B','C','D','E','F','G'].map(v=>`<option value="${v}" ${ans===v?'selected':''}>${v}</option>`).join('')}
-                        </select>
+                        正解: <select class="q-ans">${['A','B','C','D','E','F','G'].map(v=>`<option value="${v}" ${ans===v?'selected':''}>${v}</option>`).join('')}</select>
                     </div>
                 </div>
             </div>
-            <div style="text-align:right; margin-top:5px;">
-                <button onclick="this.parentElement.parentElement.remove()" style="color:#e74c3c; background:none; border:none; cursor:pointer; font-size:12px;">[この問題を削除]</button>
-            </div>
+            <div style="text-align:right;"><button onclick="this.parentElement.parentElement.remove()" style="color:#e74c3c; background:none; border:none; cursor:pointer; font-size:12px;">[削除]</button></div>
         `;
-        container.appendChild(div);
+        document.getElementById('questions-container').appendChild(div);
     }
 
-    // GitHub APIへのアップロード処理
     async function uploadToGitHub(input) {
-        const file = input.files[0];
-        if (!file) return;
+        const file = input.files[0]; if (!file) return;
+        const row = input.closest('.q-row');
+        row.querySelector('.up-status').style.display = 'flex';
 
         const token = document.getElementById('gh-token').value;
         const user = document.getElementById('gh-user').value;
         const repo = document.getElementById('gh-repo').value;
-
-        if (user.includes('【') || repo.includes('【')) {
-            alert("GitHubのユーザー名とリポジトリ名を設定してください（コード内のvalueを書き換え）");
-            return;
-        }
-
-        const row = input.closest('.q-row');
-        row.querySelector('.up-status').style.display = 'flex';
 
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -167,85 +148,53 @@
                 const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`, {
                     method: 'PUT',
                     headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: "upload quiz image", content: base64Content })
+                    body: JSON.stringify({ message: "upload", content: base64Content })
                 });
-                
-                if (!res.ok) throw new Error("Upload Failed");
-
                 const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/main/${path}`;
                 row.querySelector('.q-img-url').value = rawUrl;
                 row.querySelector('img').src = rawUrl;
                 row.querySelector('img').style.display = 'block';
-            } catch (e) {
-                alert("GitHubへのアップロードに失敗しました。設定を確認してください。");
-            } finally {
-                row.querySelector('.up-status').style.display = 'none';
-            }
+            } catch (e) { alert("GitHubアップロード失敗"); }
+            row.querySelector('.up-status').style.display = 'none';
         };
     }
 
-    // Firebaseに一括保存
     function saveAll() {
         const qList = [];
         document.querySelectorAll('.q-row').forEach(r => { 
             const img = r.querySelector('.q-img-url').value;
             const txt = r.querySelector('.q-txt').value;
-            const ans = r.querySelector('.q-ans').value;
-            if (img || txt) qList.push({ image: img, text: txt, ans: ans }); 
+            if (img || txt) qList.push({ image: img, text: txt, ans: r.querySelector('.q-ans').value }); 
         });
-        db.ref('quizConfig').set(qList).then(() => {
-            alert("Firebaseへ保存しました。参加者の画面に反映されます。");
-            location.reload();
-        });
+        db.ref('quizConfig').set(qList).then(() => { alert("保存しました！"); location.reload(); });
     }
 
-    // 読み込み時に既存の問題を表示
     window.onload = () => {
         db.ref('quizConfig').once('value', s => {
-            const data = s.val();
-            if (data) {
-                data.forEach(d => addQuestionRow(d));
-                buildScenario(data.length);
-            } else {
-                addQuestionRow();
-            }
+            if (s.val()) { s.val().forEach(d => addQuestionRow(d)); buildScenario(s.val().length); } 
+            else { addQuestionRow(); }
         });
     };
 
-    // クイズ進行の組み立て
     function buildScenario(n) {
         scenario = [{type:'rules',t:'ルール説明'}];
         for(let i=0; i<n; i++) {
-            scenario.push({type:i===0?'start':'next',qi:i,t:`第${i+1}問 受付中`});
-            scenario.push({type:'close',qi:i,t:`第${i+1}問 正解発表`});
+            scenario.push({type:i===0?'start':'next',qi:i,t:`第${i+1}問 受付中`}, {type:'close',qi:i,t:`第${i+1}問 正解発表`});
         }
         scenario.push({type:'end',t:'全問終了'}, {type:'details',t:'結果発表'}, {type:'ranking',t:'総合順位'});
     }
 
-    // 進行ボタンの処理
     function startFlow() { currentIdx = 0; exec(); }
     function next() { if(currentIdx < scenario.length - 1) { currentIdx++; exec(); } }
     function prev() { if(currentIdx > 0) { currentIdx--; exec(); } }
-    
     function exec() {
-        const step = scenario[currentIdx];
-        document.getElementById('status-text').innerText = step.t;
+        const s = scenario[currentIdx];
+        document.getElementById('status-text').innerText = s.t;
         document.getElementById('btn-start').style.display = 'none';
         document.getElementById('nav-btns').style.display = 'flex';
-        db.ref('adminCommand').set({
-            type: step.type,
-            qIndex: step.qi !== undefined ? step.qi : -1,
-            ts: Date.now()
-        });
+        db.ref('adminCommand').set({ type: s.type, qIndex: s.qi !== undefined ? s.qi : -1, ts: Date.now() });
     }
-
-    function resetGame() {
-        if(confirm("全プレイヤーの回答とスコアをリセットしますか？")) {
-            db.ref('players').remove();
-            db.ref('answers').remove();
-            location.reload();
-        }
-    }
+    function resetGame() { if(confirm("リセット？")) { db.ref('players').remove(); db.ref('answers').remove(); location.reload(); } }
 </script>
 </body>
 </html>
