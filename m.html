@@ -2,85 +2,26 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>スピードクイズ・メインスクリーン (m)</title>
+    <title>スピードクイズ・メインスクリーン</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        /* 16:9 の大型モニター・プロジェクターに最適化したデザイン */
-        body { 
-            margin: 0; 
-            background: #000; 
-            color: #fff; 
-            font-family: 'Segoe UI', Meiryo, sans-serif; 
-            overflow: hidden; 
-            text-align: center;
-        }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Meiryo, sans-serif; overflow: hidden; text-align: center; }
+        #display-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); }
 
-        #display-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
-            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
-        }
+        .q-image-frame { height: 60vh; width: 90vw; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+        .q-image { max-height: 100%; max-width: 100%; border: 6px solid #2ecc71; border-radius: 20px; box-shadow: 0 0 60px rgba(46, 204, 113, 0.4); object-fit: contain; }
 
-        /* 🖼️ 設問画像エリア */
-        .q-image-frame {
-            height: 65vh;
-            width: 90vw;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-        }
+        .q-text { font-size: 4.5rem; font-weight: bold; color: #ffffff; text-shadow: 0 0 20px rgba(0,0,0,1), 2px 2px 0px #2ecc71; line-height: 1.2; white-space: pre-wrap; max-width: 95vw; }
+        .q-header { font-size: 3rem; color: #2ecc71; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 10px; border-bottom: 2px solid #2ecc71; }
 
-        .q-image {
-            max-height: 100%;
-            max-width: 100%;
-            border: 6px solid #2ecc71;
-            border-radius: 20px;
-            box-shadow: 0 0 60px rgba(46, 204, 113, 0.4);
-            object-fit: contain;
-        }
-
-        /* 📝 補足テキスト */
-        .q-text {
-            font-size: 4.5rem;
-            font-weight: bold;
-            color: #ffffff;
-            text-shadow: 0 0 20px rgba(0,0,0,1), 2px 2px 0px #2ecc71;
-            line-height: 1.2;
-            white-space: pre-wrap;
-            max-width: 95vw;
-        }
-
-        .q-header {
-            font-size: 3rem;
-            color: #2ecc71;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 10px;
-            border-bottom: 2px solid #2ecc71;
-        }
-
-        /* メッセージ表示 */
         .big-msg { font-size: 10rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 30px #f1c40f; }
         .timeup-msg { font-size: 12rem; color: #e74c3c; font-weight: bold; animation: pulse 0.5s infinite alternate; }
-        
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.05); opacity: 0.7; } }
 
-        /* 📊 ランキングテーブル */
+        /* ランキング用 */
         .ranking-container { width: 90%; }
-        .ranking-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 15px;
-            font-size: 3rem;
-        }
+        .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 15px; font-size: 3rem; }
         .ranking-table tr { background: rgba(255,255,255,0.05); border-radius: 15px; }
         .ranking-table th { color: #f1c40f; font-size: 2rem; padding: 10px; border-bottom: 2px solid #f1c40f; }
         .ranking-table td { padding: 20px; }
@@ -100,43 +41,33 @@
 </div>
 
 <script>
-    // Firebase初期設定（他画面と共通）
-    const firebaseConfig = { 
-        apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", 
-        authDomain: "speed-quiz26.firebaseapp.com", 
-        databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", 
-        projectId: "speed-quiz26" 
-    };
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp({ apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" });
     const db = firebase.database();
-
     const view = document.getElementById('view-area');
 
-    // 管理者からの命令を監視
     db.ref('adminCommand').on('value', snap => {
         const cmd = snap.val();
         if (!cmd) return;
 
         if (cmd.type === 'start' || cmd.type === 'next') {
-            // 第n問 表示
             db.ref('quizConfig/' + cmd.qIndex).once('value', s => {
                 const data = s.val();
                 if(!data) return;
+                
+                // 画像がない場合はテキストのみを中心に大きく表示するための制御
+                let imageHtml = data.image ? `<div class="q-image-frame"><img src="${data.image}" class="q-image"></div>` : '';
+                
                 view.innerHTML = `
                     <div class="q-header">QUESTION ${cmd.qIndex + 1}</div>
-                    <div class="q-image-frame">
-                        ${data.image ? `<img src="${data.image}" class="q-image">` : `<div class="big-msg">NO IMAGE</div>`}
-                    </div>
-                    <div class="q-text">${data.text || ''}</div>
+                    ${imageHtml}
+                    <div class="q-text" style="${data.image ? '' : 'font-size: 6rem; margin-top: 100px;'}">${data.text || ''}</div>
                 `;
             });
         } else if (cmd.type === 'close') {
-            // タイムアップ演出
             view.innerHTML = `<div class="timeup-msg">TIME UP!</div><p style="font-size:3rem;">回答を締め切りました</p>`;
         } else if (cmd.type === 'rules') {
             view.innerHTML = `<div class="big-msg">RULES</div><p style="font-size:4rem; color:#2ecc71;">スクリーンを見て、スマホで素早くタップ！</p>`;
         } else if (cmd.type === 'ranking') {
-            // 総合順位の表示
             showRanking();
         } else if (cmd.type === 'end') {
             view.innerHTML = `<div class="big-msg">ALL FINISHED!</div><p style="font-size:3rem;">全問題が終了しました。結果発表をお楽しみに！</p>`;
@@ -145,7 +76,6 @@
         }
     });
 
-    // ランキング描画処理
     function showRanking() {
         db.ref('players').once('value', snap => {
             const players = snap.val() || {};
@@ -153,10 +83,8 @@
             
             let html = `<div class="ranking-container">
                             <h1 style="color:#f1c40f; font-size:5rem; margin-bottom:30px;">FINAL RANKING</h1>
-                            <table class="ranking-table">
-                                <tr><th>RANK</th><th>TEAM NAME</th><th>TOTAL SCORE</th></tr>`;
+                            <table class="ranking-table"><tr><th>RANK</th><th>TEAM NAME</th><th>TOTAL SCORE</th></tr>`;
 
-            // 上位5チームを表示
             sorted.slice(0, 5).forEach((p, idx) => {
                 const isTop = idx === 0 ? 'top-1' : '';
                 const photo = p.photo ? `<img src="${p.photo}" class="team-avatar">` : `<span style="font-size:4rem; margin-right:20px;">👤</span>`;
