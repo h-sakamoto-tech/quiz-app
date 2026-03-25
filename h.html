@@ -15,10 +15,10 @@
         #quiz-area { display: none; flex: 1; padding: 15px; flex-direction: column; justify-content: center; }
         .q-title { font-size: 1.2rem; margin-bottom: 20px; color: #2ecc71; font-weight: bold; text-align: center; }
 
-        /* どんな問題にも対応できるように、A〜Fの6ボタンを配置 */
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; margin: 0 auto; }
+        /* A〜Fまで対応できるように3列×2行のレイアウトに調整 */
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; margin: 0 auto; }
         
-        .ans-btn { background: #1a202c; border: 3px solid #2ecc71; color: #2ecc71; padding: 25px 0; font-size: 2.5rem; font-weight: bold; border-radius: 15px; cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
+        .ans-btn { background: #1a202c; border: 3px solid #2ecc71; color: #2ecc71; padding: 25px 0; font-size: 2.2rem; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
         .ans-btn:active { background: #2ecc71; color: #0b0e14; transform: scale(0.95); }
         .ans-btn:disabled { border-color: #444; color: #444; opacity: 0.3; }
 
@@ -51,48 +51,34 @@
     let myUid = "u" + Math.random().toString(36).substring(2, 7);
 
     db.ref('adminCommand').on('value', snap => {
-        const cmd = snap.val();
-        if (!cmd) return;
-
+        const cmd = snap.val(); if (!cmd) return;
         const waitArea = document.getElementById('wait-area');
         const quizArea = document.getElementById('quiz-area');
         const sentMsg = document.getElementById('sent-msg');
         const btns = document.querySelectorAll('.ans-btn');
 
         if (cmd.type === 'start' || cmd.type === 'next') {
-            waitArea.style.display = 'none';
-            quizArea.style.display = 'flex';
-            sentMsg.style.display = 'none';
+            waitArea.style.display = 'none'; quizArea.style.display = 'flex'; sentMsg.style.display = 'none';
             document.getElementById('q-label').innerText = `第 ${cmd.qIndex + 1} 問`;
-            
-            btns.forEach(b => {
-                b.disabled = false;
-                b.style.visibility = 'visible';
-            });
+            btns.forEach(b => { b.disabled = false; b.style.visibility = 'visible'; });
         } else if (cmd.type === 'close') {
             document.getElementById('status-label').innerText = "受付終了";
-            waitArea.style.display = 'flex';
-            quizArea.style.display = 'none';
+            waitArea.style.display = 'flex'; quizArea.style.display = 'none';
         } else if (cmd.type === 'reset') {
             location.reload();
         } else {
             document.getElementById('status-label').innerText = "待機中...";
-            waitArea.style.display = 'flex';
-            quizArea.style.display = 'none';
+            waitArea.style.display = 'flex'; quizArea.style.display = 'none';
         }
     });
 
     function sendAnswer(choice) {
         const btns = document.querySelectorAll('.ans-btn');
-        const sentMsg = document.getElementById('sent-msg');
-
         btns.forEach(b => b.disabled = true);
-        
+        // 回答時に現在のタイムスタンプ（ts）を記録し、管理画面でスコア計算に利用する
         db.ref('answers/' + myUid).set({ choice: choice, ts: Date.now() }).then(() => {
-            sentMsg.style.display = 'block';
-            btns.forEach(b => {
-                if(b.innerText !== choice) b.style.visibility = 'hidden';
-            });
+            document.getElementById('sent-msg').style.display = 'block';
+            btns.forEach(b => { if(b.innerText !== choice) b.style.visibility = 'hidden'; });
         });
     }
 </script>
