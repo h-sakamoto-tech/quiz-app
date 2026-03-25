@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>スピードクイズ・コマンドセンター (index)</title>
+    <title>スピードクイズ・管理者画面</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -12,17 +12,13 @@
         .header h1 { color: #f1c40f; margin: 0; font-size: 2rem; letter-spacing: 2px; }
         
         .section { background: #2d2d2d; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        
-        /* クイズ問題の行 */
         .q-row { background: #3d3d3d; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #3498db; }
         .q-grid { display: flex; gap: 15px; align-items: flex-start; }
         
-        /* プレビュー枠 */
         .preview-box { width: 160px; height: 120px; background: #000; border: 1px solid #555; display: flex; align-items: center; justify-content: center; position: relative; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
         .preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .up-status { position: absolute; background: rgba(0,0,0,0.8); width: 100%; height: 100%; display: none; align-items: center; justify-content: center; color: #f1c40f; font-size: 14px; font-weight: bold; }
 
-        /* 入力エリア */
         .input-area { flex: 1; }
         .btn-upload { background: #3498db; color: #fff; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; display: inline-block; margin-bottom: 10px; transition: 0.3s; }
         .btn-upload:hover { background: #2980b9; }
@@ -31,7 +27,6 @@
         
         .btn-save-all { background: #27ae60; color: white; width: 100%; padding: 18px; font-size: 22px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 0 #1e8449; }
 
-        /* 進行管理パネル */
         .control-panel { position: sticky; top: 20px; }
         .status-display { background: #000; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 15px; border: 2px solid #f1c40f; }
         .btn-control { width: 100%; padding: 15px; font-size: 20px; color: white; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 10px; font-weight: bold; }
@@ -40,7 +35,7 @@
 <body>
 
 <div class="header">
-    <h1><i class="fa fa-shuttle-space"></i> SPEED QUIZ 2026 ADMIN</h1>
+    <h1><i class="fa fa-shuttle-space"></i> スピードクイズ管理者画面</h1>
 </div>
 
 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 25px;">
@@ -86,7 +81,6 @@
 </div>
 
 <script>
-    // Firebase初期設定
     firebase.initializeApp({ 
         apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", 
         authDomain: "speed-quiz26.firebaseapp.com", 
@@ -94,7 +88,6 @@
         projectId: "speed-quiz26" 
     });
     const db = firebase.database();
-    
     let scenario = [];
     let currentIdx = -1;
 
@@ -141,20 +134,30 @@
         reader.readAsDataURL(file);
         reader.onload = async () => {
             const base64Content = reader.result.split(',')[1];
-            const fileName = `q_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+            // ファイル名から空白や特殊文字を除去して安全にする
+            const fileName = `q_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
             const path = `images/${fileName}`;
 
             try {
                 const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`, {
                     method: 'PUT',
                     headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: "upload", content: base64Content })
+                    body: JSON.stringify({ message: "upload quiz image", content: base64Content })
                 });
+                
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.message || "Upload failed");
+                }
+
                 const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/main/${path}`;
                 row.querySelector('.q-img-url').value = rawUrl;
                 row.querySelector('img').src = rawUrl;
                 row.querySelector('img').style.display = 'block';
-            } catch (e) { alert("GitHubアップロード失敗"); }
+            } catch (e) { 
+                console.error("GitHub Upload Error: ", e);
+                alert("GitHubへのアップロードに失敗しました。\nトークンが有効か確認してください。エラー: " + e.message); 
+            }
             row.querySelector('.up-status').style.display = 'none';
         };
     }
@@ -194,7 +197,7 @@
         document.getElementById('nav-btns').style.display = 'flex';
         db.ref('adminCommand').set({ type: s.type, qIndex: s.qi !== undefined ? s.qi : -1, ts: Date.now() });
     }
-    function resetGame() { if(confirm("リセット？")) { db.ref('players').remove(); db.ref('answers').remove(); location.reload(); } }
+    function resetGame() { if(confirm("全リセットしますか？")) { db.ref('players').remove(); db.ref('answers').remove(); location.reload(); } }
 </script>
 </body>
 </html>
