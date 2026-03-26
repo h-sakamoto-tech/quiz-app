@@ -69,12 +69,13 @@
                     <input type="text" id="base-folder-url" class="url-input" placeholder="例: https://example.com/" onchange="autoFillUrls()">
                 </div>
                 <div class="sound-grid">
-                    <div class="sound-row"><div class="sound-header"><span>① 締切＆ルール</span><input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')"></div><input type="text" id="url-sndRules" class="url-input"></div>
-                    <div class="sound-row"><div class="sound-header"><span>② クイズ開始</span><input type="file" onchange="previewSnd(this, 'sndStart', 'url-sndStart')"></div><input type="text" id="url-sndStart" class="url-input"></div>
-                    <div class="sound-row"><div class="sound-header"><span>③ 次へ（正解）</span><input type="file" onchange="previewSnd(this, 'sndNext', 'url-sndNext')"></div><input type="text" id="url-sndNext" class="url-input"></div>
-                    <div class="sound-row"><div class="sound-header"><span>④ 終了表示</span><input type="file" onchange="previewSnd(this, 'sndEnd', 'url-sndEnd')"></div><input type="text" id="url-sndEnd" class="url-input"></div>
-                    <div class="sound-row"><div class="sound-header"><span>⑤ 結果発表</span><input type="file" onchange="previewSnd(this, 'sndDetails', 'url-sndDetails')"></div><input type="text" id="url-sndDetails" class="url-input"></div>
-                    <div class="sound-row"><div class="sound-header"><span>⑥ 総合順位</span><input type="file" onchange="previewSnd(this, 'sndRanking', 'url-sndRanking')"></div><input type="text" id="url-sndRanking" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>① ルール説明</span><input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')"></div><input type="text" id="url-sndRules" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>② クイズ開始（1問目）</span><input type="file" onchange="previewSnd(this, 'sndStart', 'url-sndStart')"></div><input type="text" id="url-sndStart" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>③ 正解発表（締切）</span><input type="file" onchange="previewSnd(this, 'sndClose', 'url-sndClose')"></div><input type="text" id="url-sndClose" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>④ 次の問題へ</span><input type="file" onchange="previewSnd(this, 'sndNext', 'url-sndNext')"></div><input type="text" id="url-sndNext" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>⑤ 終了表示</span><input type="file" onchange="previewSnd(this, 'sndEnd', 'url-sndEnd')"></div><input type="text" id="url-sndEnd" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>⑥ 結果発表</span><input type="file" onchange="previewSnd(this, 'sndDetails', 'url-sndDetails')"></div><input type="text" id="url-sndDetails" class="url-input"></div>
+                    <div class="sound-row"><div class="sound-header"><span>⑦ 総合順位</span><input type="file" onchange="previewSnd(this, 'sndRanking', 'url-sndRanking')"></div><input type="text" id="url-sndRanking" class="url-input"></div>
                 </div>
             </div>
         </div>
@@ -84,7 +85,6 @@
                 <span>📝 クイズ問題の設定</span><span id="quiz-icon">▼</span>
             </h2>
             <div id="quiz-settings-content">
-                
                 <div class="gh-settings-panel">
                     <label>🔑 GitHub Token (画像アップロード用・初回のみ入力)</label>
                     <input type="password" id="gh-token" placeholder="ghp_ から始まるトークンを貼り付け" onchange="saveGhSettings()">
@@ -161,11 +161,13 @@
             if(base) { document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name; }
         }
     };
+    
+    // ★自動入力も7つに対応
     window.autoFillUrls = function() {
         const base = document.getElementById('base-folder-url').value.trim(); 
         if(!base) return;
         const fix = base.endsWith('/') ? base : base + '/';
-        const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
+        const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndClose: "close.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
         for(let id in files) { 
             if(document.getElementById('url-' + id)) { document.getElementById('url-' + id).value = fix + files[id]; }
         }
@@ -247,13 +249,23 @@
         };
     };
 
+    // ★保存処理も7つに対応
     window.saveAllConfig = function() {
         const qData = []; 
         document.querySelectorAll('.q-row').forEach(r => { 
             const img = r.querySelector('.q-img-url').value; const txt = r.querySelector('.q-txt').value;
             if (img || txt) qData.push({ image: img, text: txt, ans: r.querySelector('.q-ans').value }); 
         });
-        const sData = { baseUrl: document.getElementById('base-folder-url').value, sndRules: document.getElementById('url-sndRules').value, sndStart: document.getElementById('url-sndStart').value, sndNext: document.getElementById('url-sndNext').value, sndEnd: document.getElementById('url-sndEnd').value, sndDetails: document.getElementById('url-sndDetails').value, sndRanking: document.getElementById('url-sndRanking').value };
+        const sData = { 
+            baseUrl: document.getElementById('base-folder-url').value, 
+            sndRules: document.getElementById('url-sndRules').value, 
+            sndStart: document.getElementById('url-sndStart').value, 
+            sndClose: document.getElementById('url-sndClose').value, 
+            sndNext: document.getElementById('url-sndNext').value, 
+            sndEnd: document.getElementById('url-sndEnd').value, 
+            sndDetails: document.getElementById('url-sndDetails').value, 
+            sndRanking: document.getElementById('url-sndRanking').value 
+        };
         
         db.ref('quizConfig').set(qData); 
         db.ref('soundConfig').set(sData).then(() => { alert("設定を保存しました！"); location.reload(); });
@@ -308,6 +320,7 @@
         }
     });
 
+    // ★読み込み時も7つに対応
     window.onload = function() {
         const savedToken = localStorage.getItem('gh_token_saved');
         const savedUser = localStorage.getItem('gh_user_saved');
@@ -319,7 +332,7 @@
         db.ref('soundConfig').once('value', snap => {
             const snds = snap.val() || {};
             if(snds.baseUrl) document.getElementById('base-folder-url').value = snds.baseUrl;
-            ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => { 
+            ['sndRules','sndStart','sndClose','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => { 
                 if(snds[id] && document.getElementById('url-' + id)) { document.getElementById('url-' + id).value = snds[id]; }
             });
         });
@@ -337,11 +350,12 @@
         scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果発表(タイトル)'},{type:'ranking',title:'総合順位(マトリクス表)'});
     }
 
-    // ★ シーンに応じた音源を再生する関数を追加
+    // ★ シーンに応じた音源を再生する関数（sndCloseを独立）
     function playScenarioSound(type) {
         let sndId = '';
-        if (type === 'rules' || type === 'close') sndId = 'sndRules'; // ルールと締切
+        if (type === 'rules') sndId = 'sndRules';                     // ルール
         else if (type === 'start') sndId = 'sndStart';                // Q1スタート
+        else if (type === 'close') sndId = 'sndClose';                // 締切(正解発表)
         else if (type === 'next') sndId = 'sndNext';                  // Q2以降スタート
         else if (type === 'end') sndId = 'sndEnd';                    // 全問終了
         else if (type === 'details') sndId = 'sndDetails';            // 結果発表タイトル
@@ -350,7 +364,6 @@
         if (sndId) {
             const urlInput = document.getElementById('url-' + sndId);
             if (urlInput && urlInput.value) {
-                // 自動再生ポリシー対策も含め、エラーをキャッチ
                 const audio = new Audio(urlInput.value);
                 audio.play().catch(e => console.warn("音源再生ブロック:", e));
             }
@@ -364,7 +377,6 @@
         document.getElementById('btn-start-flow').style.display = 'none'; document.getElementById('nav-group').style.display = 'flex';
         document.getElementById('btn-next-step').style.display = (currentStepIndex >= scenario.length - 1) ? 'none' : 'block';
 
-        // ★ ここで音源を再生！
         playScenarioSound(step.type);
 
         if (step.type === 'start' || step.type === 'next') {
