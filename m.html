@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>スピードクイズ・メインスクリーン</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Meiryo, sans-serif; overflow: hidden; text-align: center; }
         #display-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); }
 
+        /* 待機用QRコードエリア */
         .qr-area { display: flex; flex-direction: column; align-items: center; margin-top: 30px; }
         .qr-area img { border: 15px solid #fff; border-radius: 10px; width: 300px; height: 300px; box-shadow: 0 0 30px rgba(255,255,255,0.2); }
         .qr-text { font-size: 2.5rem; color: #2ecc71; margin-top: 20px; font-weight: bold; letter-spacing: 2px; }
 
+        /* 問題表示エリア */
         .q-image-frame { height: 55vh; width: 90vw; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
         .q-image { max-height: 100%; max-width: 100%; border: 6px solid #2ecc71; border-radius: 20px; box-shadow: 0 0 60px rgba(46, 204, 113, 0.4); object-fit: contain; }
         .q-text { font-size: 4.5rem; font-weight: bold; color: #ffffff; text-shadow: 0 0 20px rgba(0,0,0,1), 2px 2px 0px #2ecc71; line-height: 1.2; white-space: pre-wrap; max-width: 95vw; }
@@ -22,6 +25,17 @@
         .timeup-msg { font-size: 12rem; color: #e74c3c; font-weight: bold; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.05); opacity: 0.7; } }
 
+        /* ★ 新しいルール説明用スタイル */
+        .rule-wrapper { background: rgba(11, 14, 20, 0.9); padding: 50px 60px; border-radius: 20px; border: 3px solid #3498db; box-shadow: 0 0 40px rgba(52, 152, 219, 0.5); text-align: left; max-width: 90vw; }
+        .rule-title-text { font-size: 6rem; color: #f1c40f; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.8); letter-spacing: 5px; font-weight: bold; }
+        .rule-intro { font-size: 3rem; color: #fff; text-align: center; margin-bottom: 50px; line-height: 1.6; }
+        .rule-item { font-size: 3.2rem; color: #ecf0f1; margin-bottom: 30px; line-height: 1.5; display: flex; align-items: flex-start; gap: 25px; }
+        .rule-item i { color: #3498db; font-size: 3.5rem; margin-top: 5px; }
+        .rule-highlight { color: #e74c3c; font-weight: bold; text-shadow: 2px 2px 0px #000; background: rgba(231, 76, 60, 0.2); padding: 0 10px; border-radius: 10px; }
+        .rule-item.alert { color: #f1c40f; font-weight: bold; margin-top: 50px; border-top: 2px dashed #f1c40f; padding-top: 40px; }
+        .rule-item.alert i { color: #f1c40f; }
+
+        /* ランキング用 */
         .ranking-container { width: 90%; }
         .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 15px; font-size: 3rem; }
         .ranking-table tr { background: rgba(255,255,255,0.05); border-radius: 15px; }
@@ -36,7 +50,8 @@
 <body>
 
 <div id="display-container">
-    <div id="view-area"></div>
+    <div id="view-area">
+        </div>
 </div>
 
 <script>
@@ -60,7 +75,32 @@
             return;
         }
 
-        if (cmd.type === 'start' || cmd.type === 'next') {
+        if (cmd.type === 'rules') {
+            // ★ リッチなルール説明画面
+            view.innerHTML = `
+                <div class="rule-wrapper">
+                    <div class="rule-title-text">RULES</div>
+                    <div class="rule-intro">それではスピードクイズの時間がやってまいりました！<br>全部で５問出題します。</div>
+                    
+                    <div class="rule-item">
+                        <i class="fa-solid fa-mobile-screen"></i> 
+                        <div>スマホ画面の選択肢の中から、正解と思ったボタンを押してください。</div>
+                    </div>
+                    <div class="rule-item">
+                        <i class="fa-solid fa-stopwatch"></i> 
+                        <div>各問題の制限時間は<span class="rule-highlight">「60秒」</span>です。</div>
+                    </div>
+                    <div class="rule-item">
+                        <i class="fa-solid fa-bolt"></i> 
+                        <div>このクイズは正解しただけの得点ではありません。<br>基本点100点に加え、早く回答するほど<span class="rule-highlight">「残り時間(秒) × 1点」</span>のボーナスが加算されます！</div>
+                    </div>
+                    <div class="rule-item alert">
+                        <i class="fa-solid fa-trophy"></i> 
+                        <div>正答数が同じ場合は、回答までの時間が短いチームが優勝です！</div>
+                    </div>
+                </div>
+            `;
+        } else if (cmd.type === 'start' || cmd.type === 'next') {
             db.ref('quizConfig/' + cmd.qIndex).once('value', s => {
                 const data = s.val(); if(!data) return;
                 let imageHtml = data.image ? `<div class="q-image-frame"><img src="${data.image}" class="q-image"></div>` : '';
@@ -72,9 +112,6 @@
             });
         } else if (cmd.type === 'close') {
             view.innerHTML = `<div class="timeup-msg">TIME UP!</div><p style="font-size:3rem;">回答を締め切りました</p>`;
-        } else if (cmd.type === 'rules') {
-            // ★ 元のルール表示（一昨日の表示）に完全に戻しました
-            view.innerHTML = `<div class="big-msg">RULES</div><p style="font-size:4rem; color:#2ecc71;">スクリーンを見て、スマホで素早くタップ！</p>`;
         } else if (cmd.type === 'ranking') {
             showRanking();
         } else if (cmd.type === 'end') {
