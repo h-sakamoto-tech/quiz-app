@@ -10,8 +10,6 @@
         body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #1e1e1e; color: #fff; padding: 20px; margin: 0; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #f1c40f; padding-bottom: 20px; position: relative; }
         .header h1 { color: #f1c40f; margin: 0; font-size: 2.5rem; }
-        .manual-link { display: inline-block; margin-top: 15px; padding: 10px 25px; background: #2c3e50; color: #fff; text-decoration: none; border-radius: 25px; font-size: 16px; font-weight: bold; border: 2px solid #3498db; transition: background 0.3s, transform 0.2s; }
-        .manual-link:hover { background: #3498db; transform: scale(1.05); }
 
         .section { background: #2d2d2d; padding: 25px; border-radius: 12px; border: 1px solid #444; margin-bottom: 20px; }
         .collapsible-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 1px dashed #555; transition: color 0.2s; }
@@ -64,7 +62,7 @@
             </h2>
             <div id="sound-settings-content">
                 <div style="background: #111; padding: 15px; border-radius: 8px; border: 2px solid #3498db;">
-                    <input type="text" id="base-folder-url" class="url-input" placeholder="例: https://h-sakamoto-tech.github.io/quiz-app/sounds/" onchange="autoFillUrls()">
+                    <input type="text" id="base-folder-url" class="url-input" placeholder="例: https://example.com/" onchange="autoFillUrls()">
                 </div>
                 <div class="sound-grid">
                     <div class="sound-row"><div class="sound-header"><span>① 締切＆ルール</span><input type="file" onchange="previewSnd(this, 'sndRules', 'url-sndRules')"></div><input type="text" id="url-sndRules" class="url-input"></div>
@@ -117,7 +115,6 @@
                 </h3>
                 <div id="admin-live-status" class="live-status-box"><div style="color:#aaa; text-align:center;">データなし</div></div>
             </div>
-            
             <button onclick="resetGame()" style="margin-top:30px; background:none; border:1px solid #555; color:#777; width:100%; cursor:pointer; padding:5px;">全データをリセット</button>
         </div>
     </div>
@@ -127,9 +124,6 @@
     <h2 style="color:#3498db;">📊 チーム別 詳細結果表（正誤・タイム）</h2>
     <div class="table-container" id="admin-detailed-results"><div style="color:#aaa; text-align:center;">データなし</div></div>
 </div>
-
-<audio id="sndRules"></audio><audio id="sndStart"></audio><audio id="sndNext"></audio>
-<audio id="sndEnd"></audio><audio id="sndDetails"></audio><audio id="sndRanking"></audio>
 
 <script>
     var firebaseConfig = { apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" };
@@ -354,7 +348,6 @@
     window.goNext = function() { if (currentStepIndex < scenario.length - 1) { currentStepIndex++; executeStep(); } }
     window.goPrev = function() { if (currentStepIndex > 0) { currentStepIndex--; executeStep(); } }
     
-    // ★修正ポイント：リセット時にデータベースに「standby」を書き込む
     window.resetGame = function() { 
         if(confirm("全データをリセットしますか？")) { 
             db.ref('players').remove(); 
