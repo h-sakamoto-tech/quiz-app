@@ -9,14 +9,18 @@
     <style>
         body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #0b0e14; color: #fff; margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        #wait-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        /* ★ 参加エントリー画面の復活 */
+        #entry-area { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
+        .name-input { padding: 15px; font-size: 1.5rem; width: 80%; max-width: 300px; border-radius: 8px; border: 2px solid #2ecc71; background: #111; color: #fff; margin-bottom: 20px; text-align: center; }
+        .join-btn { padding: 15px 30px; font-size: 1.5rem; background: #27ae60; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        #wait-area { display: none; flex: 1; flex-direction: column; justify-content: center; align-items: center; }
         .waiting-text { font-size: 1.5rem; color: #f1c40f; font-weight: bold; }
 
         #quiz-area { display: none; flex: 1; padding: 15px; flex-direction: column; justify-content: center; }
         .q-title { font-size: 1.2rem; margin-bottom: 20px; color: #2ecc71; font-weight: bold; text-align: center; }
 
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; margin: 0 auto; }
-        
         .ans-btn { background: #1a202c; border: 3px solid #2ecc71; color: #2ecc71; padding: 25px 0; font-size: 2.2rem; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
         .ans-btn:active { background: #2ecc71; color: #0b0e14; transform: scale(0.95); }
         .ans-btn:disabled { border-color: #444; color: #444; opacity: 0.3; }
@@ -25,6 +29,12 @@
     </style>
 </head>
 <body>
+
+    <div id="entry-area">
+        <h1 style="color:#f1c40f; margin-bottom: 30px;">SPEED QUIZ</h1>
+        <input type="text" id="player-name" class="name-input" placeholder="チーム名・お名前">
+        <button class="join-btn" onclick="joinGame()">参加する</button>
+    </div>
 
     <div id="wait-area">
         <div class="waiting-text" id="status-label">待機中...</div>
@@ -47,16 +57,44 @@
 <script>
     firebase.initializeApp({ apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" });
     const db = firebase.database();
-    let myUid = "u" + Math.random().toString(36).substring(2, 7);
+    
+    // ユーザーIDの管理（リロードしても維持）
+    let myUid = localStorage.getItem('speed_quiz_uid');
+    if (!myUid) {
+        myUid = "u_" + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('speed_quiz_uid', myUid);
+    }
+    let isJoined = false;
+
+    // 既にデータベースに登録されているかチェック
+    db.ref('players/' + myUid).once('value', snap => {
+        if(snap.val()) {
+            isJoined = true;
+            document.getElementById('entry-area').style.display = 'none';
+        }
+    });
+
+    // 参加ボタンの処理
+    function joinGame() {
+        const name = document.getElementById('player-name').value.trim();
+        if(!name) return alert("名前を入力してください");
+        
+        // ★ここでデータベースに名前を登録することで、管理者画面に表示される
+        db.ref('players/' + myUid).set({ name: name, score: 0, photo: "" }).then(() => {
+            isJoined = true;
+            document.getElementById('entry-area').style.display = 'none';
+            document.getElementById('wait-area').style.display = 'flex';
+        });
+    }
 
     db.ref('adminCommand').on('value', snap => {
+        if (!isJoined) return; // 参加前は命令を無視
         const cmd = snap.val(); 
         const waitArea = document.getElementById('wait-area');
         const quizArea = document.getElementById('quiz-area');
         const sentMsg = document.getElementById('sent-msg');
         const btns = document.querySelectorAll('.ans-btn');
 
-        // ★修正ポイント：命令がない、またはstandbyの時は待機画面
         if (!cmd || cmd.type === 'standby' || cmd.type === 'reset') {
             document.getElementById('status-label').innerText = "待機中...";
             waitArea.style.display = 'flex'; quizArea.style.display = 'none';
