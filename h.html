@@ -10,24 +10,20 @@
     <style>
         body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #0b0e14; color: #fff; margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        /* エントリー画面の設定 */
         #entry-area { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .name-input { padding: 15px; font-size: 1.5rem; width: 80%; max-width: 300px; border-radius: 8px; border: 2px solid #2ecc71; background: #111; color: #fff; margin-bottom: 20px; text-align: center; }
         .join-btn { padding: 15px 30px; font-size: 1.5rem; background: #27ae60; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; transition: background 0.2s; }
         .join-btn:hover { background: #219150; }
 
-        /* ★ 自撮り写真投稿エリアのスタイル */
         .photo-section { display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px dashed #555; margin-bottom: 30px; width: 80%; max-width: 300px; }
         .photo-instruction { font-size: 14px; color: #f1c40f; text-align: center; line-height: 1.5; margin-bottom: 15px; font-weight: bold; }
         .photo-btn-label { padding: 10px 20px; background: #3498db; color: #fff; border-radius: 25px; cursor: pointer; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: background 0.2s; }
         .photo-btn-label:hover { background: #2980b9; }
         #photo-preview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; margin-top: 15px; display: none; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
 
-        /* 待機画面 */
         #wait-area { display: none; flex: 1; flex-direction: column; justify-content: center; align-items: center; }
         .waiting-text { font-size: 1.5rem; color: #f1c40f; font-weight: bold; }
 
-        /* クイズ回答画面 */
         #quiz-area { display: none; flex: 1; padding: 15px; flex-direction: column; justify-content: center; }
         .q-title { font-size: 1.2rem; margin-bottom: 20px; color: #2ecc71; font-weight: bold; text-align: center; }
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; margin: 0 auto; }
@@ -77,16 +73,14 @@
     firebase.initializeApp({ apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" });
     const db = firebase.database();
     
-    // ユーザーIDの管理（リロードしても維持）
     let myUid = localStorage.getItem('speed_quiz_uid');
     if (!myUid) {
         myUid = "u_" + Math.random().toString(36).substr(2, 9);
         localStorage.setItem('speed_quiz_uid', myUid);
     }
     let isJoined = false;
-    let base64Photo = ""; // 写真データを格納する変数
+    let base64Photo = "";
 
-    // 既にデータベースに登録されているかチェック
     db.ref('players/' + myUid).once('value', snap => {
         if(snap.val()) {
             isJoined = true;
@@ -94,40 +88,30 @@
         }
     });
 
-    // ★ ファイルを選択した時の処理
     function handleFileSelect(input) {
         const file = input.files[0];
         if (!file) return;
-
-        // Base64に変換
         const reader = new FileReader();
         reader.onload = function(e) {
-            base64Photo = e.target.result; // 画像データを保存
+            base64Photo = e.target.result;
             const preview = document.getElementById('photo-preview');
-            preview.src = base64Photo; // プレビューに表示
+            preview.src = base64Photo;
             preview.style.display = 'block';
         };
         reader.readAsDataURL(file);
     }
 
-    // 参加ボタンの処理
     function joinGame() {
         const name = document.getElementById('player-name').value.trim();
         if(!name) return alert("名前を入力してください");
         
-        // ★ データベースに名前と写真データを登録
-        db.ref('players/' + myUid).set({ 
-            name: name, 
-            score: 0, 
-            photo: base64Photo // 写真（Base64形式）
-        }).then(() => {
+        db.ref('players/' + myUid).set({ name: name, score: 0, photo: base64Photo }).then(() => {
             isJoined = true;
             document.getElementById('entry-area').style.display = 'none';
             document.getElementById('wait-area').style.display = 'flex';
         });
     }
 
-    // --- 命令の監視等は以前の通り ---
     db.ref('adminCommand').on('value', snap => {
         if (!isJoined) return;
         const cmd = snap.val(); 
