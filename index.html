@@ -137,6 +137,33 @@
         if(c.style.display === 'none') { c.style.display = 'block'; i.innerText = '▼'; } else { c.style.display = 'none'; i.innerText = '▶'; }
     }
 
+    // ★ 音源プレビュー機能の復元
+    window.previewSnd = function(input, audioId, urlInputId) {
+        if(input.files[0]) {
+            const url = URL.createObjectURL(input.files[0]); 
+            const a = new Audio(url); 
+            a.play(); // 音声をプレビュー再生
+            
+            const base = document.getElementById('base-folder-url').value.trim();
+            if(base) {
+                document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name;
+            }
+        }
+    };
+
+    // ★ 音源URL一括入力機能の復元
+    window.autoFillUrls = function() {
+        const base = document.getElementById('base-folder-url').value.trim(); 
+        if(!base) return;
+        const fix = base.endsWith('/') ? base : base + '/';
+        const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
+        for(let id in files) { 
+            if(document.getElementById('url-' + id)) {
+                document.getElementById('url-' + id).value = fix + files[id]; 
+            }
+        }
+    };
+
     window.addQuestionRow = function(qData = null) {
         const container = document.getElementById('questions-container');
         const div = document.createElement('div'); div.className = 'q-row';
@@ -171,7 +198,6 @@
         container.appendChild(div);
     };
 
-    // ★ GitHubアップロード（エラー表示を強化）
     window.uploadToGitHub = async function(input) {
         const file = input.files[0]; if (!file) return;
         const row = input.closest('.q-row');
@@ -207,12 +233,11 @@
                 
                 const rawUrl = data.content.download_url + "?t=" + Date.now();
                 row.querySelector('.q-img-url').value = rawUrl;
-                // ローカルの画像を瞬時にプレビューに表示
                 row.querySelector('.prev-img').src = reader.result;
                 row.querySelector('.prev-img').style.display = 'block';
             } catch (e) { 
                 console.error(e);
-                alert("GitHubへのアップロード失敗:\\n" + e.message + "\\n\\nトークンが無効になっている可能性があります。"); 
+                alert("GitHubへのアップロード失敗:\n" + e.message + "\n\nトークンが無効になっている可能性があります。"); 
             }
             row.querySelector('.up-status').style.display = 'none';
         };
@@ -296,7 +321,18 @@
         }
     });
 
+    // ★ 起動時に音源とクイズ設定の両方を読み込む処理を復元
     window.onload = function() {
+        db.ref('soundConfig').once('value', snap => {
+            const snds = snap.val() || {};
+            if(snds.baseUrl) document.getElementById('base-folder-url').value = snds.baseUrl;
+            ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => { 
+                if(snds[id] && document.getElementById('url-' + id)) {
+                    document.getElementById('url-' + id).value = snds[id]; 
+                }
+            });
+        });
+
         db.ref('quizConfig').once('value', snap => {
             const data = snap.val();
             if (data && data.length > 0) { globalQCount = data.length; data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } 
