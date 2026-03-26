@@ -148,7 +148,7 @@
             <div class="q-grid">
                 <div class="preview-box">
                     <div class="up-status">UP中...</div>
-                    <img src="${imgVal}" class="prev-img" style="${imgVal ? 'display:block' : 'display:none'}">
+                    <img src="${imgVal}" class="prev-img" style="${imgVal ? 'display:block' : 'display:none'}" onerror="this.src=''; this.alt='画像エラー'">
                 </div>
                 <div class="input-area">
                     <label class="btn-upload"><i class="fa fa-folder-open"></i> パソコンから画像を選択
@@ -179,6 +179,7 @@
         reader.readAsDataURL(file);
         reader.onload = async () => {
             const base64Content = reader.result.split(',')[1];
+            // ファイル名のエラーを防ぐため、記号を取り除く
             const fileName = `q_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
             const path = `images/${fileName}`;
 
@@ -188,12 +189,20 @@
                     headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: "upload quiz image", content: base64Content })
                 });
+                
                 if (!res.ok) throw new Error("Upload Failed");
-                const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/main/${path}`;
+                const data = await res.json();
+                
+                // ★修正: GitHubが発行する確実なURLを取得し、キャッシュ回避用のタイムスタンプを付ける
+                const rawUrl = data.content.download_url + "?t=" + Date.now();
+                
                 row.querySelector('.q-img-url').value = rawUrl;
-                row.querySelector('.prev-img').src = rawUrl;
+                // ローカルのプレビューには確実に表示できるBase64データをセット
+                row.querySelector('.prev-img').src = reader.result;
                 row.querySelector('.prev-img').style.display = 'block';
-            } catch (e) { alert("GitHubアップロード失敗"); }
+            } catch (e) { 
+                alert("GitHubへのアップロードに失敗しました。トークンや設定を確認してください。"); 
+            }
             row.querySelector('.up-status').style.display = 'none';
         };
     };
@@ -210,6 +219,7 @@
         db.ref('soundConfig').set(sData).then(() => { alert("設定を保存しました！"); location.reload(); });
     };
 
+    // --- 進行管理・スコア計算ロジック ---
     function getAvatarHTML(p) {
         return p.photo ? `<img src="${p.photo}" class="avatar-small">` : `<div class="avatar-small" style="display:flex;align-items:center;justify-content:center;background:#555;font-size:18px;margin:0;">👤</div>`;
     }
@@ -276,31 +286,12 @@
     });
 
     window.onload = function() {
-        db.ref('soundConfig').once('value', snap => {
-            const snds = snap.val() || {};
-            if(snds.baseUrl) document.getElementById('base-folder-url').value = snds.baseUrl;
-            ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => { if(snds[id]) document.getElementById('url-' + id).value = snds[id]; });
-        });
         db.ref('quizConfig').once('value', snap => {
             const data = snap.val();
             if (data && data.length > 0) { globalQCount = data.length; data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } 
             else { addQuestionRow(); }
         });
     };
-
-    window.autoFillUrls = function() {
-        const base = document.getElementById('base-folder-url').value.trim(); if(!base) return;
-        const fix = base.endsWith('/') ? base : base + '/';
-        const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
-        for(let id in files) { document.getElementById('url-' + id).value = fix + files[id]; }
-    }
-    window.previewSnd = function(input, audioId, urlInputId) {
-        if(input.files[0]) {
-            const url = URL.createObjectURL(input.files[0]); const a = new Audio(url); a.play();
-            const base = document.getElementById('base-folder-url').value.trim();
-            if(base) document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name;
-        }
-    }
 
     function buildScenario(n) {
         scenario = [{type:'rules',title:'ルール説明'}];
