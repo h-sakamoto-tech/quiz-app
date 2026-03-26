@@ -46,6 +46,11 @@
         
         .avatar-small { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; flex-shrink: 0; }
         .team-name-cell { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: max-content; margin: 0 auto; white-space: nowrap; font-weight: bold; font-size: 18px; }
+
+        /* GitHub設定パネルのスタイル */
+        .gh-settings-panel { background: #1a1a1a; border: 1px solid #e67e22; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .gh-settings-panel input { padding: 8px; background: #111; color: #fff; border: 1px solid #555; border-radius: 4px; margin-bottom: 10px; width: 100%; box-sizing: border-box;}
+        .gh-settings-panel label { font-size: 12px; color: #e67e22; font-weight: bold; display: block; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -80,10 +85,21 @@
                 <span>📝 クイズ問題の設定</span><span id="quiz-icon">▼</span>
             </h2>
             <div id="quiz-settings-content">
-                <div style="display:none;">
-                    <input type="password" id="gh-token" value="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">
-                    <input type="text" id="gh-user" value="h-sakamoto-tech">
-                    <input type="text" id="gh-repo" value="quiz-app">
+                
+                <div class="gh-settings-panel">
+                    <label>🔑 GitHub Token (画像アップロード用・初回のみ入力)</label>
+                    <input type="password" id="gh-token" placeholder="ghp_ から始まるトークンを貼り付け" onchange="saveGhSettings()">
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label>ユーザー名</label>
+                            <input type="text" id="gh-user" value="h-sakamoto-tech" onchange="saveGhSettings()">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>リポジトリ名</label>
+                            <input type="text" id="gh-repo" value="quiz-app" onchange="saveGhSettings()">
+                        </div>
+                    </div>
                 </div>
 
                 <div id="questions-container"></div>
@@ -137,30 +153,23 @@
         if(c.style.display === 'none') { c.style.display = 'block'; i.innerText = '▼'; } else { c.style.display = 'none'; i.innerText = '▶'; }
     }
 
-    // ★ 音源プレビュー機能の復元
+    // 音源プレビュー機能
     window.previewSnd = function(input, audioId, urlInputId) {
         if(input.files[0]) {
             const url = URL.createObjectURL(input.files[0]); 
             const a = new Audio(url); 
-            a.play(); // 音声をプレビュー再生
-            
+            a.play(); 
             const base = document.getElementById('base-folder-url').value.trim();
-            if(base) {
-                document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name;
-            }
+            if(base) { document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name; }
         }
     };
-
-    // ★ 音源URL一括入力機能の復元
     window.autoFillUrls = function() {
         const base = document.getElementById('base-folder-url').value.trim(); 
         if(!base) return;
         const fix = base.endsWith('/') ? base : base + '/';
         const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
         for(let id in files) { 
-            if(document.getElementById('url-' + id)) {
-                document.getElementById('url-' + id).value = fix + files[id]; 
-            }
+            if(document.getElementById('url-' + id)) { document.getElementById('url-' + id).value = fix + files[id]; }
         }
     };
 
@@ -168,11 +177,9 @@
         const container = document.getElementById('questions-container');
         const div = document.createElement('div'); div.className = 'q-row';
         let imgVal = qData ? (qData.image || '') : '';
-        
         if (imgVal.includes('raw.githubusercontent.com') && !imgVal.includes('?t=')) {
             imgVal = imgVal + "?t=" + Date.now();
         }
-        
         const txtVal = qData ? (qData.text || '') : '';
         const ansVal = qData ? qData.ans : 'A';
 
@@ -198,14 +205,29 @@
         container.appendChild(div);
     };
 
+    // ★ GitHub設定をブラウザに記憶させる関数
+    window.saveGhSettings = function() {
+        localStorage.setItem('gh_token_saved', document.getElementById('gh-token').value.trim());
+        localStorage.setItem('gh_user_saved', document.getElementById('gh-user').value.trim());
+        localStorage.setItem('gh_repo_saved', document.getElementById('gh-repo').value.trim());
+    };
+
+    // GitHubアップロード処理
     window.uploadToGitHub = async function(input) {
         const file = input.files[0]; if (!file) return;
         const row = input.closest('.q-row');
         row.querySelector('.up-status').style.display = 'flex';
 
+        // 画面の入力欄から取得する
         const token = document.getElementById('gh-token').value.trim();
         const user = document.getElementById('gh-user').value.trim();
         const repo = document.getElementById('gh-repo').value.trim();
+
+        if(!token) {
+            alert("⚠️ 最初に「GitHub Token」の欄にパスワードを入力してください！");
+            row.querySelector('.up-status').style.display = 'none';
+            return;
+        }
 
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -237,7 +259,7 @@
                 row.querySelector('.prev-img').style.display = 'block';
             } catch (e) { 
                 console.error(e);
-                alert("GitHubへのアップロード失敗:\n" + e.message + "\n\nトークンが無効になっている可能性があります。"); 
+                alert("GitHubへのアップロード失敗:\n" + e.message + "\n\nトークンが無効になっているか、権限が足りません。"); 
             }
             row.querySelector('.up-status').style.display = 'none';
         };
@@ -255,10 +277,7 @@
         db.ref('soundConfig').set(sData).then(() => { alert("設定を保存しました！"); location.reload(); });
     };
 
-    // --- 進行管理・スコア計算ロジック ---
-    function getAvatarHTML(p) {
-        return p.photo ? `<img src="${p.photo}" class="avatar-small">` : `<div class="avatar-small" style="display:flex;align-items:center;justify-content:center;background:#555;font-size:18px;margin:0;">👤</div>`;
-    }
+    function getAvatarHTML(p) { return p.photo ? `<img src="${p.photo}" class="avatar-small">` : `<div class="avatar-small" style="display:flex;align-items:center;justify-content:center;background:#555;font-size:18px;margin:0;">👤</div>`; }
 
     function updateLiveStatus() {
         const container = document.getElementById('admin-live-status'); if (!container) return;
@@ -270,41 +289,28 @@
                 let hasAnswered = (currentAnswers[uid] && currentAnswers[uid].choice);
                 if (hasAnswered) html += `<div style="display:flex; justify-content:space-between; background:#27ae60; padding:8px; border-radius:5px; align-items:center;"><div style="display:flex; align-items:center; gap:8px;">${av}<span>${p.name}</span></div><span style="font-weight:bold;">回答済</span></div>`;
                 else html += `<div style="display:flex; justify-content:space-between; background:#c0392b; padding:8px; border-radius:5px; align-items:center;"><div style="display:flex; align-items:center; gap:8px;">${av}<span>${p.name}</span></div><span style="font-weight:bold;">未回答</span></div>`;
-            } else {
-                html += `<div style="display:flex; justify-content:space-between; background:#2980b9; padding:8px; border-radius:5px; align-items:center;"><div style="display:flex; align-items:center; gap:8px;">${av}<span>${p.name}</span></div><span style="font-weight:bold;">${p.score||0} pt</span></div>`;
-            }
+            } else { html += `<div style="display:flex; justify-content:space-between; background:#2980b9; padding:8px; border-radius:5px; align-items:center;"><div style="display:flex; align-items:center; gap:8px;">${av}<span>${p.name}</span></div><span style="font-weight:bold;">${p.score||0} pt</span></div>`; }
         }
         container.innerHTML = html || '<div style="color:#aaa; text-align:center;">データなし</div>';
     }
 
     db.ref('answers').on('value', snap => { currentAnswers = snap.val() || {}; updateLiveStatus(); });
-
     db.ref('players').on('value', snap => {
         playersData = snap.val() || {};
-        const pCount = Object.keys(playersData).length;
-        document.getElementById('admin-p-count').innerText = pCount;
-        updateLiveStatus(); 
-        
+        const pCount = Object.keys(playersData).length; document.getElementById('admin-p-count').innerText = pCount; updateLiveStatus(); 
         if (globalQCount > 0 && pCount > 0) {
             let tableHtml = `<table class="result-table"><tr><th>順位</th><th style="text-align:center;">チーム名</th><th>合計</th>`;
             for (let i = 0; i < globalQCount; i++) { tableHtml += `<th>Q${i+1}</th>`; }
             tableHtml += `</tr>`;
-
             let sortedPlayers = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
             sortedPlayers.forEach((p, index) => {
-                let av = getAvatarHTML(p);
-                let baseTotal = 0; let bonusTotal = 0;
+                let av = getAvatarHTML(p); let baseTotal = 0; let bonusTotal = 0;
                 for (let i = 0; i < globalQCount; i++) {
                     let h = p.history ? p.history[i] : null;
                     if (h && h.correct) { baseTotal += 100; bonusTotal += (h.points ? h.points - 100 : 0); }
                 }
-                tableHtml += `<tr><td>${index+1}</td>
-                <td><div class="team-name-cell">${av}<span>${p.name}</span></div></td>
-                <td style="color:#f1c40f; font-weight:bold; font-size:20px; line-height:1.3;">
-                    ${p.score || 0}<br>
-                    <span style="font-size:12px; color:#2ecc71;">正答:${baseTotal}</span><br>
-                    <span style="font-size:12px; color:#3498db;">ﾀｲﾑ:${bonusTotal}</span>
-                </td>`;
+                tableHtml += `<tr><td>${index+1}</td><td><div class="team-name-cell">${av}<span>${p.name}</span></div></td>
+                <td style="color:#f1c40f; font-weight:bold; font-size:20px; line-height:1.3;">${p.score || 0}<br><span style="font-size:12px; color:#2ecc71;">正答:${baseTotal}</span><br><span style="font-size:12px; color:#3498db;">ﾀｲﾑ:${bonusTotal}</span></td>`;
                 for (let i = 0; i < globalQCount; i++) {
                     let h = p.history ? p.history[i] : null;
                     if (h) {
@@ -316,20 +322,24 @@
                 }
                 tableHtml += `</tr>`;
             });
-            tableHtml += `</table>`;
-            document.getElementById('admin-detailed-results').innerHTML = tableHtml;
+            tableHtml += `</table>`; document.getElementById('admin-detailed-results').innerHTML = tableHtml;
         }
     });
 
-    // ★ 起動時に音源とクイズ設定の両方を読み込む処理を復元
     window.onload = function() {
+        // ★ 起動時にブラウザの記憶からトークンを復元
+        const savedToken = localStorage.getItem('gh_token_saved');
+        const savedUser = localStorage.getItem('gh_user_saved');
+        const savedRepo = localStorage.getItem('gh_repo_saved');
+        if(savedToken) document.getElementById('gh-token').value = savedToken;
+        if(savedUser) document.getElementById('gh-user').value = savedUser;
+        if(savedRepo) document.getElementById('gh-repo').value = savedRepo;
+
         db.ref('soundConfig').once('value', snap => {
             const snds = snap.val() || {};
             if(snds.baseUrl) document.getElementById('base-folder-url').value = snds.baseUrl;
             ['sndRules','sndStart','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => { 
-                if(snds[id] && document.getElementById('url-' + id)) {
-                    document.getElementById('url-' + id).value = snds[id]; 
-                }
+                if(snds[id] && document.getElementById('url-' + id)) { document.getElementById('url-' + id).value = snds[id]; }
             });
         });
 
