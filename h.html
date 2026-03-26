@@ -26,7 +26,10 @@
 
         #quiz-area { display: none; flex: 1; padding: 15px; flex-direction: column; justify-content: center; }
         .q-title { font-size: 1.2rem; margin-bottom: 20px; color: #2ecc71; font-weight: bold; text-align: center; }
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; margin: 0 auto; }
+        
+        /* ★ ボタンのグリッドを2列（A,B,C,D）に変更 */
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; margin: 0 auto; }
+        
         .ans-btn { background: #1a202c; border: 3px solid #2ecc71; color: #2ecc71; padding: 25px 0; font-size: 2.2rem; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
         .ans-btn:active { background: #2ecc71; color: #0b0e14; transform: scale(0.95); }
         .ans-btn:disabled { border-color: #444; color: #444; opacity: 0.3; }
@@ -63,8 +66,6 @@
             <button class="ans-btn" onclick="sendAnswer('B')">B</button>
             <button class="ans-btn" onclick="sendAnswer('C')">C</button>
             <button class="ans-btn" onclick="sendAnswer('D')">D</button>
-            <button class="ans-btn" onclick="sendAnswer('E')">E</button>
-            <button class="ans-btn" onclick="sendAnswer('F')">F</button>
         </div>
         <div id="sent-msg">送信完了！</div>
     </div>
