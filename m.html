@@ -10,12 +10,10 @@
         body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Meiryo, sans-serif; overflow: hidden; text-align: center; }
         #display-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); }
 
-        /* 待機用QRコードエリア */
         .qr-area { display: flex; flex-direction: column; align-items: center; margin-top: 30px; }
         .qr-area img { border: 15px solid #fff; border-radius: 10px; width: 300px; height: 300px; box-shadow: 0 0 30px rgba(255,255,255,0.2); }
         .qr-text { font-size: 2.5rem; color: #2ecc71; margin-top: 20px; font-weight: bold; letter-spacing: 2px; }
 
-        /* 問題表示エリア */
         .q-image-frame { height: 55vh; width: 90vw; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
         .q-image { max-height: 100%; max-width: 100%; border: 6px solid #2ecc71; border-radius: 20px; box-shadow: 0 0 60px rgba(46, 204, 113, 0.4); object-fit: contain; }
         .q-text { font-size: 4.5rem; font-weight: bold; color: #ffffff; text-shadow: 0 0 20px rgba(0,0,0,1), 2px 2px 0px #2ecc71; line-height: 1.2; white-space: pre-wrap; max-width: 95vw; }
@@ -25,7 +23,6 @@
         .timeup-msg { font-size: 12rem; color: #e74c3c; font-weight: bold; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.05); opacity: 0.7; } }
 
-        /* ルール説明用 */
         .rule-wrapper { background: rgba(11, 14, 20, 0.9); padding: 50px 60px; border-radius: 20px; border: 3px solid #3498db; box-shadow: 0 0 40px rgba(52, 152, 219, 0.5); text-align: left; max-width: 90vw; }
         .rule-title-text { font-size: 6rem; color: #f1c40f; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.8); letter-spacing: 5px; font-weight: bold; }
         .rule-intro { font-size: 3rem; color: #fff; text-align: center; margin-bottom: 50px; line-height: 1.6; }
@@ -35,16 +32,16 @@
         .rule-item.alert { color: #f1c40f; font-weight: bold; margin-top: 50px; border-top: 2px dashed #f1c40f; padding-top: 40px; }
         .rule-item.alert i { color: #f1c40f; }
 
-        /* ★ ランキング・マトリクス表用 */
+        /* ★ ランキング・マトリクス表（全体的にゆとりを持たせました） */
         .ranking-container { width: 98%; }
-        .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; font-size: 2rem; }
-        .ranking-table tr { background: rgba(255,255,255,0.05); border-radius: 10px; }
-        .ranking-table th { color: #f1c40f; font-size: 1.8rem; padding: 15px 10px; border-bottom: 2px solid #f1c40f; }
-        .ranking-table td { padding: 10px; vertical-align: middle; }
-        .rank-number { font-size: 3.5rem; font-weight: bold; color: #3498db; text-align: center; }
+        .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 18px; font-size: 2.2rem; }
+        .ranking-table tr { background: rgba(255,255,255,0.05); border-radius: 12px; }
+        .ranking-table th { color: #f1c40f; font-size: 1.9rem; padding: 15px 10px; border-bottom: 2px solid #f1c40f; letter-spacing: 2px; }
+        .ranking-table td { padding: 15px; vertical-align: middle; }
+        .rank-number { font-size: 3.8rem; font-weight: bold; color: #3498db; text-align: center; }
         .top-1 { background: rgba(241, 196, 15, 0.15) !important; border: 2px solid #f1c40f; }
         .top-1 .rank-number { color: #f1c40f; }
-        .team-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; vertical-align: middle; margin-right: 15px; }
+        .team-avatar { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; vertical-align: middle; margin-right: 20px; }
     </style>
 </head>
 <body>
@@ -111,22 +108,18 @@
         } else if (cmd.type === 'close') {
             view.innerHTML = `<div class="timeup-msg">TIME UP!</div><p style="font-size:3rem;">回答を締め切りました</p>`;
         } else if (cmd.type === 'details') {
-            // ★ 結果発表の直前のタメの画面
             view.innerHTML = `
                 <div class="big-msg" style="font-size: 8rem; animation: pulse 1s infinite alternate;">結果発表！！</div>
                 <p style="font-size: 4rem; margin-top: 30px; color: #fff;">はたして優勝はどのチームか！？</p>
             `;
         } else if (cmd.type === 'ranking') {
-            // ★ 詳細マトリクス結果表を表示
             showRanking();
         } else if (cmd.type === 'end') {
             view.innerHTML = `<div class="big-msg">ALL FINISHED!</div><p style="font-size:3rem;">全問題が終了しました。お疲れ様でした！</p>`;
         }
     });
 
-    // ★ 詳細マトリクス結果表の生成処理
     function showRanking() {
-        // 問題数を取得してテーブルのヘッダーを作成
         db.ref('quizConfig').once('value', qSnap => {
             const qCount = qSnap.val() ? qSnap.val().length : 0;
 
@@ -139,52 +132,34 @@
                                 <table class="ranking-table">
                                     <tr>
                                         <th style="width:8%;">RANK</th>
-                                        <th style="text-align:left; padding-left:20px;">TEAM</th>
+                                        <th style="text-align:left; padding-left:25px;">TEAM</th>
                                         <th style="width:12%;">TOTAL</th>`;
                 
-                // Q1, Q2... のヘッダーを動的に追加
                 for(let i=0; i<qCount; i++) {
                     html += `<th>Q${i+1}</th>`;
                 }
                 html += `</tr>`;
 
-                // 上位6チームを表示（画面に収まる範囲）
                 sorted.slice(0, 6).forEach((p, idx) => {
                     const isTop = idx === 0 ? 'top-1' : '';
-                    const photo = p.photo ? `<img src="${p.photo}" class="team-avatar">` : `<span style="font-size:2.5rem; margin-right:15px; vertical-align:middle;">👤</span>`;
+                    const photo = p.photo ? `<img src="${p.photo}" class="team-avatar">` : `<span style="font-size:3rem; margin-right:20px; vertical-align:middle;">👤</span>`;
                     
                     html += `<tr class="${isTop}">
                         <td class="rank-number">${idx + 1}</td>
-                        <td style="text-align:left; padding-left:20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 350px;">
+                        <td style="text-align:left; padding-left:25px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 450px; letter-spacing: 2px;">
                             ${photo} <span style="font-weight:bold;">${p.name || 'ゲスト'}</span>
                         </td>
-                        <td style="text-align:center; font-weight:bold; color:#f1c40f; font-size:3rem; line-height:1.1;">
-                            ${p.score || 0}<br><span style="font-size:1.2rem; color:#fff; font-weight:normal;">pt</span>
+                        <td style="text-align:center; font-weight:bold; color:#f1c40f; font-size:3.5rem; line-height:1.1;">
+                            ${p.score || 0}<br><span style="font-size:1.4rem; color:#fff; font-weight:normal; letter-spacing: 0;">pt</span>
                         </td>`;
                     
-                    // 各設問ごとの正誤(〇/✖)とタイムを横に並べる
                     for(let i=0; i<qCount; i++) {
                         let h = p.history ? p.history[i] : null;
                         if (h) {
-                            let mark = h.correct ? '<span style="color:#2ecc71; font-weight:bold; font-size:3rem;">〇</span>' : '<span style="color:#e74c3c; font-weight:bold; font-size:3rem;">✖</span>';
-                            if (h.choice === '未') mark = '<span style="color:#aaa; font-size:3rem;">-</span>';
+                            let mark = h.correct ? '<span style="color:#2ecc71; font-weight:bold; font-size:3.5rem;">〇</span>' : '<span style="color:#e74c3c; font-weight:bold; font-size:3.5rem;">✖</span>';
+                            if (h.choice === '未') mark = '<span style="color:#aaa; font-size:3.5rem;">-</span>';
                             let timeStr = h.time !== '--' ? `${h.time}秒` : '--';
                             
                             html += `<td style="text-align:center; line-height:1.2;">
                                         ${mark}<br>
-                                        <span style="font-size:1.2rem; color:#aaa;">${timeStr}</span>
-                                     </td>`;
-                        } else {
-                            html += `<td style="text-align:center; color:#555;">-</td>`;
-                        }
-                    }
-                    html += `</tr>`;
-                });
-                html += `</table></div>`;
-                view.innerHTML = html;
-            });
-        });
-    }
-</script>
-</body>
-</html>
+                                        <span style="font-size:1.4rem; color:#aaa
