@@ -6,7 +6,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Meiryo, sans-serif; overflow: hidden; text-align: center; }
+        body { margin: 0; background: #0b0e14; color: #fff; font-family: 'Segoe UI', Meiryo, sans-serif; overflow: hidden; text-align: center; }
         #display-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); }
 
         /* 待機用QRコードエリア */
@@ -15,7 +15,7 @@
         .qr-text { font-size: 2.5rem; color: #2ecc71; margin-top: 20px; font-weight: bold; letter-spacing: 2px; }
 
         /* 問題表示エリア */
-        .q-image-frame { height: 55vh; width: 90vw; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+        .q-image-frame { height: 60vh; width: 90vw; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
         .q-image { max-height: 100%; max-width: 100%; border: 6px solid #2ecc71; border-radius: 20px; box-shadow: 0 0 60px rgba(46, 204, 113, 0.4); object-fit: contain; }
         .q-text { font-size: 4.5rem; font-weight: bold; color: #ffffff; text-shadow: 0 0 20px rgba(0,0,0,1), 2px 2px 0px #2ecc71; line-height: 1.2; white-space: pre-wrap; max-width: 95vw; }
         .q-header { font-size: 3rem; color: #2ecc71; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 10px; border-bottom: 2px solid #2ecc71; }
@@ -24,9 +24,10 @@
         .timeup-msg { font-size: 12rem; color: #e74c3c; font-weight: bold; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.05); opacity: 0.7; } }
 
-        /* ルール説明用 */
-        .rule-list { font-size: 4rem; color: #2ecc71; text-align: left; display: inline-block; margin-top: 30px; line-height: 1.6; }
-        .rule-list span { color: #f1c40f; font-weight: bold; }
+        /* ★ ルール説明用のスタイル（画像のデザインを再現） */
+        .rule-title { font-size: 8rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 40px rgba(241, 196, 15, 0.8); margin-bottom: 50px; letter-spacing: 5px; }
+        .rule-list { font-size: 4.5rem; color: #2ecc71; text-align: left; display: inline-block; line-height: 1.8; font-weight: bold; }
+        .rule-list span { color: #f1c40f; }
 
         /* ランキング用 */
         .ranking-container { width: 90%; }
@@ -52,7 +53,6 @@
     const db = firebase.database();
     const view = document.getElementById('view-area');
 
-    // ★ 待機画面（QRコード）のHTML
     const standbyHTML = `
         <div class="big-msg">SPEED QUIZ 2026</div>
         <div class="qr-area">
@@ -64,27 +64,12 @@
     db.ref('adminCommand').on('value', snap => {
         const cmd = snap.val();
         
-        // 命令がない、または待機・リセット状態の時はQRコードを表示
         if (!cmd || cmd.type === 'standby' || cmd.type === 'reset') {
             view.innerHTML = standbyHTML;
             return;
         }
 
-        // ==========================
-        // 画面切り替えの処理
-        // ==========================
-        if (cmd.type === 'rules') {
-            // ★ルール説明の画面を日本語で大きく表示
-            view.innerHTML = `
-                <div class="big-msg" style="font-size: 8rem;">ルール説明</div>
-                <div class="rule-list">
-                    ① スクリーンに問題と画像が出ます<br>
-                    ② 手元のスマホで<span>素早くタップ！</span><br>
-                    ③ 早く正解するほど<span>高得点</span>です
-                </div>
-            `;
-        } else if (cmd.type === 'start' || cmd.type === 'next') {
-            // 問題表示
+        if (cmd.type === 'start' || cmd.type === 'next') {
             db.ref('quizConfig/' + cmd.qIndex).once('value', s => {
                 const data = s.val(); if(!data) return;
                 let imageHtml = data.image ? `<div class="q-image-frame"><img src="${data.image}" class="q-image"></div>` : '';
@@ -95,13 +80,20 @@
                 `;
             });
         } else if (cmd.type === 'close') {
-            // タイムアップ
             view.innerHTML = `<div class="timeup-msg">TIME UP!</div><p style="font-size:3rem;">回答を締め切りました</p>`;
+        } else if (cmd.type === 'rules') {
+            // ★ 画像の通りのデザインでルール説明を表示
+            view.innerHTML = `
+                <div class="rule-title">ルール説明</div>
+                <div class="rule-list">
+                    ① スクリーンに問題と画像が出ます<br>
+                    ② 手元のスマホで<span>素早くタップ！</span><br>
+                    ③ 早く正解するほど<span>高得点</span>です
+                </div>
+            `;
         } else if (cmd.type === 'ranking') {
-            // ランキング表示
             showRanking();
         } else if (cmd.type === 'end') {
-            // 終了画面
             view.innerHTML = `<div class="big-msg">ALL FINISHED!</div><p style="font-size:3rem;">全問題が終了しました。結果発表をお楽しみに！</p>`;
         }
     });
