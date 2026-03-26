@@ -85,6 +85,7 @@
                 <span>📝 クイズ問題の設定</span><span id="quiz-icon">▼</span>
             </h2>
             <div id="quiz-settings-content">
+                
                 <div class="gh-settings-panel">
                     <label>🔑 GitHub Token (画像アップロード用・初回のみ入力)</label>
                     <input type="password" id="gh-token" placeholder="ghp_ から始まるトークンを貼り付け" onchange="saveGhSettings()">
@@ -162,7 +163,6 @@
         }
     };
     
-    // ★自動入力も7つに対応
     window.autoFillUrls = function() {
         const base = document.getElementById('base-folder-url').value.trim(); 
         if(!base) return;
@@ -194,8 +194,8 @@
                     <input type="text" class="q-img-url" placeholder="画像のURL（自動入力されます）" value="${imgVal}" readonly>
                     <textarea class="q-txt" placeholder="画像の下に表示する補足テキスト">${txtVal}</textarea>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span>正解: <select class="q-ans">${['A','B','C','D','E','F'].map(v=>`<option value="${v}" ${ansVal===v?'selected':''}>${v}</option>`).join('')}</select></span>
-                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="color:#e74c3c; background:none; border:none; cursor:pointer;">[削除]</button>
+                        <span>正解: <select class="q-ans">${['A','B','C','D'].map(v=>`<option value="${v}" ${ansVal===v?'selected':''}>${v}</option>`).join('')}</select></span>
+                        <button type="button" onclick="this.closest('.q-row').remove()" style="color:#e74c3c; background:none; border:none; cursor:pointer;">[削除]</button>
                     </div>
                 </div>
             </div>
@@ -249,7 +249,6 @@
         };
     };
 
-    // ★保存処理も7つに対応
     window.saveAllConfig = function() {
         const qData = []; 
         document.querySelectorAll('.q-row').forEach(r => { 
@@ -320,7 +319,6 @@
         }
     });
 
-    // ★読み込み時も7つに対応
     window.onload = function() {
         const savedToken = localStorage.getItem('gh_token_saved');
         const savedUser = localStorage.getItem('gh_user_saved');
@@ -350,16 +348,15 @@
         scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果発表(タイトル)'},{type:'ranking',title:'総合順位(マトリクス表)'});
     }
 
-    // ★ シーンに応じた音源を再生する関数（sndCloseを独立）
     function playScenarioSound(type) {
         let sndId = '';
-        if (type === 'rules') sndId = 'sndRules';                     // ルール
-        else if (type === 'start') sndId = 'sndStart';                // Q1スタート
-        else if (type === 'close') sndId = 'sndClose';                // 締切(正解発表)
-        else if (type === 'next') sndId = 'sndNext';                  // Q2以降スタート
-        else if (type === 'end') sndId = 'sndEnd';                    // 全問終了
-        else if (type === 'details') sndId = 'sndDetails';            // 結果発表タイトル
-        else if (type === 'ranking') sndId = 'sndRanking';            // ランキング
+        if (type === 'rules') sndId = 'sndRules';
+        else if (type === 'start') sndId = 'sndStart';
+        else if (type === 'close') sndId = 'sndClose';
+        else if (type === 'next') sndId = 'sndNext';
+        else if (type === 'end') sndId = 'sndEnd';
+        else if (type === 'details') sndId = 'sndDetails';
+        else if (type === 'ranking') sndId = 'sndRanking';
 
         if (sndId) {
             const urlInput = document.getElementById('url-' + sndId);
