@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>スピードクイズ・メインスクリーン</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
@@ -23,32 +22,22 @@
         .timeup-msg { font-size: 12rem; color: #e74c3c; font-weight: bold; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.05); opacity: 0.7; } }
 
-        .rule-wrapper { background: rgba(11, 14, 20, 0.9); padding: 50px 60px; border-radius: 20px; border: 3px solid #3498db; box-shadow: 0 0 40px rgba(52, 152, 219, 0.5); text-align: left; max-width: 90vw; }
-        .rule-title-text { font-size: 6rem; color: #f1c40f; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.8); letter-spacing: 5px; font-weight: bold; }
-        .rule-intro { font-size: 3rem; color: #fff; text-align: center; margin-bottom: 50px; line-height: 1.6; }
-        .rule-item { font-size: 3.2rem; color: #ecf0f1; margin-bottom: 30px; line-height: 1.5; display: flex; align-items: flex-start; gap: 25px; }
-        .rule-item i { color: #3498db; font-size: 3.5rem; margin-top: 5px; }
-        .rule-highlight { color: #e74c3c; font-weight: bold; text-shadow: 2px 2px 0px #000; background: rgba(231, 76, 60, 0.2); padding: 0 10px; border-radius: 10px; }
-        .rule-item.alert { color: #f1c40f; font-weight: bold; margin-top: 50px; border-top: 2px dashed #f1c40f; padding-top: 40px; }
-        .rule-item.alert i { color: #f1c40f; }
-
-        /* ★ ランキング・マトリクス表（全体的にゆとりを持たせました） */
+        /* ランキング・マトリクス表用 */
         .ranking-container { width: 98%; }
-        .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 18px; font-size: 2.2rem; }
-        .ranking-table tr { background: rgba(255,255,255,0.05); border-radius: 12px; }
-        .ranking-table th { color: #f1c40f; font-size: 1.9rem; padding: 15px 10px; border-bottom: 2px solid #f1c40f; letter-spacing: 2px; }
-        .ranking-table td { padding: 15px; vertical-align: middle; }
-        .rank-number { font-size: 3.8rem; font-weight: bold; color: #3498db; text-align: center; }
+        .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; font-size: 2rem; }
+        .ranking-table tr { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .ranking-table th { color: #f1c40f; font-size: 1.8rem; padding: 15px 10px; border-bottom: 2px solid #f1c40f; }
+        .ranking-table td { padding: 10px; vertical-align: middle; }
+        .rank-number { font-size: 3.5rem; font-weight: bold; color: #3498db; text-align: center; }
         .top-1 { background: rgba(241, 196, 15, 0.15) !important; border: 2px solid #f1c40f; }
         .top-1 .rank-number { color: #f1c40f; }
-        .team-avatar { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; vertical-align: middle; margin-right: 20px; }
+        .team-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; vertical-align: middle; margin-right: 15px; }
     </style>
 </head>
 <body>
 
 <div id="display-container">
-    <div id="view-area">
-        </div>
+    <div id="view-area"></div>
 </div>
 
 <script>
@@ -72,33 +61,10 @@
             return;
         }
 
-        if (cmd.type === 'rules') {
-            view.innerHTML = `
-                <div class="rule-wrapper">
-                    <div class="rule-title-text">RULES</div>
-                    <div class="rule-intro">それではスピードクイズの時間がやってまいりました！<br>全部で５問出題します。</div>
-                    <div class="rule-item">
-                        <i class="fa-solid fa-mobile-screen"></i> 
-                        <div>スマホ画面の選択肢の中から、正解と思ったボタンを押してください。</div>
-                    </div>
-                    <div class="rule-item">
-                        <i class="fa-solid fa-stopwatch"></i> 
-                        <div>各問題の制限時間は<span class="rule-highlight">「60秒」</span>です。</div>
-                    </div>
-                    <div class="rule-item">
-                        <i class="fa-solid fa-bolt"></i> 
-                        <div>正解の基本点100点に加え、早く回答するほど<span class="rule-highlight">「残り時間(秒) × 1点」</span>のボーナスが加算されます！</div>
-                    </div>
-                    <div class="rule-item alert">
-                        <i class="fa-solid fa-trophy"></i> 
-                        <div>正答数が同じ場合は、回答までの時間が短いチームが優勝です！</div>
-                    </div>
-                </div>
-            `;
-        } else if (cmd.type === 'start' || cmd.type === 'next') {
+        if (cmd.type === 'start' || cmd.type === 'next') {
             db.ref('quizConfig/' + cmd.qIndex).once('value', s => {
                 const data = s.val(); if(!data) return;
-                let imageHtml = data.image ? `<div class="q-image-frame"><img src="${data.image}" class="q-image"></div>` : '';
+                let imageHtml = data.image ? `<div class="q-image-frame"><img src="${data.image}" class="q-image" onerror="this.style.display='none'"></div>` : '';
                 view.innerHTML = `
                     <div class="q-header">QUESTION ${cmd.qIndex + 1}</div>
                     ${imageHtml}
@@ -107,11 +73,11 @@
             });
         } else if (cmd.type === 'close') {
             view.innerHTML = `<div class="timeup-msg">TIME UP!</div><p style="font-size:3rem;">回答を締め切りました</p>`;
+        } else if (cmd.type === 'rules') {
+            // シンプルな英語表記に戻しました
+            view.innerHTML = `<div class="big-msg">RULES</div><p style="font-size:4rem; color:#2ecc71;">スクリーンを見て、スマホで素早くタップ！</p>`;
         } else if (cmd.type === 'details') {
-            view.innerHTML = `
-                <div class="big-msg" style="font-size: 8rem; animation: pulse 1s infinite alternate;">結果発表！！</div>
-                <p style="font-size: 4rem; margin-top: 30px; color: #fff;">はたして優勝はどのチームか！？</p>
-            `;
+            view.innerHTML = `<div class="big-msg" style="font-size: 8rem; animation: pulse 1s infinite alternate;">結果発表！！</div><p style="font-size: 4rem; margin-top: 30px; color: #fff;">はたして優勝はどのチームか！？</p>`;
         } else if (cmd.type === 'ranking') {
             showRanking();
         } else if (cmd.type === 'end') {
@@ -132,7 +98,7 @@
                                 <table class="ranking-table">
                                     <tr>
                                         <th style="width:8%;">RANK</th>
-                                        <th style="text-align:left; padding-left:25px;">TEAM</th>
+                                        <th style="text-align:left; padding-left:20px;">TEAM</th>
                                         <th style="width:12%;">TOTAL</th>`;
                 
                 for(let i=0; i<qCount; i++) {
@@ -142,24 +108,36 @@
 
                 sorted.slice(0, 6).forEach((p, idx) => {
                     const isTop = idx === 0 ? 'top-1' : '';
-                    const photo = p.photo ? `<img src="${p.photo}" class="team-avatar">` : `<span style="font-size:3rem; margin-right:20px; vertical-align:middle;">👤</span>`;
+                    const photo = p.photo ? `<img src="${p.photo}" class="team-avatar">` : `<span style="font-size:2.5rem; margin-right:15px; vertical-align:middle;">👤</span>`;
                     
                     html += `<tr class="${isTop}">
                         <td class="rank-number">${idx + 1}</td>
-                        <td style="text-align:left; padding-left:25px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 450px; letter-spacing: 2px;">
+                        <td style="text-align:left; padding-left:20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 350px; letter-spacing: 2px;">
                             ${photo} <span style="font-weight:bold;">${p.name || 'ゲスト'}</span>
                         </td>
-                        <td style="text-align:center; font-weight:bold; color:#f1c40f; font-size:3.5rem; line-height:1.1;">
-                            ${p.score || 0}<br><span style="font-size:1.4rem; color:#fff; font-weight:normal; letter-spacing: 0;">pt</span>
+                        <td style="text-align:center; font-weight:bold; color:#f1c40f; font-size:3rem; line-height:1.1;">
+                            ${p.score || 0}<br><span style="font-size:1.2rem; color:#fff; font-weight:normal;">pt</span>
                         </td>`;
                     
                     for(let i=0; i<qCount; i++) {
                         let h = p.history ? p.history[i] : null;
                         if (h) {
-                            let mark = h.correct ? '<span style="color:#2ecc71; font-weight:bold; font-size:3.5rem;">〇</span>' : '<span style="color:#e74c3c; font-weight:bold; font-size:3.5rem;">✖</span>';
-                            if (h.choice === '未') mark = '<span style="color:#aaa; font-size:3.5rem;">-</span>';
+                            let mark = h.correct ? '<span style="color:#2ecc71; font-weight:bold; font-size:3rem;">〇</span>' : '<span style="color:#e74c3c; font-weight:bold; font-size:3rem;">✖</span>';
+                            if (h.choice === '未') mark = '<span style="color:#aaa; font-size:3rem;">-</span>';
                             let timeStr = h.time !== '--' ? `${h.time}秒` : '--';
                             
-                            html += `<td style="text-align:center; line-height:1.2;">
-                                        ${mark}<br>
-                                        <span style="font-size:1.4rem; color:#aaa
+                            html += `<td style="text-align:center; line-height:1.2;">${mark}<br><span style="font-size:1.2rem; color:#aaa;">${timeStr}</span></td>`;
+                        } else {
+                            html += `<td style="text-align:center; color:#555;">-</td>`;
+                        }
+                    }
+                    html += `</tr>`;
+                });
+                html += `</table></div>`;
+                view.innerHTML = html;
+            });
+        });
+    }
+</script>
+</body>
+</html>
