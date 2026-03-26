@@ -15,17 +15,17 @@
         .qr-area img { border: 15px solid #fff; border-radius: 10px; width: 300px; height: 300px; box-shadow: 0 0 30px rgba(255,255,255,0.2); }
         .qr-text { font-size: 2.5rem; color: #2ecc71; margin-top: 20px; font-weight: bold; letter-spacing: 2px; }
 
-        /* 問題表示エリア */
-        .q-image-frame { height: 55vh; width: 90vw; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
-        .q-image { max-height: 100%; max-width: 100%; border: 6px solid #2ecc71; border-radius: 20px; box-shadow: 0 0 60px rgba(46, 204, 113, 0.4); object-fit: contain; }
-        .q-text { font-size: 4.5rem; font-weight: bold; color: #ffffff; text-shadow: 0 0 20px rgba(0,0,0,1), 2px 2px 0px #2ecc71; line-height: 1.2; white-space: pre-wrap; max-width: 95vw; }
-        .q-header { font-size: 3rem; color: #2ecc71; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 10px; border-bottom: 2px solid #2ecc71; }
+        /* ★ 問題表示エリア（画像を限界まで大きく調整） */
+        .q-image-frame { height: 75vh; width: 96vw; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
+        .q-image { max-height: 100%; max-width: 100%; border: 8px solid #2ecc71; border-radius: 20px; box-shadow: 0 0 60px rgba(46, 204, 113, 0.4); object-fit: contain; }
+        .q-text { font-size: 4rem; font-weight: bold; color: #ffffff; text-shadow: 0 0 20px rgba(0,0,0,1), 2px 2px 0px #2ecc71; line-height: 1.2; white-space: pre-wrap; max-width: 95vw; }
+        .q-header { font-size: 3rem; color: #2ecc71; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 10px; border-bottom: 2px solid #2ecc71; }
 
         .big-msg { font-size: 10rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 30px #f1c40f; }
         .timeup-msg { font-size: 12rem; color: #e74c3c; font-weight: bold; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.05); opacity: 0.7; } }
 
-        /* ★ ルール説明用スタイル（復元） */
+        /* ルール説明用スタイル */
         .rule-wrapper { background: rgba(11, 14, 20, 0.9); padding: 50px 60px; border-radius: 20px; border: 3px solid #3498db; box-shadow: 0 0 40px rgba(52, 152, 219, 0.5); text-align: left; max-width: 90vw; }
         .rule-title-text { font-size: 6rem; color: #f1c40f; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.8); letter-spacing: 5px; font-weight: bold; }
         .rule-intro { font-size: 3rem; color: #fff; text-align: center; margin-bottom: 50px; line-height: 1.6; }
@@ -35,29 +35,20 @@
         .rule-item.alert { color: #f1c40f; font-weight: bold; margin-top: 50px; border-top: 2px dashed #f1c40f; padding-top: 40px; }
         .rule-item.alert i { color: #f1c40f; }
 
-        /* ★ ランキング・マトリクス表（レイアウト設定を復活・修正） */
+        /* ランキング・マトリクス表 */
         .ranking-container { width: 98%; }
         .ranking-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 18px;
-            font-size: 2.2rem;
-            table-layout: fixed; /* 固定レイアウト */
+            width: 100%; border-collapse: separate; border-spacing: 0 18px; font-size: 2.2rem; table-layout: fixed; 
         }
         .ranking-table tr { background: rgba(255,255,255,0.05); border-radius: 12px; }
         .ranking-table th { color: #f1c40f; font-size: 1.9rem; padding: 15px 10px; border-bottom: 2px solid #f1c40f; letter-spacing: 2px; }
         .ranking-table td { padding: 15px; vertical-align: middle; }
         
-        /* RANKカラムの幅を復活 */
         .col-rank { width: 8%; font-size: 3.8rem; font-weight: bold; color: #3498db; text-align: center; }
-        /* TEAMカラムの幅を調整 */
         .col-team { width: 25%; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 30px; }
-        /* TOTALカラムの幅を復活 */
         .col-total { width: 15%; text-align: center; font-weight: bold; color: #f1c40f; font-size: 3.5rem; line-height: 1.1; }
-        /* subタグのデザイン設定 */
         .ranking-table td.col-total sub { font-size: 1.4rem; color: #fff; font-weight: normal; letter-spacing: 0;}
 
-        /* ボーナス表示用 CSSクラス */
         .bonus-points { font-size: 1.2rem; display: block; line-height: 1.3; font-weight: normal;}
         .correct-bonus { color: #2ecc71; }
         .time-bonus { color: #3498db; }
@@ -94,7 +85,6 @@
             return;
         }
 
-        // ★ルール説明の表示（完全復元）
         if (cmd.type === 'rules') {
             view.innerHTML = `
                 <div class="rule-wrapper">
@@ -121,11 +111,12 @@
         } else if (cmd.type === 'start' || cmd.type === 'next') {
             db.ref('quizConfig/' + cmd.qIndex).once('value', s => {
                 const data = s.val(); if(!data) return;
+                // ★ 画像の表示枠を大きく使う設定
                 let imageHtml = data.image ? `<div class="q-image-frame"><img src="${data.image}" class="q-image" onerror="this.style.display='none'"></div>` : '';
                 view.innerHTML = `
                     <div class="q-header">QUESTION ${cmd.qIndex + 1}</div>
                     ${imageHtml}
-                    <div class="q-text" style="${data.image ? '' : 'font-size: 6rem; margin-top: 100px;'}">${data.text || ''}</div>
+                    <div class="q-text" style="${data.image ? '' : 'font-size: 8rem; margin-top: 100px;'}">${data.text || ''}</div>
                 `;
             });
         } else if (cmd.type === 'close') {
@@ -139,9 +130,7 @@
         }
     });
 
-    // ★ 詳細マトリクス結果表の生成処理（レイアウト設定を復活・修正、トータルボーナスを復活）
     function showRanking() {
-        // 問題数を取得してテーブルのヘッダーを作成
         db.ref('quizConfig').once('value', qSnap => {
             const qCount = qSnap.val() ? qSnap.val().length : 0;
 
@@ -158,24 +147,17 @@
                                             <th class="col-team">TEAM</th>
                                             <th class="col-total">TOTAL</th>`;
                 
-                // Q1, Q2... のヘッダーを動的に追加
                 for(let i=0; i<qCount; i++) {
-                    // ★修正: 各カラム幅を広げる。設問カラムに対して最小幅を設定する。
-                    // 固定レイアウト（table-layout: fixed）とパーセンテージ、最小幅で確実に広げます。
-                    // チーム名カラムを少し縮め、Qx カラムに幅を割り当てます。
-                    // RANK 8% + TEAM 25% + TOTAL 15% + Qx 6.75% * 8問 = 100%
                     html += `<th style="width: 6.75%; min-width: 100px;">Q${i+1}</th>`; 
                 }
                 html += `</tr>
                         </thead>
                         <tbody>`;
 
-                // 上位6チームを表示（画面に収まる範囲）
                 sorted.slice(0, 6).forEach((p, idx) => {
                     const isTop = idx === 0 ? 'top-1' : '';
                     const photo = p.photo ? `<img src="${p.photo}" class="team-avatar">` : `<span style="font-size:3rem; margin-right:20px; vertical-align:middle;">👤</span>`;
                     
-                    // ★復活: ボーナス点数の計算
                     let baseTotal = 0; let bonusTotal = 0;
                     for (let i = 0; i < qCount; i++) {
                         let h = p.history ? p.history[i] : null;
@@ -192,7 +174,6 @@
                             <span class="bonus-points"><span class="correct-bonus">正答:${baseTotal}</span> / <span class="time-bonus">ﾀｲﾑ:${bonusTotal}</span></span>
                         </td>`;
                     
-                    // 各設問ごとの正誤(〇/✖)とタイムを横に並べる
                     for(let i=0; i<qCount; i++) {
                         let h = p.history ? p.history[i] : null;
                         if (h) {
@@ -200,7 +181,6 @@
                             if (h.choice === '未') mark = '<span style="color:#aaa; font-size:3.5rem;">-</span>';
                             let timeStr = h.time !== '--' ? `${h.time}秒` : '--';
                             
-                            // ★修正: タイムの折り返しを防ぐため、line-height を調整
                             html += `<td style="text-align:center; line-height:1.2;">
                                         ${mark}<br>
                                         <span style="font-size:1.4rem; color:#aaa;">${timeStr}</span>
