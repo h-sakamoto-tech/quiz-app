@@ -25,7 +25,7 @@
         .timeup-msg { font-size: 12rem; color: #e74c3c; font-weight: bold; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.05); opacity: 0.7; } }
 
-        /* ★ 新しいルール説明用スタイル */
+        /* ルール説明用 */
         .rule-wrapper { background: rgba(11, 14, 20, 0.9); padding: 50px 60px; border-radius: 20px; border: 3px solid #3498db; box-shadow: 0 0 40px rgba(52, 152, 219, 0.5); text-align: left; max-width: 90vw; }
         .rule-title-text { font-size: 6rem; color: #f1c40f; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.8); letter-spacing: 5px; font-weight: bold; }
         .rule-intro { font-size: 3rem; color: #fff; text-align: center; margin-bottom: 50px; line-height: 1.6; }
@@ -35,16 +35,16 @@
         .rule-item.alert { color: #f1c40f; font-weight: bold; margin-top: 50px; border-top: 2px dashed #f1c40f; padding-top: 40px; }
         .rule-item.alert i { color: #f1c40f; }
 
-        /* ランキング用 */
-        .ranking-container { width: 90%; }
-        .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 15px; font-size: 3rem; }
-        .ranking-table tr { background: rgba(255,255,255,0.05); border-radius: 15px; }
-        .ranking-table th { color: #f1c40f; font-size: 2rem; padding: 10px; border-bottom: 2px solid #f1c40f; }
-        .ranking-table td { padding: 20px; }
-        .rank-number { font-size: 4rem; font-weight: bold; color: #3498db; }
-        .top-1 { background: rgba(241, 196, 15, 0.2) !important; border: 2px solid #f1c40f; }
+        /* ★ ランキング・マトリクス表用 */
+        .ranking-container { width: 98%; }
+        .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; font-size: 2rem; }
+        .ranking-table tr { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .ranking-table th { color: #f1c40f; font-size: 1.8rem; padding: 15px 10px; border-bottom: 2px solid #f1c40f; }
+        .ranking-table td { padding: 10px; vertical-align: middle; }
+        .rank-number { font-size: 3.5rem; font-weight: bold; color: #3498db; text-align: center; }
+        .top-1 { background: rgba(241, 196, 15, 0.15) !important; border: 2px solid #f1c40f; }
         .top-1 .rank-number { color: #f1c40f; }
-        .team-avatar { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; vertical-align: middle; margin-right: 20px; }
+        .team-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; vertical-align: middle; margin-right: 15px; }
     </style>
 </head>
 <body>
@@ -76,12 +76,10 @@
         }
 
         if (cmd.type === 'rules') {
-            // ★ リッチなルール説明画面
             view.innerHTML = `
                 <div class="rule-wrapper">
                     <div class="rule-title-text">RULES</div>
                     <div class="rule-intro">それではスピードクイズの時間がやってまいりました！<br>全部で５問出題します。</div>
-                    
                     <div class="rule-item">
                         <i class="fa-solid fa-mobile-screen"></i> 
                         <div>スマホ画面の選択肢の中から、正解と思ったボタンを押してください。</div>
@@ -92,7 +90,7 @@
                     </div>
                     <div class="rule-item">
                         <i class="fa-solid fa-bolt"></i> 
-                        <div>このクイズは正解しただけの得点ではありません。<br>基本点100点に加え、早く回答するほど<span class="rule-highlight">「残り時間(秒) × 1点」</span>のボーナスが加算されます！</div>
+                        <div>正解の基本点100点に加え、早く回答するほど<span class="rule-highlight">「残り時間(秒) × 1点」</span>のボーナスが加算されます！</div>
                     </div>
                     <div class="rule-item alert">
                         <i class="fa-solid fa-trophy"></i> 
@@ -112,24 +110,79 @@
             });
         } else if (cmd.type === 'close') {
             view.innerHTML = `<div class="timeup-msg">TIME UP!</div><p style="font-size:3rem;">回答を締め切りました</p>`;
+        } else if (cmd.type === 'details') {
+            // ★ 結果発表の直前のタメの画面
+            view.innerHTML = `
+                <div class="big-msg" style="font-size: 8rem; animation: pulse 1s infinite alternate;">結果発表！！</div>
+                <p style="font-size: 4rem; margin-top: 30px; color: #fff;">はたして優勝はどのチームか！？</p>
+            `;
         } else if (cmd.type === 'ranking') {
+            // ★ 詳細マトリクス結果表を表示
             showRanking();
         } else if (cmd.type === 'end') {
-            view.innerHTML = `<div class="big-msg">ALL FINISHED!</div><p style="font-size:3rem;">全問題が終了しました。結果発表をお楽しみに！</p>`;
+            view.innerHTML = `<div class="big-msg">ALL FINISHED!</div><p style="font-size:3rem;">全問題が終了しました。お疲れ様でした！</p>`;
         }
     });
 
+    // ★ 詳細マトリクス結果表の生成処理
     function showRanking() {
-        db.ref('players').once('value', snap => {
-            const players = snap.val() || {};
-            let sorted = Object.values(players).sort((a, b) => (b.score || 0) - (a.score || 0));
-            let html = `<div class="ranking-container"><h1 style="color:#f1c40f; font-size:5rem; margin-bottom:30px;">FINAL RANKING</h1><table class="ranking-table"><tr><th>RANK</th><th>TEAM NAME</th><th>TOTAL SCORE</th></tr>`;
-            sorted.slice(0, 5).forEach((p, idx) => {
-                const isTop = idx === 0 ? 'top-1' : '';
-                const photo = p.photo ? `<img src="${p.photo}" class="team-avatar">` : `<span style="font-size:4rem; margin-right:20px;">👤</span>`;
-                html += `<tr class="${isTop}"><td class="rank-number">${idx + 1}</td><td style="text-align:left; padding-left:100px;">${photo} <span>${p.name || 'ゲスト'}</span></td><td style="font-weight:bold; color:#f1c40f;">${p.score || 0} <small>pt</small></td></tr>`;
+        // 問題数を取得してテーブルのヘッダーを作成
+        db.ref('quizConfig').once('value', qSnap => {
+            const qCount = qSnap.val() ? qSnap.val().length : 0;
+
+            db.ref('players').once('value', snap => {
+                const players = snap.val() || {};
+                let sorted = Object.values(players).sort((a, b) => (b.score || 0) - (a.score || 0));
+                
+                let html = `<div class="ranking-container">
+                                <h1 style="color:#f1c40f; font-size:4.5rem; margin-bottom:20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.8);">FINAL RANKING</h1>
+                                <table class="ranking-table">
+                                    <tr>
+                                        <th style="width:8%;">RANK</th>
+                                        <th style="text-align:left; padding-left:20px;">TEAM</th>
+                                        <th style="width:12%;">TOTAL</th>`;
+                
+                // Q1, Q2... のヘッダーを動的に追加
+                for(let i=0; i<qCount; i++) {
+                    html += `<th>Q${i+1}</th>`;
+                }
+                html += `</tr>`;
+
+                // 上位6チームを表示（画面に収まる範囲）
+                sorted.slice(0, 6).forEach((p, idx) => {
+                    const isTop = idx === 0 ? 'top-1' : '';
+                    const photo = p.photo ? `<img src="${p.photo}" class="team-avatar">` : `<span style="font-size:2.5rem; margin-right:15px; vertical-align:middle;">👤</span>`;
+                    
+                    html += `<tr class="${isTop}">
+                        <td class="rank-number">${idx + 1}</td>
+                        <td style="text-align:left; padding-left:20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 350px;">
+                            ${photo} <span style="font-weight:bold;">${p.name || 'ゲスト'}</span>
+                        </td>
+                        <td style="text-align:center; font-weight:bold; color:#f1c40f; font-size:3rem; line-height:1.1;">
+                            ${p.score || 0}<br><span style="font-size:1.2rem; color:#fff; font-weight:normal;">pt</span>
+                        </td>`;
+                    
+                    // 各設問ごとの正誤(〇/✖)とタイムを横に並べる
+                    for(let i=0; i<qCount; i++) {
+                        let h = p.history ? p.history[i] : null;
+                        if (h) {
+                            let mark = h.correct ? '<span style="color:#2ecc71; font-weight:bold; font-size:3rem;">〇</span>' : '<span style="color:#e74c3c; font-weight:bold; font-size:3rem;">✖</span>';
+                            if (h.choice === '未') mark = '<span style="color:#aaa; font-size:3rem;">-</span>';
+                            let timeStr = h.time !== '--' ? `${h.time}秒` : '--';
+                            
+                            html += `<td style="text-align:center; line-height:1.2;">
+                                        ${mark}<br>
+                                        <span style="font-size:1.2rem; color:#aaa;">${timeStr}</span>
+                                     </td>`;
+                        } else {
+                            html += `<td style="text-align:center; color:#555;">-</td>`;
+                        }
+                    }
+                    html += `</tr>`;
+                });
+                html += `</table></div>`;
+                view.innerHTML = html;
             });
-            html += `</table></div>`; view.innerHTML = html;
         });
     }
 </script>
