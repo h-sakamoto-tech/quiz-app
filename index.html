@@ -140,7 +140,14 @@
     window.addQuestionRow = function(qData = null) {
         const container = document.getElementById('questions-container');
         const div = document.createElement('div'); div.className = 'q-row';
-        const imgVal = qData ? (qData.image || '') : '';
+        let imgVal = qData ? (qData.image || '') : '';
+        
+        // ★キャッシュ回避: Firebaseから読み込んだURLを使ってプレビューを生成する際、タイムスタンプを付ける
+        // GitHub raw contentのURLの場合のみタイムスタンプを付与
+        if (imgVal.includes('raw.githubusercontent.com') && !imgVal.includes('?t=')) {
+            imgVal = imgVal + "?t=" + Date.now();
+        }
+        
         const txtVal = qData ? (qData.text || '') : '';
         const ansVal = qData ? qData.ans : 'A';
 
@@ -148,7 +155,7 @@
             <div class="q-grid">
                 <div class="preview-box">
                     <div class="up-status">UP中...</div>
-                    <img src="${imgVal}" class="prev-img" style="${imgVal ? 'display:block' : 'display:none'}" onerror="this.src=''; this.alt='画像エラー'">
+                    <img src="${imgVal}" class="prev-img" style="${imgVal ? 'display:block' : 'display:none'}" alt="画像エラー">
                 </div>
                 <div class="input-area">
                     <label class="btn-upload"><i class="fa fa-folder-open"></i> パソコンから画像を選択
