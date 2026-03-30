@@ -11,6 +11,15 @@
         .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #f1c40f; padding-bottom: 20px; position: relative; }
         .header h1 { color: #f1c40f; margin: 0; font-size: 2.5rem; }
 
+        /* ★ マニュアルボタンのスタイル */
+        .manual-btn {
+            position: absolute; right: 10px; top: 10px;
+            background: transparent; color: #3498db; border: 1px solid #3498db;
+            padding: 8px 15px; border-radius: 20px; text-decoration: none;
+            font-weight: bold; font-size: 14px; transition: 0.3s;
+        }
+        .manual-btn:hover { background: #3498db; color: #fff; }
+
         .section { background: #2d2d2d; padding: 25px; border-radius: 12px; border: 1px solid #444; margin-bottom: 20px; }
         .collapsible-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 1px dashed #555; transition: color 0.2s; }
         .collapsible-header:hover { color: #3498db; }
@@ -51,7 +60,6 @@
         .gh-settings-panel input { padding: 8px; background: #111; color: #fff; border: 1px solid #555; border-radius: 4px; margin-bottom: 10px; width: 100%; box-sizing: border-box;}
         .gh-settings-panel label { font-size: 12px; color: #e67e22; font-weight: bold; display: block; margin-bottom: 5px; }
 
-        /* ★ パスワード画面用のスタイル追加 */
         #auth-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(15, 15, 15, 0.98); z-index: 9999; 
@@ -84,6 +92,9 @@
 
 <div class="header">
     <h1>スピードクイズ管理画面</h1>
+    <a href="https://h-sakamoto-tech.github.io/quiz-app/operation_manual.html" target="_blank" class="manual-btn">
+        <i class="fa-solid fa-book"></i> 運営マニュアル
+    </a>
 </div>
 
 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
@@ -182,17 +193,13 @@
     let scenario = []; let currentStepIndex = -1;
     let currentAnswers = {}; let playersData = {}; let currentQuestionStartTs = 0; let globalQCount = 0;
 
-    // ★ パスワード認証機能
     window.checkAdminPass = function() {
         const pass = document.getElementById('admin-pass-input').value;
-        const correctPass = "admin1234"; // ★ パスワードを変えたい場合はここを変更してください
-
+        const correctPass = "admin1234";
         if (pass === correctPass) {
             sessionStorage.setItem('admin_auth_passed', 'true');
             document.getElementById('auth-overlay').style.display = 'none';
-        } else {
-            alert("パスワードが違います！");
-        }
+        } else { alert("パスワードが違います！"); }
     };
 
     function toggleSection(cid, iid) {
@@ -202,22 +209,17 @@
 
     window.previewSnd = function(input, audioId, urlInputId) {
         if(input.files[0]) {
-            const url = URL.createObjectURL(input.files[0]); 
-            const a = new Audio(url); 
-            a.play(); 
+            const url = URL.createObjectURL(input.files[0]); const a = new Audio(url); a.play(); 
             const base = document.getElementById('base-folder-url').value.trim();
             if(base) { document.getElementById(urlInputId).value = (base.endsWith('/') ? base : base + '/') + input.files[0].name; }
         }
     };
     
     window.autoFillUrls = function() {
-        const base = document.getElementById('base-folder-url').value.trim(); 
-        if(!base) return;
+        const base = document.getElementById('base-folder-url').value.trim(); if(!base) return;
         const fix = base.endsWith('/') ? base : base + '/';
         const files = {sndRules: "rules.mp3", sndStart: "start.mp3", sndClose: "close.mp3", sndNext: "next.mp3", sndEnd: "end.mp3", sndDetails: "details.mp3", sndRanking: "ranking.mp3"};
-        for(let id in files) { 
-            if(document.getElementById('url-' + id)) { document.getElementById('url-' + id).value = fix + files[id]; }
-        }
+        for(let id in files) { if(document.getElementById('url-' + id)) { document.getElementById('url-' + id).value = fix + files[id]; } }
     };
 
     window.addQuestionRow = function(qData = null) {
@@ -230,15 +232,10 @@
 
         div.innerHTML = `
             <div class="q-grid">
-                <div class="preview-box">
-                    <div class="up-status">UP中...</div>
-                    <img src="${imgVal}" class="prev-img" style="${imgVal ? 'display:block' : 'display:none'}" alt="画像">
-                </div>
+                <div class="preview-box"><div class="up-status">UP中...</div><img src="${imgVal}" class="prev-img" style="${imgVal ? 'display:block' : 'display:none'}" alt="画像"></div>
                 <div class="input-area">
-                    <label class="btn-upload"><i class="fa fa-folder-open"></i> パソコンから画像を選択
-                        <input type="file" style="display:none" accept="image/*" onchange="uploadToGitHub(this)">
-                    </label>
-                    <input type="text" class="q-img-url" placeholder="画像のURL（自動入力されます）" value="${imgVal}" readonly>
+                    <label class="btn-upload"><i class="fa fa-folder-open"></i> パソコンから画像を選択<input type="file" style="display:none" accept="image/*" onchange="uploadToGitHub(this)"></label>
+                    <input type="text" class="q-img-url" placeholder="画像のURL" value="${imgVal}" readonly>
                     <textarea class="q-txt" placeholder="画像の下に表示する補足テキスト">${txtVal}</textarea>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span>正解: <select class="q-ans">${['A','B','C','D'].map(v=>`<option value="${v}" ${ansVal===v?'selected':''}>${v}</option>`).join('')}</select></span>
@@ -258,40 +255,27 @@
 
     window.uploadToGitHub = async function(input) {
         const file = input.files[0]; if (!file) return;
-        const row = input.closest('.q-row');
-        row.querySelector('.up-status').style.display = 'flex';
-
+        const row = input.closest('.q-row'); row.querySelector('.up-status').style.display = 'flex';
         const token = document.getElementById('gh-token').value.trim();
         const user = document.getElementById('gh-user').value.trim();
         const repo = document.getElementById('gh-repo').value.trim();
-
-        if(!token) {
-            alert("⚠️ 最初に「GitHub Token」の欄にパスワードを入力してください！");
-            row.querySelector('.up-status').style.display = 'none'; return;
-        }
-
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
+        if(!token) { alert("⚠️ 最初に「GitHub Token」を入力してください！"); row.querySelector('.up-status').style.display = 'none'; return; }
+        const reader = new FileReader(); reader.readAsDataURL(file);
         reader.onload = async () => {
             const base64Content = reader.result.split(',')[1];
             const fileName = `q_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
             const path = `images/${fileName}`;
-
             try {
                 const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`, {
                     method: 'PUT',
                     headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
                     body: JSON.stringify({ message: "upload quiz image", content: base64Content })
                 });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || "不明なエラー");
+                const data = await res.json(); if (!res.ok) throw new Error(data.message || "不明なエラー");
                 const rawUrl = data.content.download_url + "?t=" + Date.now();
                 row.querySelector('.q-img-url').value = rawUrl;
-                row.querySelector('.prev-img').src = reader.result;
-                row.querySelector('.prev-img').style.display = 'block';
-            } catch (e) { 
-                alert("GitHubへのアップロード失敗:\n" + e.message + "\n\nトークンが無効になっているか、権限が足りません。"); 
-            }
+                row.querySelector('.prev-img').src = reader.result; row.querySelector('.prev-img').style.display = 'block';
+            } catch (e) { alert("GitHubへのアップロード失敗:\n" + e.message); }
             row.querySelector('.up-status').style.display = 'none';
         };
     };
@@ -302,17 +286,7 @@
             const img = r.querySelector('.q-img-url').value; const txt = r.querySelector('.q-txt').value;
             if (img || txt) qData.push({ image: img, text: txt, ans: r.querySelector('.q-ans').value }); 
         });
-        const sData = { 
-            baseUrl: document.getElementById('base-folder-url').value, 
-            sndRules: document.getElementById('url-sndRules').value, 
-            sndStart: document.getElementById('url-sndStart').value, 
-            sndClose: document.getElementById('url-sndClose').value, 
-            sndNext: document.getElementById('url-sndNext').value, 
-            sndEnd: document.getElementById('url-sndEnd').value, 
-            sndDetails: document.getElementById('url-sndDetails').value, 
-            sndRanking: document.getElementById('url-sndRanking').value 
-        };
-        
+        const sData = { baseUrl: document.getElementById('base-folder-url').value, sndRules: document.getElementById('url-sndRules').value, sndStart: document.getElementById('url-sndStart').value, sndClose: document.getElementById('url-sndClose').value, sndNext: document.getElementById('url-sndNext').value, sndEnd: document.getElementById('url-sndEnd').value, sndDetails: document.getElementById('url-sndDetails').value, sndRanking: document.getElementById('url-sndRanking').value };
         db.ref('quizConfig').set(qData); 
         db.ref('soundConfig').set(sData).then(() => { alert("設定を保存しました！"); location.reload(); });
     };
@@ -336,61 +310,40 @@
 
     db.ref('answers').on('value', snap => { currentAnswers = snap.val() || {}; updateLiveStatus(); });
     db.ref('players').on('value', snap => {
-        playersData = snap.val() || {};
-        const pCount = Object.keys(playersData).length; document.getElementById('admin-p-count').innerText = pCount; updateLiveStatus(); 
+        playersData = snap.val() || {}; const pCount = Object.keys(playersData).length; document.getElementById('admin-p-count').innerText = pCount; updateLiveStatus(); 
         if (globalQCount > 0 && pCount > 0) {
             let tableHtml = `<table class="result-table"><tr><th>順位</th><th style="text-align:center;">チーム名</th><th>合計</th>`;
-            for (let i = 0; i < globalQCount; i++) { tableHtml += `<th>Q${i+1}</th>`; }
-            tableHtml += `</tr>`;
+            for (let i = 0; i < globalQCount; i++) { tableHtml += `<th>Q${i+1}</th>`; } tableHtml += `</tr>`;
             let sortedPlayers = Object.values(playersData).sort((a,b) => (b.score || 0) - (a.score || 0));
             sortedPlayers.forEach((p, index) => {
                 let av = getAvatarHTML(p); let baseTotal = 0; let bonusTotal = 0;
                 for (let i = 0; i < globalQCount; i++) {
-                    let h = p.history ? p.history[i] : null;
-                    if (h && h.correct) { baseTotal += 100; bonusTotal += (h.points ? h.points - 100 : 0); }
+                    let h = p.history ? p.history[i] : null; if (h && h.correct) { baseTotal += 100; bonusTotal += (h.points ? h.points - 100 : 0); }
                 }
                 tableHtml += `<tr><td>${index+1}</td><td><div class="team-name-cell">${av}<span>${p.name}</span></div></td>
                 <td style="color:#f1c40f; font-weight:bold; font-size:20px; line-height:1.3;">${p.score || 0}<br><span style="font-size:12px; color:#2ecc71;">正答:${baseTotal}</span><br><span style="font-size:12px; color:#3498db;">ﾀｲﾑ:${bonusTotal}</span></td>`;
                 for (let i = 0; i < globalQCount; i++) {
                     let h = p.history ? p.history[i] : null;
                     if (h) {
-                        let mark = h.correct ? '<span class="mark-o">〇</span>' : '<span class="mark-x">✖</span>';
-                        if (h.choice === '未') mark = '<span style="color:#aaa;">-</span>';
-                        let timeStr = h.time !== '--' ? `${h.time}秒` : '--';
-                        tableHtml += `<td>${mark}<br><span class="time-sec">${timeStr}</span></td>`;
+                        let mark = h.correct ? '<span class="mark-o">〇</span>' : '<span class="mark-x">✖</span>'; if (h.choice === '未') mark = '<span style="color:#aaa;">-</span>';
+                        let timeStr = h.time !== '--' ? `${h.time}秒` : '--'; tableHtml += `<td>${mark}<br><span class="time-sec">${timeStr}</span></td>`;
                     } else { tableHtml += `<td>-</td>`; }
-                }
-                tableHtml += `</tr>`;
+                } tableHtml += `</tr>`;
             });
             tableHtml += `</table>`; document.getElementById('admin-detailed-results').innerHTML = tableHtml;
         }
     });
 
     window.onload = function() {
-        // ★ パスワード認証のチェック
-        if (sessionStorage.getItem('admin_auth_passed') === 'true') {
-            document.getElementById('auth-overlay').style.display = 'none';
-        }
-
-        const savedToken = localStorage.getItem('gh_token_saved');
-        const savedUser = localStorage.getItem('gh_user_saved');
-        const savedRepo = localStorage.getItem('gh_repo_saved');
-        if(savedToken) document.getElementById('gh-token').value = savedToken;
-        if(savedUser) document.getElementById('gh-user').value = savedUser;
-        if(savedRepo) document.getElementById('gh-repo').value = savedRepo;
-
+        if (sessionStorage.getItem('admin_auth_passed') === 'true') { document.getElementById('auth-overlay').style.display = 'none'; }
+        const savedToken = localStorage.getItem('gh_token_saved'); const savedUser = localStorage.getItem('gh_user_saved'); const savedRepo = localStorage.getItem('gh_repo_saved');
+        if(savedToken) document.getElementById('gh-token').value = savedToken; if(savedUser) document.getElementById('gh-user').value = savedUser; if(savedRepo) document.getElementById('gh-repo').value = savedRepo;
         db.ref('soundConfig').once('value', snap => {
-            const snds = snap.val() || {};
-            if(snds.baseUrl) document.getElementById('base-folder-url').value = snds.baseUrl;
-            ['sndRules','sndStart','sndClose','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => { 
-                if(snds[id] && document.getElementById('url-' + id)) { document.getElementById('url-' + id).value = snds[id]; }
-            });
+            const snds = snap.val() || {}; if(snds.baseUrl) document.getElementById('base-folder-url').value = snds.baseUrl;
+            ['sndRules','sndStart','sndClose','sndNext','sndEnd','sndDetails','sndRanking'].forEach(id => { if(snds[id] && document.getElementById('url-' + id)) { document.getElementById('url-' + id).value = snds[id]; } });
         });
-
         db.ref('quizConfig').once('value', snap => {
-            const data = snap.val();
-            if (data && data.length > 0) { globalQCount = data.length; data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } 
-            else { addQuestionRow(); }
+            const data = snap.val(); if (data && data.length > 0) { globalQCount = data.length; data.forEach(q => addQuestionRow(q)); buildScenario(data.length); } else { addQuestionRow(); }
         });
     };
 
@@ -402,74 +355,42 @@
 
     function playScenarioSound(type) {
         let sndId = '';
-        if (type === 'rules') sndId = 'sndRules';
-        else if (type === 'start') sndId = 'sndStart';
-        else if (type === 'close') sndId = 'sndClose';
-        else if (type === 'next') sndId = 'sndNext';
-        else if (type === 'end') sndId = 'sndEnd';
-        else if (type === 'details') sndId = 'sndDetails';
-        else if (type === 'ranking') sndId = 'sndRanking';
-
-        if (sndId) {
-            const urlInput = document.getElementById('url-' + sndId);
-            if (urlInput && urlInput.value) {
-                const audio = new Audio(urlInput.value);
-                audio.play().catch(e => console.warn("音源再生ブロック:", e));
-            }
-        }
+        if (type === 'rules') sndId = 'sndRules'; else if (type === 'start') sndId = 'sndStart'; else if (type === 'close') sndId = 'sndClose'; else if (type === 'next') sndId = 'sndNext'; else if (type === 'end') sndId = 'sndEnd'; else if (type === 'details') sndId = 'sndDetails'; else if (type === 'ranking') sndId = 'sndRanking';
+        if (sndId) { const urlInput = document.getElementById('url-' + sndId); if (urlInput && urlInput.value) { const audio = new Audio(urlInput.value); audio.play().catch(e => console.warn("再生失敗:", e)); } }
     }
 
     window.executeStep = function() {
-        if (!scenario[currentStepIndex]) return;
-        const step = scenario[currentStepIndex]; const now = Date.now();
+        if (!scenario[currentStepIndex]) return; const step = scenario[currentStepIndex]; const now = Date.now();
         document.getElementById('current-status-text').innerText = step.title;
         document.getElementById('btn-start-flow').style.display = 'none'; document.getElementById('nav-group').style.display = 'flex';
         document.getElementById('btn-next-step').style.display = (currentStepIndex >= scenario.length - 1) ? 'none' : 'block';
-
         playScenarioSound(step.type);
-
         if (step.type === 'start' || step.type === 'next') {
-            currentQuestionStartTs = now; 
-            db.ref('answers').remove().then(() => { db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now }); updateLiveStatus(); });
+            currentQuestionStartTs = now; db.ref('answers').remove().then(() => { db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now }); updateLiveStatus(); });
         } else if (step.type === 'close') {
             db.ref('quizConfig').once('value').then(snap => {
                 const qData = snap.val() || []; const correctAns = qData[step.qIndex]?.ans; let updates = {};
                 for (let uid in playersData) {
-                    let p = playersData[uid]; let ans = currentAnswers[uid];
-                    let hInfo = { choice: '未', correct: false, time: '--', points: 0 };
+                    let p = playersData[uid]; let ans = currentAnswers[uid]; let hInfo = { choice: '未', correct: false, time: '--', points: 0 };
                     if (ans && ans.choice) {
-                        let elapsed = 60; 
-                        if (ans.time !== undefined) elapsed = ans.time; else if (ans.ts && currentQuestionStartTs) elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
+                        let elapsed = 60; if (ans.time !== undefined) elapsed = ans.time; else if (ans.ts && currentQuestionStartTs) elapsed = Math.floor((ans.ts - currentQuestionStartTs) / 1000);
                         if (elapsed < 0) elapsed = 0; if (elapsed > 60) elapsed = 60;
-                        let isCorrect = (ans.choice === correctAns);
-                        let points = isCorrect ? 100 + Math.max(0, 60 - elapsed) : 0;
+                        let isCorrect = (ans.choice === correctAns); let points = isCorrect ? 100 + Math.max(0, 60 - elapsed) : 0;
                         hInfo = { choice: ans.choice, correct: isCorrect, time: elapsed, points: points };
                     }
                     updates[`${uid}/history/${step.qIndex}`] = hInfo;
-                    let totalScore = 0; let historyObj = p.history || {}; historyObj[step.qIndex] = hInfo; 
-                    for (let q in historyObj) { totalScore += (historyObj[q].points || 0); }
+                    let totalScore = 0; let historyObj = p.history || {}; historyObj[step.qIndex] = hInfo; for (let q in historyObj) { totalScore += (historyObj[q].points || 0); }
                     updates[`${uid}/score`] = totalScore;
                 }
                 if (Object.keys(updates).length > 0) db.ref('players').update(updates);
                 db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex, ts: now }); updateLiveStatus();
             });
-        } else {
-            db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex !== undefined ? step.qIndex : -1, ts: now }); updateLiveStatus();
-        }
+        } else { db.ref('adminCommand').set({ type: step.type, qIndex: step.qIndex !== undefined ? step.qIndex : -1, ts: now }); updateLiveStatus(); }
     }
     window.startQuizFlow = function() { if(scenario.length <= 1) return alert("問題を保存してください！"); currentStepIndex = 0; executeStep(); }
     window.goNext = function() { if (currentStepIndex < scenario.length - 1) { currentStepIndex++; executeStep(); } }
     window.goPrev = function() { if (currentStepIndex > 0) { currentStepIndex--; executeStep(); } }
-    
-    window.resetGame = function() { 
-        if(confirm("全データをリセットしますか？")) { 
-            db.ref('players').remove(); 
-            db.ref('answers').remove(); 
-            db.ref('adminCommand').set({ type: 'standby', ts: Date.now() }).then(() => {
-                location.reload(); 
-            });
-        } 
-    }
+    window.resetGame = function() { if(confirm("全データをリセットしますか？")) { db.ref('players').remove(); db.ref('answers').remove(); db.ref('adminCommand').set({ type: 'standby', ts: Date.now() }).then(() => { location.reload(); }); } }
 </script>
 </body>
 </html>
