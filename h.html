@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>スピードクイズ - 回答</title>
+    <title>クイズハルメク10 - 回答</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -27,7 +27,6 @@
         #quiz-area { display: none; flex: 1; padding: 15px; flex-direction: column; justify-content: center; }
         .q-title { font-size: 1.2rem; margin-bottom: 20px; color: #2ecc71; font-weight: bold; text-align: center; }
         
-        /* ボタンのグリッドを2列（A,B,C,D）に設定 */
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; margin: 0 auto; }
         
         .ans-btn { background: #1a202c; border: 3px solid #2ecc71; color: #2ecc71; padding: 25px 0; font-size: 2.2rem; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
@@ -39,7 +38,7 @@
 <body>
 
     <div id="entry-area">
-        <h1 style="color:#f1c40f; margin-bottom: 20px;">SPEED QUIZ</h1>
+        <h1 style="color:#f1c40f; margin-bottom: 20px; font-size: 2.2rem;">クイズハルメク10</h1>
         <input type="text" id="player-name" class="name-input" placeholder="チーム名・お名前">
         
         <div class="photo-section">
@@ -50,3 +49,105 @@
             </label>
             <img id="photo-preview" src="" alt="プレビュー">
         </div>
+
+        <button class="join-btn" onclick="joinGame()">参加する</button>
+    </div>
+
+    <div id="wait-area">
+        <div class="waiting-text" id="status-label">待機中...</div>
+        <p style="color: #8892b0;">スクリーンに注目してください</p>
+    </div>
+
+    <div id="quiz-area">
+        <div class="q-title" id="q-label">第 1 問</div>
+        <div class="btn-grid">
+            <button class="ans-btn" onclick="sendAnswer('A')">A</button>
+            <button class="ans-btn" onclick="sendAnswer('B')">B</button>
+            <button class="ans-btn" onclick="sendAnswer('C')">C</button>
+            <button class="ans-btn" onclick="sendAnswer('D')">D</button>
+        </div>
+        <div id="sent-msg">送信完了！</div>
+    </div>
+
+<script>
+    firebase.initializeApp({ apiKey: "AIzaSyARzh6_jH8u9kRRkC4JSrvWCB9eBFKA1P0", authDomain: "speed-quiz26.firebaseapp.com", databaseURL: "https://speed-quiz26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "speed-quiz26" });
+    const db = firebase.database();
+    
+    let myUid = localStorage.getItem('speed_quiz_uid');
+    if (!myUid) {
+        myUid = "u_" + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('speed_quiz_uid', myUid);
+    }
+    let isJoined = false;
+    let base64Photo = "";
+
+    db.ref('players/' + myUid).once('value', snap => {
+        if(snap.val()) {
+            isJoined = true;
+            document.getElementById('entry-area').style.display = 'none';
+        }
+    });
+
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            base64Photo = e.target.result;
+            const preview = document.getElementById('photo-preview');
+            preview.src = base64Photo;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function joinGame() {
+        const name = document.getElementById('player-name').value.trim();
+        if(!name) return alert("名前を入力してください");
+        
+        db.ref('players/' + myUid).set({ name: name, score: 0, photo: base64Photo }).then(() => {
+            isJoined = true;
+            document.getElementById('entry-area').style.display = 'none';
+            document.getElementById('wait-area').style.display = 'flex';
+        });
+    }
+
+    db.ref('adminCommand').on('value', snap => {
+        if (!isJoined) return;
+        const cmd = snap.val(); 
+        const waitArea = document.getElementById('wait-area');
+        const quizArea = document.getElementById('quiz-area');
+        const sentMsg = document.getElementById('sent-msg');
+        const btns = document.querySelectorAll('.ans-btn');
+
+        if (!cmd || cmd.type === 'standby' || cmd.type === 'reset') {
+            document.getElementById('status-label').innerText = "待機中...";
+            waitArea.style.display = 'flex'; quizArea.style.display = 'none';
+            return;
+        }
+
+        if (cmd.type === 'start' || cmd.type === 'next') {
+            waitArea.style.display = 'none'; quizArea.style.display = 'flex'; sentMsg.style.display = 'none';
+            document.getElementById('q-label').innerText = `第 ${cmd.qIndex + 1} 問`;
+            btns.forEach(b => { b.disabled = false; b.style.visibility = 'visible'; });
+        } else if (cmd.type === 'close') {
+            document.getElementById('status-label').innerText = "受付終了";
+            waitArea.style.display = 'flex'; quizArea.style.display = 'none';
+        } else if (cmd.type === 'answer') { // ★ 正解発表時の状態追加（待機状態を維持）
+            document.getElementById('status-label').innerText = "スクリーンに注目！";
+            waitArea.style.display = 'flex'; quizArea.style.display = 'none';
+        }
+    });
+
+    function sendAnswer(choice) {
+        const btns = document.querySelectorAll('.ans-btn');
+        btns.forEach(b => b.disabled = true);
+        db.ref('answers/' + myUid).set({ choice: choice, ts: Date.now() }).then(() => {
+            document.getElementById('sent-msg').style.display = 'block';
+            btns.forEach(b => { if(b.innerText !== choice) b.style.visibility = 'hidden'; });
+        });
+    }
+</script>
+
+</body>
+</html>
