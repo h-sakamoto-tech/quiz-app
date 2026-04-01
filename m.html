@@ -35,15 +35,13 @@
         .timeup-msg { font-size: 12rem; color: #e74c3c; font-weight: bold; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.05); opacity: 0.7; } }
 
-        /* ルール説明用スタイル */
-        .rule-wrapper { background: rgba(11, 14, 20, 0.9); padding: 50px 60px; border-radius: 20px; border: 3px solid #3498db; box-shadow: 0 0 40px rgba(52, 152, 219, 0.5); text-align: left; max-width: 90vw; }
+        /* ★ ルール説明用スタイル（中央寄せ＆アイコン削除調整） */
+        .rule-wrapper { background: rgba(11, 14, 20, 0.9); padding: 50px 60px; border-radius: 20px; border: 3px solid #3498db; box-shadow: 0 0 40px rgba(52, 152, 219, 0.5); text-align: center; max-width: 90vw; }
         .rule-title-text { font-size: 6rem; color: #f1c40f; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.8); letter-spacing: 5px; font-weight: bold; }
-        .rule-intro { font-size: 3rem; color: #fff; text-align: center; margin-bottom: 50px; line-height: 1.6; }
-        .rule-item { font-size: 3.2rem; color: #ecf0f1; margin-bottom: 30px; line-height: 1.5; display: flex; align-items: flex-start; gap: 25px; }
-        .rule-item i { color: #3498db; font-size: 3.5rem; margin-top: 5px; }
+        .rule-intro { font-size: 3.2rem; color: #fff; text-align: center; margin-bottom: 50px; line-height: 1.6; }
+        .rule-item { font-size: 3.2rem; color: #ecf0f1; margin-bottom: 30px; line-height: 1.5; }
         .rule-highlight { color: #e74c3c; font-weight: bold; text-shadow: 2px 2px 0px #000; background: rgba(231, 76, 60, 0.2); padding: 0 10px; border-radius: 10px; }
         .rule-item.alert { color: #f1c40f; font-weight: bold; margin-top: 50px; border-top: 2px dashed #f1c40f; padding-top: 40px; }
-        .rule-item.alert i { color: #f1c40f; }
 
         /* ランキング・マトリクス表 */
         .ranking-container { width: 98%; }
@@ -94,25 +92,22 @@
         }
 
         if (cmd.type === 'rules') {
+            // ★ アイコンの削除とタグ構成の調整
             view.innerHTML = `
                 <div class="rule-wrapper">
                     <div class="rule-title-text">RULES</div>
                     <div class="rule-intro">それではスピードクイズの時間がやってまいりました！<br>全部で５問出題します。</div>
                     <div class="rule-item">
-                        <i class="fa-solid fa-mobile-screen"></i> 
-                        <div>スマホ画面の選択肢の中から、正解と思ったボタンを押してください。</div>
+                        スマホ画面の選択肢の中から、正解と思ったボタンを押してください。
                     </div>
                     <div class="rule-item">
-                        <i class="fa-solid fa-stopwatch"></i> 
-                        <div>各問題の制限時間は<span class="rule-highlight">「60秒」</span>です。</div>
+                        各問題の制限時間は<span class="rule-highlight">「60秒」</span>です。
                     </div>
                     <div class="rule-item">
-                        <i class="fa-solid fa-bolt"></i> 
-                        <div>正解の基本点100点に加え、早く回答するほど<span class="rule-highlight">「残り時間(秒) × 1点」</span>のボーナスが加算されます！</div>
+                        正解の基本点100点に加え、早く回答するほど<span class="rule-highlight">「残り時間(秒) × 1点」</span>のボーナスが加算されます！
                     </div>
                     <div class="rule-item alert">
-                        <i class="fa-solid fa-trophy"></i> 
-                        <div>正答数が同じ場合は、回答までの時間が短いチームが優勝です！</div>
+                        正答数が同じ場合は、回答までの時間が短いチームが優勝です！
                     </div>
                 </div>
             `;
