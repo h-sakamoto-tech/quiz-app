@@ -347,14 +347,20 @@
     };
 
     function buildScenario(n) {
+        // ★ ここに新たに「answer（正解発表）」が組み込まれています
         scenario = [{type:'rules',title:'ルール説明'}];
-        for(let i=0;i<n;i++) { scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`}); scenario.push({type:'close',qIndex:i,title:`第${i+1}問 正解発表`}); }
+        for(let i=0;i<n;i++) { 
+            scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`}); 
+            scenario.push({type:'close',qIndex:i,title:`第${i+1}問 タイムアップ`}); 
+            scenario.push({type:'answer',qIndex:i,title:`第${i+1}問 正解発表`}); 
+        }
         scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果発表(タイトル)'},{type:'ranking',title:'総合順位(マトリクス表)'});
     }
 
     function playScenarioSound(type) {
         let sndId = '';
         if (type === 'rules') sndId = 'sndRules'; else if (type === 'start') sndId = 'sndStart'; else if (type === 'close') sndId = 'sndClose'; else if (type === 'next') sndId = 'sndNext'; else if (type === 'end') sndId = 'sndEnd'; else if (type === 'details') sndId = 'sndDetails'; else if (type === 'ranking') sndId = 'sndRanking';
+        else if (type === 'answer') sndId = ''; // 正解発表時は音声を変更しない（既存ルール維持）
         if (sndId) { const urlInput = document.getElementById('url-' + sndId); if (urlInput && urlInput.value) { const audio = new Audio(urlInput.value); audio.play().catch(e => console.warn("再生失敗:", e)); } }
     }
 
