@@ -15,7 +15,7 @@
         .qr-area img { border: 15px solid #fff; border-radius: 10px; width: 300px; height: 300px; box-shadow: 0 0 30px rgba(255,255,255,0.2); }
         .qr-text { font-size: 2.5rem; color: #2ecc71; margin-top: 20px; font-weight: bold; letter-spacing: 2px; }
 
-        /* ★ 問題表示エリア（画像を丁度良い大きさに強制拡大・縮小する調整） */
+        /* 問題表示エリア（画像を丁度良い大きさに強制拡大・縮小する調整） */
         .q-image-frame { height: 60vh; width: 96vw; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; }
         .q-image { height: 60vh; width: auto; max-width: 96vw; border: 8px solid #2ecc71; border-radius: 20px; box-shadow: 0 0 60px rgba(46, 204, 113, 0.4); object-fit: contain; background-color: #000; }
         .q-text { font-size: 4rem; font-weight: bold; color: #ffffff; text-shadow: 0 0 20px rgba(0,0,0,1), 2px 2px 0px #2ecc71; line-height: 1.2; white-space: pre-wrap; max-width: 95vw; }
@@ -70,11 +70,11 @@
             letter-spacing: 5px;
         }
         .answer-view-compact .q-image-frame {
-            height: 40vh; 
+            height: 50vh; /* ★ 40vh から 50vh に少し拡大しました */
             margin-bottom: 10px;
         }
         .answer-view-compact .q-image {
-            height: 40vh;
+            height: 50vh; /* ★ 画像本体も 50vh に拡大しました */
         }
     </style>
 </head>
