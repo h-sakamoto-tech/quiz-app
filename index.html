@@ -221,20 +221,43 @@
         for(let id in files) { if(document.getElementById('url-' + id)) { document.getElementById('url-' + id).value = fix + files[id]; } }
     };
 
+    // ★ プレビュー枠を2つ（問題・正解）に増やしました
     window.addQuestionRow = function(qData = null) {
         const container = document.getElementById('questions-container');
         const div = document.createElement('div'); div.className = 'q-row';
+        
         let imgVal = qData ? (qData.image || '') : '';
         if (imgVal.includes('raw.githubusercontent.com') && !imgVal.includes('?t=')) { imgVal = imgVal + "?t=" + Date.now(); }
+        
+        let ansImgVal = qData ? (qData.ansImage || '') : '';
+        if (ansImgVal.includes('raw.githubusercontent.com') && !ansImgVal.includes('?t=')) { ansImgVal = ansImgVal + "?t=" + Date.now(); }
+        
         const txtVal = qData ? (qData.text || '') : '';
         const ansVal = qData ? qData.ans : 'A';
 
         div.innerHTML = `
             <div class="q-grid">
-                <div class="preview-box"><div class="up-status">UP中...</div><img src="${imgVal}" class="prev-img" style="${imgVal ? 'display:block' : 'display:none'}" alt="画像"></div>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <div class="preview-box">
+                        <div class="up-status q-up-status">UP中...</div>
+                        <div style="position:absolute; top:0; left:0; background:rgba(34,153,84,0.8); font-size:10px; padding:2px 5px;">問題</div>
+                        <img src="${imgVal}" class="prev-img q-prev-img" style="${imgVal ? 'display:block' : 'display:none'}" alt="問題画像">
+                    </div>
+                    <div class="preview-box">
+                        <div class="up-status a-up-status">UP中...</div>
+                        <div style="position:absolute; top:0; left:0; background:rgba(230,126,34,0.8); font-size:10px; padding:2px 5px;">正解</div>
+                        <img src="${ansImgVal}" class="prev-img a-prev-img" style="${ansImgVal ? 'display:block' : 'display:none'}" alt="正解画像">
+                    </div>
+                </div>
                 <div class="input-area">
-                    <label class="btn-upload"><i class="fa fa-folder-open"></i> パソコンから画像を選択<input type="file" style="display:none" accept="image/*" onchange="uploadToGitHub(this)"></label>
-                    <input type="text" class="q-img-url" placeholder="画像のURL" value="${imgVal}" readonly>
+                    <div style="display:flex; gap:10px; margin-bottom:8px;">
+                        <label class="btn-upload" style="margin:0;"><i class="fa fa-image"></i> 問題画像<input type="file" style="display:none" accept="image/*" onchange="uploadToGitHub(this, 'q')"></label>
+                        <input type="text" class="q-img-url" placeholder="問題画像のURL" value="${imgVal}" readonly style="margin:0; flex:1; padding:8px; background:#111; color:#888; border:1px solid #555; border-radius:4px;">
+                    </div>
+                    <div style="display:flex; gap:10px; margin-bottom:8px;">
+                        <label class="btn-upload" style="margin:0; background:#e67e22;"><i class="fa fa-image"></i> 正解画像<input type="file" style="display:none" accept="image/*" onchange="uploadToGitHub(this, 'a')"></label>
+                        <input type="text" class="a-img-url" placeholder="正解発表用画像のURL" value="${ansImgVal}" readonly style="margin:0; flex:1; padding:8px; background:#111; color:#888; border:1px solid #555; border-radius:4px;">
+                    </div>
                     <textarea class="q-txt" placeholder="画像の下に表示する補足テキスト">${txtVal}</textarea>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span>正解: <select class="q-ans">${['A','B','C','D'].map(v=>`<option value="${v}" ${ansVal===v?'selected':''}>${v}</option>`).join('')}</select></span>
@@ -252,13 +275,22 @@
         localStorage.setItem('gh_repo_saved', document.getElementById('gh-repo').value.trim());
     };
 
-    window.uploadToGitHub = async function(input) {
+    // ★ Q/A どちらのボタンが押されたかを判定してアップロード先を分ける
+    window.uploadToGitHub = async function(input, type) {
         const file = input.files[0]; if (!file) return;
-        const row = input.closest('.q-row'); row.querySelector('.up-status').style.display = 'flex';
+        const row = input.closest('.q-row'); 
+        
+        const statusClass = type === 'q' ? '.q-up-status' : '.a-up-status';
+        const urlClass = type === 'q' ? '.q-img-url' : '.a-img-url';
+        const prevClass = type === 'q' ? '.q-prev-img' : '.a-prev-img';
+
+        row.querySelector(statusClass).style.display = 'flex';
+        
         const token = document.getElementById('gh-token').value.trim();
         const user = document.getElementById('gh-user').value.trim();
         const repo = document.getElementById('gh-repo').value.trim();
-        if(!token) { alert("⚠️ 最初に「GitHub Token」を入力してください！"); row.querySelector('.up-status').style.display = 'none'; return; }
+        if(!token) { alert("⚠️ 最初に「GitHub Token」を入力してください！"); row.querySelector(statusClass).style.display = 'none'; return; }
+        
         const reader = new FileReader(); reader.readAsDataURL(file);
         reader.onload = async () => {
             const base64Content = reader.result.split(',')[1];
@@ -272,18 +304,20 @@
                 });
                 const data = await res.json(); if (!res.ok) throw new Error(data.message || "不明なエラー");
                 const rawUrl = data.content.download_url + "?t=" + Date.now();
-                row.querySelector('.q-img-url').value = rawUrl;
-                row.querySelector('.prev-img').src = reader.result; row.querySelector('.prev-img').style.display = 'block';
+                row.querySelector(urlClass).value = rawUrl;
+                row.querySelector(prevClass).src = reader.result; row.querySelector(prevClass).style.display = 'block';
             } catch (e) { alert("GitHubへのアップロード失敗:\n" + e.message); }
-            row.querySelector('.up-status').style.display = 'none';
+            row.querySelector(statusClass).style.display = 'none';
         };
     };
 
     window.saveAllConfig = function() {
         const qData = []; 
         document.querySelectorAll('.q-row').forEach(r => { 
-            const img = r.querySelector('.q-img-url').value; const txt = r.querySelector('.q-txt').value;
-            if (img || txt) qData.push({ image: img, text: txt, ans: r.querySelector('.q-ans').value }); 
+            const img = r.querySelector('.q-img-url').value; 
+            const ansImg = r.querySelector('.a-img-url').value; // ★ 正解画像も保存
+            const txt = r.querySelector('.q-txt').value;
+            if (img || ansImg || txt) qData.push({ image: img, ansImage: ansImg, text: txt, ans: r.querySelector('.q-ans').value }); 
         });
         const sData = { baseUrl: document.getElementById('base-folder-url').value, sndRules: document.getElementById('url-sndRules').value, sndStart: document.getElementById('url-sndStart').value, sndClose: document.getElementById('url-sndClose').value, sndNext: document.getElementById('url-sndNext').value, sndEnd: document.getElementById('url-sndEnd').value, sndDetails: document.getElementById('url-sndDetails').value, sndRanking: document.getElementById('url-sndRanking').value };
         db.ref('quizConfig').set(qData); 
@@ -347,20 +381,15 @@
     };
 
     function buildScenario(n) {
-        // ★ ここに新たに「answer（正解発表）」が組み込まれています
         scenario = [{type:'rules',title:'ルール説明'}];
-        for(let i=0;i<n;i++) { 
-            scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`}); 
-            scenario.push({type:'close',qIndex:i,title:`第${i+1}問 タイムアップ`}); 
-            scenario.push({type:'answer',qIndex:i,title:`第${i+1}問 正解発表`}); 
-        }
+        for(let i=0;i<n;i++) { scenario.push({type:i===0?'start':'next',qIndex:i,title:`第${i+1}問 受付中`}); scenario.push({type:'close',qIndex:i,title:`第${i+1}問 正解発表`}); scenario.push({type:'answer',qIndex:i,title:`第${i+1}問 正解発表`}); }
         scenario.push({type:'end',title:'全問終了'},{type:'details',title:'結果発表(タイトル)'},{type:'ranking',title:'総合順位(マトリクス表)'});
     }
 
     function playScenarioSound(type) {
         let sndId = '';
         if (type === 'rules') sndId = 'sndRules'; else if (type === 'start') sndId = 'sndStart'; else if (type === 'close') sndId = 'sndClose'; else if (type === 'next') sndId = 'sndNext'; else if (type === 'end') sndId = 'sndEnd'; else if (type === 'details') sndId = 'sndDetails'; else if (type === 'ranking') sndId = 'sndRanking';
-        else if (type === 'answer') sndId = ''; // 正解発表時は音声を変更しない（既存ルール維持）
+        else if (type === 'answer') sndId = ''; // 正解発表時は音を鳴らさない
         if (sndId) { const urlInput = document.getElementById('url-' + sndId); if (urlInput && urlInput.value) { const audio = new Audio(urlInput.value); audio.play().catch(e => console.warn("再生失敗:", e)); } }
     }
 
