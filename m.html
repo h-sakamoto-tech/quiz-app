@@ -15,7 +15,7 @@
         .qr-area img { border: 15px solid #fff; border-radius: 10px; width: 300px; height: 300px; box-shadow: 0 0 30px rgba(255,255,255,0.2); }
         .qr-text { font-size: 2.5rem; color: #2ecc71; margin-top: 20px; font-weight: bold; letter-spacing: 2px; }
 
-        /* 問題表示エリア */
+        /* 問題表示エリア（共通スタイル） */
         .q-image-frame { height: 75vh; width: 96vw; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
         .q-image { max-height: 100%; max-width: 100%; border: 8px solid #2ecc71; border-radius: 20px; box-shadow: 0 0 60px rgba(46, 204, 113, 0.4); object-fit: contain; }
         .q-text { font-size: 4rem; font-weight: bold; color: #ffffff; text-shadow: 0 0 20px rgba(0,0,0,1), 2px 2px 0px #2ecc71; line-height: 1.2; white-space: pre-wrap; max-width: 95vw; }
@@ -35,7 +35,7 @@
         .timeup-msg { font-size: 12rem; color: #e74c3c; font-weight: bold; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.05); opacity: 0.7; } }
 
-        /* ★ ルール説明用スタイル（中央寄せ＆アイコン削除調整） */
+        /* ルール説明用スタイル */
         .rule-wrapper { background: rgba(11, 14, 20, 0.9); padding: 50px 60px; border-radius: 20px; border: 3px solid #3498db; box-shadow: 0 0 40px rgba(52, 152, 219, 0.5); text-align: center; max-width: 90vw; }
         .rule-title-text { font-size: 6rem; color: #f1c40f; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px rgba(241, 196, 15, 0.8); letter-spacing: 5px; font-weight: bold; }
         .rule-intro { font-size: 3.2rem; color: #fff; text-align: center; margin-bottom: 50px; line-height: 1.6; }
@@ -61,6 +61,18 @@
         .top-1 { background: rgba(241, 196, 15, 0.15) !important; border: 2px solid #f1c40f; }
         .top-1 .rank-number { color: #f1c40f; }
         .team-avatar { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; vertical-align: middle; margin-right: 20px; }
+
+        /* ★ 回答発表専用のコンパクトスタイル */
+        .answer-view-compact .q-header {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            letter-spacing: 5px;
+        }
+        .answer-view-compact .q-image-frame {
+            height: 45vh; /* 高さを75vhから45vhに大幅縮小 */
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -92,7 +104,6 @@
         }
 
         if (cmd.type === 'rules') {
-            // ★ アイコンの削除とタグ構成の調整
             view.innerHTML = `
                 <div class="rule-wrapper">
                     <div class="rule-title-text">RULES</div>
@@ -126,11 +137,16 @@
         } else if (cmd.type === 'answer') {
             db.ref('quizConfig/' + cmd.qIndex).once('value', s => {
                 const data = s.val(); if(!data) return;
-                let imageHtml = data.image ? `<div class="q-image-frame"><img src="${data.image}" class="q-image" onerror="this.style.display='none'"></div>` : '';
+                // ★ 回答発表専用のコンパクトレイアウト
+                let imageTag = data.image ? `<img src="${data.image}" class="q-image" onerror="this.style.display='none'">` : '';
+                let textStyle = data.image ? 'font-size: 4rem; margin-top: 5px;' : 'font-size: 6rem; margin-top: 60px;';
+
                 view.innerHTML = `
-                    <div class="q-header">QUESTION ${cmd.qIndex + 1} - 正解発表</div>
-                    ${imageHtml}
-                    <div class="q-text" style="${data.image ? 'font-size: 5rem; margin-top: 10px;' : 'font-size: 8rem; margin-top: 100px;'}">正解は <span style="color:#e74c3c; font-size: 1.2em;">「${data.ans}」</span> です！</div>
+                    <div class="answer-view-compact">
+                        <div class="q-header">QUESTION ${cmd.qIndex + 1} - 正解発表</div>
+                        <div class="q-image-frame">${imageTag}</div>
+                        <div class="q-text" style="${textStyle}">正解は <span style="color:#e74c3c; font-size: 1.1em;">「${data.ans}」</span> です！</div>
+                    </div>
                 `;
             });
         } else if (cmd.type === 'details') {
@@ -187,7 +203,7 @@
                                 <span style="font-size: 1.8rem; color: #fff; font-weight: normal; line-height: 0.85;">pt</span>
                             </div>
                             <div class="bonus-points" style="height: 1.6rem; display: flex; align-items: flex-end; justify-content: center; line-height: 1;">
-                                <span class="correct-bonus">正答:${baseTotal}</span><span style="margin: 0 6px; color:#777;">/</span><span class="time-bonus">ﾀｲﾑ:${bonusTotal}</span>
+                                <span class="correct-bonus">正答:${baseTotal}</span><span style="margin: 0 6px; color:#777;">/</span><span class="time-bonus">ﾀｲム:${bonusTotal}</span>
                             </div>
                         </td>`;
                     
